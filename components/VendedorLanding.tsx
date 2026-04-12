@@ -31,10 +31,10 @@ export function VendedorLanding() {
               </span>
             </div>
             <h1 className="mb-3 max-w-5xl font-serif tracking-tight">
-              <span className="block text-4xl font-medium leading-[1.06] text-white md:text-5xl xl:text-6xl 2xl:text-6xl">
+              <span className="block text-4xl font-medium leading-[1.06] text-teal-2 md:text-5xl xl:text-6xl 2xl:text-6xl">
                 Le damos liquidez
               </span>
-              <span className="mt-1.5 block font-serif text-lg font-normal leading-snug text-teal-2/85 md:mt-2 md:text-xl xl:text-xl">
+              <span className="mt-2 block font-serif text-xl font-normal leading-snug text-white md:mt-2.5 md:text-2xl xl:text-2xl">
                 a tu propiedad.
               </span>
             </h1>
