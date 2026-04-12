@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vende tu propiedad · MaxRent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --dark:#001F30;
+  --orange:#FF6701;--orange2:#FF8C3A;--orangeL:#FFF0E6;
+  --cream:#FBF7F3;--white:#FFFFFF;
+  --gray1:#EDE7E0;--gray2:#C4B8AE;--gray3:#7A6E68;
+  --teal:#0F6E56;--tealL:#D4EDE7;--teal2:#5DCAA5;
+}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--dark);overflow-x:hidden}
+
+.site-header{position:sticky;top:0;z-index:100;background:rgba(0,31,48,.96);backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,255,255,.08);padding:0 3.5rem;display:flex;align-items:center;justify-content:space-between;height:56px}
+.sh-logo{text-decoration:none;display:flex;align-items:center;opacity:.85;transition:opacity .15s}
+.sh-logo:hover{opacity:1}
+.sh-nav{display:flex;align-items:center;gap:0}
+.sh-nav a{font-size:12px;font-weight:500;color:var(--gray2);text-decoration:none;padding:0 14px;height:56px;display:flex;align-items:center;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;white-space:nowrap}
+.sh-nav a:hover{color:var(--white);border-bottom-color:var(--teal2)}
+.sh-cta{background:var(--teal)!important;color:var(--white)!important;padding:8px 18px!important;height:auto!important;border-radius:8px;border-bottom:none!important;font-weight:600!important;transition:background .15s!important}
+.sh-cta:hover{background:#085041!important}
+
+.layout{display:block;margin-right:420px}
+
+.hero{background:var(--dark);padding:4rem 3.5rem 3.5rem;position:relative;overflow:hidden}
+.hero::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 70% at 8% 55%, rgba(15,110,86,.18) 0%, transparent 65%);pointer-events:none}
+.hero>*{position:relative;z-index:1}
+
+.piloto-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,103,1,.12);border:1px solid rgba(255,103,1,.3);border-radius:40px;padding:5px 14px 5px 8px;margin-bottom:2rem;width:fit-content}
+.piloto-dot{width:8px;height:8px;border-radius:50%;background:var(--orange);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.85)}}
+.piloto-txt{font-size:12px;font-weight:500;color:var(--orange2);letter-spacing:.02em}
+
+.hero-h1{font-family:'DM Serif Display',serif;font-size:clamp(34px,4.2vw,54px);color:var(--white);line-height:1.06;letter-spacing:-.035em;margin-bottom:.9rem}
+.hero-h1 em{font-style:italic;color:var(--teal2);font-size:1.18em;display:block;line-height:1}
+.hero-h2{font-family:'DM Serif Display',serif;font-size:clamp(15px,1.8vw,20px);font-weight:400;color:var(--gray2);line-height:1.4;letter-spacing:-.015em;max-width:500px;margin-bottom:2.5rem}
+.hero-h2 strong{color:#9FE1CB;font-weight:500}
+
+.hero-context{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:1.2rem 1.5rem;max-width:500px}
+.hc-title{font-size:12px;font-weight:600;color:var(--teal2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.5rem}
+.hc-body{font-size:13px;color:var(--gray2);line-height:1.65}
+.hc-body strong{color:var(--white);font-weight:500}
+
+.col-right{position:fixed;top:56px;right:0;width:420px;height:calc(100vh - 56px);background:var(--white);box-shadow:-6px 0 40px rgba(0,0,0,.14);display:flex;flex-direction:column;justify-content:center;padding:2.5rem 2rem;z-index:10;overflow-y:auto}
+.col-right::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--teal)}
+
+.sf-title{font-family:'DM Serif Display',serif;font-size:24px;color:var(--dark);letter-spacing:-.03em;margin-bottom:6px;line-height:1.2}
+.sf-title em{font-style:italic;color:var(--teal)}
+.sf-sub{font-size:13px;color:var(--gray3);margin-bottom:1.6rem;line-height:1.6;padding-bottom:1.4rem;border-bottom:1px solid var(--gray1)}
+
+.lista-badge{background:var(--tealL);border:1px solid #9FE1CB;border-radius:8px;padding:8px 12px;margin-bottom:1.2rem;display:flex;align-items:center;gap:8px}
+.lb-icon{width:24px;height:24px;border-radius:50%;background:var(--teal);color:var(--white);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px}
+.lb-txt{font-size:11px;color:var(--teal);line-height:1.4}
+.lb-txt strong{font-weight:600;display:block;font-size:12px}
+
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.ff{display:flex;flex-direction:column;gap:4px}
+.ff.full{grid-column:1/-1}
+.ff label{font-size:11px;font-weight:600;color:var(--gray3);letter-spacing:.04em;text-transform:uppercase}
+.ff input,.ff select{width:100%;height:42px;padding:0 12px;border:1.5px solid #E2DAD4;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dark);background:var(--white);outline:none;transition:border-color .15s;appearance:none;-webkit-appearance:none;display:block}
+.ff input:focus,.ff select:focus{border-color:var(--teal)}
+.ff input::placeholder{color:#C4B8AE}
+.sw{position:relative;width:100%}
+.sw::after{content:'↓';position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--gray3);pointer-events:none}
+
+.btn-submit{width:100%;padding:14px;background:var(--teal);color:var(--white);border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;margin-top:14px;letter-spacing:-.01em;transition:background .15s,transform .1s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-submit:hover{background:#085041}
+.btn-submit:active{transform:scale(.98)}
+.btn-arr{transition:transform .2s}
+.btn-submit:hover .btn-arr{transform:translateX(4px)}
+.f-disc{font-size:11.5px;color:var(--gray3);text-align:center;margin-top:10px;line-height:1.55}
+
+.success{display:none;text-align:center;padding:1.5rem 0}
+.s-icon{width:56px;height:56px;border-radius:50%;background:var(--teal);color:var(--white);font-size:22px;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem}
+.s-title{font-family:'DM Serif Display',serif;font-size:22px;color:var(--dark);margin-bottom:8px}
+.s-sub{font-size:13px;color:var(--gray3);line-height:1.65;max-width:280px;margin:0 auto}
+.s-badge{margin-top:14px;padding:10px 18px;background:var(--tealL);border-radius:8px;font-size:13px;font-weight:600;color:var(--teal)}
+
+.form-sep{display:flex;align-items:center;gap:10px;margin:14px 0 10px}
+.form-sep span{font-size:10px;font-weight:600;color:var(--teal);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.form-sep::before,.form-sep::after{content:'';flex:1;height:1px;background:var(--gray1)}
+
+.sec{padding:4.5rem 3.5rem}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin-bottom:12px}
+.sec-title{font-family:'DM Serif Display',serif;font-size:clamp(24px,2.8vw,38px);letter-spacing:-.03em;line-height:1.1;color:var(--dark);margin-bottom:.6rem}
+.sec-sub{font-size:14px;color:var(--gray3);max-width:520px;line-height:1.7;margin-bottom:2.8rem}
+
+.req-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.req-card{border-radius:14px;padding:1.8rem;border:1.5px solid var(--gray1);background:var(--cream);position:relative;overflow:hidden;transition:border-color .2s,transform .18s}
+.req-card:hover{border-color:var(--teal);transform:translateY(-2px)}
+.req-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--teal);opacity:0;transition:opacity .2s}
+.req-card:hover::before{opacity:1}
+.req-bg-num{font-family:'DM Serif Display',serif;font-size:68px;color:var(--gray1);position:absolute;bottom:-8px;right:12px;line-height:1;pointer-events:none;transition:color .2s}
+.req-card:hover .req-bg-num{color:rgba(15,110,86,.1)}
+.req-icon{width:38px;height:38px;border-radius:9px;background:var(--tealL);display:flex;align-items:center;justify-content:center;margin-bottom:.9rem}
+.req-num{font-size:10px;font-weight:600;color:var(--teal);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.35rem}
+.req-tag{display:inline-block;background:var(--tealL);color:var(--teal);font-size:10px;font-weight:600;padding:2px 9px;border-radius:20px;margin-bottom:.6rem}
+.req-card h3{font-size:15px;font-weight:600;color:var(--dark);margin-bottom:.45rem;line-height:1.3}
+.req-card p{font-size:13px;color:var(--gray3);line-height:1.7;position:relative}
+
+.porque-sec{background:var(--dark);padding:4.5rem 3.5rem;position:relative;overflow:hidden}
+.porque-sec::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 50% 60% at 80% 50%, rgba(15,110,86,.12) 0%, transparent 65%);pointer-events:none}
+.porque-sec .eyebrow{color:var(--teal2)}
+.porque-sec .sec-title{color:var(--white);margin-bottom:2.5rem}
+.p-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.p-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:1.8rem;transition:border-color .2s,background .2s}
+.p-card:hover{background:rgba(255,255,255,.07);border-color:rgba(15,110,86,.4)}
+.p-accent{height:3px;background:var(--teal);border-radius:2px;width:28px;margin-bottom:1.1rem}
+.p-stat{font-family:'DM Serif Display',serif;font-size:34px;color:var(--white);letter-spacing:-.03em;line-height:1;margin-bottom:4px}
+.p-lbl{font-size:11px;color:var(--teal2);margin-bottom:.8rem;font-weight:500}
+.p-div{height:1px;background:rgba(255,255,255,.08);margin-bottom:.8rem}
+.p-body{font-size:13px;color:var(--gray2);line-height:1.7}
+.p-body strong{color:var(--white);font-weight:500}
+
+.site-footer{background:var(--dark);padding:3rem 3.5rem 2rem;border-top:1px solid rgba(255,255,255,.08)}
+.footer-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1.5rem;padding-bottom:1.8rem;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:1.5rem}
+.footer-links{display:flex;gap:0}
+.footer-links a{font-size:12px;color:var(--gray3);text-decoration:none;padding:0 14px;transition:color .15s;border-right:1px solid rgba(255,255,255,.08)}
+.footer-links a:first-child{padding-left:0}
+.footer-links a:last-child{border-right:none}
+.footer-links a:hover{color:var(--white)}
+.footer-bottom{font-size:11px;color:var(--gray3)}
+
+.faq-section{padding:4.5rem 3.5rem;background:var(--white)}
+.faq-section .eyebrow{color:var(--teal)}
+.faq-section .sec-title{margin-bottom:.5rem}
+.faq-section .sec-sub{margin-bottom:2.5rem}
+.faq-list{display:flex;flex-direction:column;gap:0}
+.faq-item{border-bottom:1px solid var(--gray1)}
+.faq-item:first-child{border-top:1px solid var(--gray1)}
+.faq-q{width:100%;background:transparent;border:none;cursor:pointer;padding:1.2rem 0;display:flex;align-items:center;justify-content:space-between;gap:1rem;text-align:left}
+.faq-q-txt{font-size:15px;font-weight:500;color:var(--dark);line-height:1.4}
+.faq-icon{width:28px;height:28px;border-radius:50%;background:var(--gray1);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;color:var(--gray3);transition:background .2s,transform .25s}
+.faq-item.open .faq-icon{background:var(--teal);color:var(--white);transform:rotate(45deg)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .35s ease,padding .35s ease;font-size:13.5px;color:var(--gray3);line-height:1.75}
+.faq-item.open .faq-a{max-height:200px;padding-bottom:1.2rem}
+
+.calc-section{padding:4.5rem 3.5rem;background:var(--cream)}
+.calc-section .eyebrow{color:var(--teal)}
+.calc-section .sec-title{color:var(--dark);margin-bottom:.5rem}
+.calc-section .sec-sub{color:var(--gray3);margin-bottom:2.5rem}
+.calc-wrap{display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start}
+.calc-left{background:var(--white);border:1.5px solid var(--gray1);border-radius:16px;padding:2rem}
+.calc-label{font-size:11px;font-weight:600;color:var(--teal);letter-spacing:.07em;text-transform:uppercase;margin-bottom:.6rem}
+.calc-input-wrap{position:relative;margin-bottom:1.5rem}
+.calc-prefix{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;font-weight:500;color:var(--gray3)}
+.calc-input{width:100%;height:58px;padding:0 14px 0 32px;background:var(--white);border:1.5px solid #E2DAD4;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:22px;font-weight:500;color:var(--dark);outline:none;transition:border-color .15s}
+.calc-input:focus{border-color:var(--teal)}
+.calc-input::placeholder{color:#C4B8AE}
+.anual-display{background:var(--tealL);border:1px solid #9FE1CB;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:1.2rem}
+.anual-lbl{font-size:12px;color:var(--teal)}
+.anual-val{font-size:18px;font-weight:600;color:var(--dark)}
+.calc-right{display:flex;flex-direction:column;gap:10px}
+.cap-card{border-radius:12px;padding:1.2rem 1.5rem;border:1px solid var(--gray1);background:var(--white);display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:1rem;transition:border-color .2s,transform .15s}
+.cap-card:hover{border-color:var(--teal);transform:translateX(3px)}
+.cap-card.mejor{border-color:var(--teal);background:var(--tealL)}
+.cap-badge{background:var(--dark);color:var(--white);font-size:12px;font-weight:600;padding:5px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.cap-card.mejor .cap-badge{background:var(--teal)}
+.cap-info{flex:1}
+.cap-tag{font-size:10px;font-weight:600;color:var(--gray3);letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px}
+.cap-valor{font-family:'DM Serif Display',serif;font-size:26px;color:var(--dark);letter-spacing:-.02em;line-height:1}
+.cap-card.mejor .cap-valor{color:var(--teal)}
+.cap-uf{font-size:11px;color:var(--gray3);margin-top:3px}
+.cap-star{font-size:18px;color:var(--gray2);flex-shrink:0}
+.cap-card.mejor .cap-star{color:var(--teal)}
+.calc-footer{margin-top:1rem;padding:1rem 1.2rem;background:var(--orangeL);border:1px solid rgba(255,103,1,.3);border-radius:10px;font-size:12px;color:#CC4E00;line-height:1.6;display:none}
+.calc-footer strong{color:var(--orange);font-weight:600}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.hero>*{animation:fadeUp .6s ease-out both}
+.hero>*:nth-child(1){animation-delay:.0s}.hero>*:nth-child(2){animation-delay:.08s}
+.hero>*:nth-child(3){animation-delay:.16s}.hero>*:nth-child(4){animation-delay:.24s}
+
+@media(max-width:900px){
+  .layout{margin-right:0}
+  .col-right{position:relative;width:100%;height:auto;top:auto;right:auto;box-shadow:none}
+  .hero,.sec,.porque-sec,.site-footer{padding-left:1.5rem;padding-right:1.5rem}
+  .site-header{padding:0 1.5rem}
+  .req-grid,.p-grid{grid-template-columns:1fr}
+  .calc-wrap{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <a href="inversionista.html" class="sh-logo">
+    <svg width="140" height="30" viewBox="0 0 140 30" fill="none" xmlns="http://www.w3.org/2000/svg"><polyline points="16.3,3.6 2.8,15.0 16.3,26.4" stroke="#4A6B8A" stroke-width="3.0" stroke-linecap="square" stroke-linejoin="miter" fill="none"/><polyline points="27.5,3.6 14.0,15.0 27.5,26.4" stroke="#CC4A28" stroke-width="3.0" stroke-linecap="square" stroke-linejoin="miter" fill="none"/><text x="46.2" y="21.6" font-family="'DM Sans',system-ui,sans-serif" font-size="15.6" font-weight="300" letter-spacing="2.4" fill="#EDE0CC">MAXRENT</text></svg>
+  </a>
+  <nav class="sh-nav">
+    <a href="#requisitos">Requisitos</a>
+    <a href="#calculadora">Calcula el precio de venta</a>
+    <a href="#faq">Preguntas</a>
+    <a href="inversionista.html" style="color:#FF6701!important;font-weight:600">Quiero invertir</a>
+    <a href="#form-state" class="sh-cta">Inscribirme</a>
+  </nav>
+</header>
+
+<div class="layout">
+  <div>
+    <section class="hero">
+      <div class="piloto-badge">
+        <div class="piloto-dot"></div>
+        <span class="piloto-txt">Piloto en curso · Segundo lanzamiento próximo</span>
+      </div>
+      <h1 class="hero-h1">Le damos liquidez<br><em>a tu propiedad.</em></h1>
+      <p class="hero-h2">Vendemos tu propiedad a inversionistas calificados — <strong>canal exclusivo, sin portales, sin complicaciones.</strong> Tú recibes el precio completo.</p>
+      <div class="hero-context">
+        <div class="hc-title">Sobre el piloto</div>
+        <div class="hc-body">El primer lanzamiento ya está en marcha con una cartera de propiedades seleccionadas. Si tu propiedad califica, <strong>inscríbete ahora para ser considerado en el segundo lanzamiento.</strong></div>
+      </div>
+    </section>
+
+    <section class="sec" style="background:var(--white)" id="requisitos">
+      <div class="eyebrow">Lo que necesitamos de ti</div>
+      <h2 class="sec-title">4 condiciones para<br>calificar al programa.</h2>
+      <p class="sec-sub">Son las mismas condiciones que hacen atractiva la propiedad para el inversionista. Si las cumples, tienes un comprador.</p>
+      <div class="req-grid">
+        <div class="req-card">
+          <div class="req-bg-num">01</div>
+          <div class="req-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 2L3 5.5V10.5c0 3.5 3 6.5 7 7 4-.5 7-3.5 7-7V5.5L10 2z" stroke="#0F6E56" stroke-width="1.5"/><path d="M7 10l2 2 4-4" stroke="#0F6E56" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+          <div class="req-num">Condición 01</div>
+          <div class="req-tag">Base del modelo</div>
+          <h3>Administrada por Houm</h3>
+          <p>La administración de Houm garantiza al inversionista la operación y el historial del arrendatario. Si aún no tienes administración con Houm, podemos coordinar el traspaso antes de la venta.</p>
+        </div>
+        <div class="req-card">
+          <div class="req-bg-num">02</div>
+          <div class="req-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="#0F6E56" stroke-width="1.5"/><path d="M10 7v3l2.5 2" stroke="#0F6E56" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+          <div class="req-num">Condición 02</div>
+          <div class="req-tag">Si no está arrendada, te ayudamos</div>
+          <h3>Debe estar arrendada</h3>
+          <p>El inversionista compra porque recibe arriendo desde el día 1. Si tu propiedad está vacía, Houm y Renta Capital coordinan el arriendo antes de salir al mercado.</p>
+        </div>
+        <div class="req-card">
+          <div class="req-bg-num">03</div>
+          <div class="req-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M4 14L8 9l3 3 5-6" stroke="#0F6E56" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="req-num">Condición 03</div>
+          <div class="req-tag">Precio con cap rate atractivo</div>
+          <h3>Cap rate ≥ 4,5%</h3>
+          <p>El inversionista compra por rentabilidad. Te ayudamos a valorizar la propiedad para que el precio sea justo para ti y atractivo para el comprador.</p>
+        </div>
+        <div class="req-card">
+          <div class="req-bg-num">04</div>
+          <div class="req-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="3" y="7" width="14" height="10" rx="2" stroke="#0F6E56" stroke-width="1.5"/><path d="M7 7V5a3 3 0 016 0v2" stroke="#0F6E56" stroke-width="1.5"/></svg></div>
+          <div class="req-num">Condición 04</div>
+          <div class="req-tag">Pie diferido en cuotas</div>
+          <h3>10% del pie en 24 cuotas post escritura</h3>
+          <p>El 90% lo recibes al contado el día de la escritura vía el Banco Aliado. El 10% restante llega en 24 cuotas garantizadas por Houm — tú recibes el 100% sin riesgo de cobranza.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="porque-sec" id="porque">
+      <div class="eyebrow">Por qué lo logramos</div>
+      <h2 class="sec-title">El canal que ningún corredor<br>tradicional tiene.</h2>
+      <div class="p-grid">
+        <div class="p-card">
+          <div class="p-accent"></div>
+          <div class="p-stat">+UF 3M</div>
+          <div class="p-lbl">en ventas de propiedades de inversión</div>
+          <div class="p-div"></div>
+          <div class="p-body"><strong>Renta Capital</strong> tiene acceso directo al segmento que busca exactamente este activo.</div>
+        </div>
+        <div class="p-card">
+          <div class="p-accent"></div>
+          <div class="p-stat">20.000<span style="font-size:22px">+</span></div>
+          <div class="p-lbl">propiedades administradas regionalmente</div>
+          <div class="p-div"></div>
+          <div class="p-body"><strong>Houm</strong> conoce cada propiedad que administra — arrendatario, historial de pago, estado del activo.</div>
+        </div>
+        <div class="p-card">
+          <div class="p-accent"></div>
+          <div class="p-stat">90%</div>
+          <div class="p-lbl">financiamiento del Banco Aliado al día de la escritura</div>
+          <div class="p-div"></div>
+          <div class="p-body"><strong>El Banco Aliado</strong> financia al comprador en el acto — tú recibes el 90% el día de la escritura.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="calc-section" id="calculadora">
+      <div class="eyebrow">Calculadora de valor</div>
+      <h2 class="sec-title">¿Cuánto vale tu propiedad?</h2>
+      <p class="sec-sub">Ingresa el arriendo mensual y calcula el rango de precio según cap rate — desde el mínimo que acepta un inversionista hasta el más atractivo.</p>
+
+      <div class="calc-wrap">
+        <div class="calc-left">
+          <div class="calc-label">Arriendo mensual actual</div>
+          <div class="calc-input-wrap">
+            <span class="calc-prefix">$</span>
+            <input class="calc-input" type="number" id="arriendo-input" placeholder="400.000" min="0" step="10000" oninput="calcular()">
+          </div>
+          <div class="anual-display">
+            <span class="anual-lbl">Arriendo anual</span>
+            <span class="anual-val" id="anual-val">$0</span>
+          </div>
+          <div style="margin-top:1.5rem">
+            <div class="calc-label" style="margin-bottom:.8rem">Cap rate — rango del mercado</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div style="background:var(--cream);border-radius:8px;padding:10px 12px;text-align:center;border:1px solid var(--gray1)">
+                <div style="font-size:10px;color:var(--gray3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Mínimo</div>
+                <div style="font-size:18px;font-weight:600;color:var(--teal)">4,5%</div>
+                <div style="font-size:10px;color:var(--gray3);margin-top:2px">umbral del mercado</div>
+              </div>
+              <div style="background:var(--cream);border-radius:8px;padding:10px 12px;text-align:center;border:1px solid var(--gray1)">
+                <div style="font-size:10px;color:var(--gray3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Atractivo</div>
+                <div style="font-size:18px;font-weight:600;color:var(--orange2)">6,0%</div>
+                <div style="font-size:10px;color:var(--gray3);margin-top:2px">muy competitivo</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="calc-right">
+          <div style="font-size:11px;font-weight:600;color:var(--gray3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:.3rem">Valor estimado según cap rate</div>
+          <div style="font-size:12px;color:var(--gray3);margin-bottom:.5rem;line-height:1.5">El <strong style="color:var(--teal)">5,0% es el punto ideal</strong> — precio justo para ti y muy atractivo para el inversionista.</div>
+          <div class="cap-card"><div class="cap-badge">4,5% cap rate</div><div class="cap-info"><div class="cap-tag">Precio referencial máximo</div><div class="cap-valor" id="val-45">—</div><div class="cap-uf" id="uf-45">ingresa el arriendo para calcular</div></div><div class="cap-star" style="opacity:.2">★</div></div>
+          <div class="cap-card mejor"><div class="cap-badge">5,0% cap rate</div><div class="cap-info"><div class="cap-tag">✦ Precio recomendado para el piloto</div><div class="cap-valor" id="val-50">—</div><div class="cap-uf" id="uf-50">ingresa el arriendo para calcular</div></div><div class="cap-star" style="color:var(--teal)">★★</div></div>
+          <div class="cap-card"><div class="cap-badge">5,5% cap rate</div><div class="cap-info"><div class="cap-tag">Precio muy atractivo para el inversionista</div><div class="cap-valor" id="val-55">—</div><div class="cap-uf" id="uf-55">ingresa el arriendo para calcular</div></div><div class="cap-star" style="opacity:.25">★</div></div>
+          <div class="cap-card"><div class="cap-badge">6,0% cap rate</div><div class="cap-info"><div class="cap-tag">Cierre más rápido — alta demanda</div><div class="cap-valor" id="val-60">—</div><div class="cap-uf" id="uf-60">ingresa el arriendo para calcular</div></div><div class="cap-star" style="opacity:.15">★</div></div>
+          <div class="calc-footer" id="calc-footer"><strong>El 5,0% es el punto ideal del piloto.</strong> Genera el mejor equilibrio entre precio para el vendedor y atractivo para el inversionista.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq-section" id="faq">
+      <div class="eyebrow">Preguntas frecuentes</div>
+      <h2 class="sec-title">Lo que nos preguntan los propietarios.</h2>
+      <p class="sec-sub">Si tienes alguna duda adicional, un ejecutivo de Renta Capital te la responde en la primera llamada.</p>
+      <div class="faq-list">
+        <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-txt">¿Cuánto voy a recibir por mi propiedad?</span><span class="faq-icon">+</span></button><div class="faq-a">El precio lo definimos juntos en base al cap rate. El 90% lo recibes al contado el día de la escritura. El 10% restante llega en 24 cuotas mensuales garantizadas por Houm.</div></div>
+        <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-txt">¿Qué pasa si mi propiedad no está administrada por Houm?</span><span class="faq-icon">+</span></button><div class="faq-a">No es un problema. Podemos coordinar el traspaso de administración a Houm antes de la venta. El proceso es simple y no interrumpe la relación con tu arrendatario actual.</div></div>
+        <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-txt">¿Qué pasa si mi propiedad no está arrendada?</span><span class="faq-icon">+</span></button><div class="faq-a">Te ayudamos a arrendarla antes de salir al mercado. Houm y Renta Capital coordinan la búsqueda del arrendatario, la calificación y el contrato.</div></div>
+        <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-txt">¿Tengo que pagar comisión de corretaje?</span><span class="faq-icon">+</span></button><div class="faq-a">El modelo está estructurado para que el comprador inversionista no pague comisión — igual que en las propiedades nuevas donde la inmobiliaria asume ese costo. Las condiciones se definen caso a caso.</div></div>
+        <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-txt">¿El 10% del pie está garantizado o hay riesgo de no recibirlo?</span><span class="faq-icon">+</span></button><div class="faq-a">Houm garantiza el pago de las 24 cuotas del 10% ante ti como vendedor. No dependes del comprador para recibirlo — tú recibes el precio completo sin riesgo de cobranza.</div></div>
+        <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-txt">¿Mi arrendatario actual se ve afectado?</span><span class="faq-icon">+</span></button><div class="faq-a">No. El contrato de arriendo se traspasa al nuevo dueño con las mismas condiciones. El arrendatario no necesita moverse ni firmar nada adicional.</div></div>
+        <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-txt">¿Cuándo se abre el segundo lanzamiento?</span><span class="faq-icon">+</span></button><div class="faq-a">El primer piloto está en marcha. El segundo lanzamiento está en proceso de estructuración — al inscribirte quedas en lista de evaluación prioritaria.</div></div>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="col-right">
+    <div id="form-state">
+      <div class="sf-title">Inscribe tu<br><em>propiedad.</em></div>
+      <p class="sf-sub">Evaluamos si califica y te contactamos para el próximo lanzamiento. Sin compromisos.</p>
+      <div class="lista-badge"><div class="lb-icon">✦</div><div class="lb-txt"><strong>Lista de espera · 2do lanzamiento</strong></div></div>
+      <form id="lead-form" onsubmit="handleSubmit(event)">
+        <div class="fgrid">
+          <div class="ff"><label>Nombre</label><input type="text" placeholder="Tu nombre" required></div>
+          <div class="ff"><label>Apellido</label><input type="text" placeholder="Tu apellido" required></div>
+          <div class="ff"><label>Email</label><input type="email" placeholder="tu@email.com" required></div>
+          <div class="ff"><label>WhatsApp</label><input type="tel" placeholder="+56 9 XXXX XXXX" required></div>
+        </div>
+        <div class="form-sep"><span>Tu propiedad</span></div>
+        <div class="fgrid">
+          <div class="ff full"><label>Dirección</label><input type="text" placeholder="Ej: Av. Matta 1234, San Miguel" required></div>
+          <div class="ff"><label>¿Está arrendada?</label><div class="sw"><select required><option value="" disabled selected>Selecciona</option><option>Sí, con contrato vigente</option><option>No, está vacía</option><option>Sí, sin contrato formal</option></select></div></div>
+          <div class="ff"><label>¿Administrada por Houm?</label><div class="sw"><select required><option value="" disabled selected>Selecciona</option><option>Sí, por Houm</option><option>No, otra administradora</option><option>La administro yo</option></select></div></div>
+          <div class="ff"><label>Valor estimado de venta ($)</label><input type="number" placeholder="Ej: 100.000.000" min="0" step="1000000"></div>
+          <div class="ff"><label>Arriendo mensual actual ($)</label><input type="number" placeholder="Ej: 400.000" min="0" step="10000"></div>
+        </div>
+        <button type="submit" class="btn-submit">Inscribir mi propiedad <span class="btn-arr">→</span></button>
+        <p class="f-disc">Sin costo · Sin compromiso · Te contactamos para evaluar</p>
+      </form>
+    </div>
+    <div class="success" id="success-state">
+      <div class="s-icon">✓</div>
+      <div class="s-title">¡Propiedad inscrita!</div>
+      <p class="s-sub">Recibimos tus datos. Un ejecutivo de Renta Capital evalúa si califica y te contacta para el próximo lanzamiento.</p>
+      <div class="s-badge">En lista de espera · 2do lanzamiento</div>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-row">
+    <svg width="160" height="34" viewBox="0 0 160 34" fill="none" xmlns="http://www.w3.org/2000/svg"><polyline points="18.5,4.1 3.2,17.0 18.5,29.9" stroke="#4A6B8A" stroke-width="3.4" stroke-linecap="square" stroke-linejoin="miter" fill="none"/><polyline points="31.3,4.1 16.0,17.0 31.3,29.9" stroke="#CC4A28" stroke-width="3.4" stroke-linecap="square" stroke-linejoin="miter" fill="none"/><text x="52.8" y="24.5" font-family="'DM Sans',system-ui,sans-serif" font-size="17.7" font-weight="300" letter-spacing="2.7" fill="#EDE0CC">MAXRENT</text></svg>
+    <div class="footer-links">
+      <a href="#requisitos">Requisitos</a>
+      <a href="#porque">Por qué funciona</a>
+      <a href="inversionista.html" style="color:#FF6701!important;font-weight:600">Quiero invertir</a>
+      <a href="#faq">Preguntas frecuentes</a>
+    </div>
+  </div>
+  <div class="footer-bottom">© 2026 MaxRent · Houm SpA · Renta Capital · En alianza con Banco Aliado · Solo para propiedades calificadas</div>
+</footer>
+
+<script>
+function formatPesos(n) {
+  if (n >= 1000000) return '$' + (n/1000000).toFixed(1).replace('.',',') + 'M';
+  return '$' + Math.round(n).toLocaleString('es-CL');
+}
+function formatUF(pesos) {
+  const uf = pesos / 38000;
+  return Math.round(uf).toLocaleString('es-CL') + ' UF aprox.';
+}
+function calcular() {
+  const mensual = parseFloat(document.getElementById('arriendo-input').value) || 0;
+  const anual = mensual * 12;
+  document.getElementById('anual-val').textContent = mensual > 0 ? formatPesos(anual) : '$0';
+  [[45,0.045],[50,0.050],[55,0.055],[60,0.060]].forEach(([id,rate]) => {
+    const valor = anual / rate;
+    if (mensual > 0) {
+      document.getElementById('val-' + id).textContent = formatPesos(valor);
+      document.getElementById('uf-' + id).textContent = formatUF(valor);
+    } else {
+      document.getElementById('val-' + id).textContent = '—';
+      document.getElementById('uf-' + id).textContent = 'ingresa el arriendo para calcular';
+    }
+  });
+  document.getElementById('calc-footer').style.display = mensual > 0 ? 'block' : 'none';
+}
+function toggleFaq(btn) {
+  const item = btn.parentElement;
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+function handleSubmit(e){
+  e.preventDefault();
+  document.getElementById('form-state').style.display='none';
+  document.getElementById('success-state').style.display='block';
+}
+</script>
+</body>
+</html>

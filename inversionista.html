@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MaxRent — Invierte en propiedades usadas sin poner pie</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --dark:#001F30;
+  --orange:#FF6701;--orange2:#FF8C3A;--orangeL:#FFF0E6;
+  --cream:#FBF7F3;--white:#FFFFFF;
+  --gray1:#EDE7E0;--gray2:#C4B8AE;--gray3:#7A6E68;
+  --green:#0F6E56;--greenL:#D4EDE7;
+}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--dark);overflow-x:hidden}
+
+.layout{display:block;margin-right:420px}
+.col-left{}
+.hero{background:var(--dark);padding:3.5rem 3.5rem 3rem;position:relative;overflow:hidden}
+.hero::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 70% at 10% 60%,rgba(255,103,1,.13) 0%,transparent 65%);pointer-events:none}
+.hero>*{position:relative;z-index:1}
+
+.logo{font-family:'DM Serif Display',serif;font-size:20px;color:var(--white);margin-bottom:2.5rem;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
+.logo span{color:var(--orange)}
+.logo-sep{width:1px;height:16px;background:rgba(255,255,255,.2)}
+.logo-partner{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:400;color:var(--gray3);letter-spacing:.02em}
+
+.badge{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(255,103,1,.35);background:rgba(255,103,1,.12);border-radius:40px;padding:5px 14px 5px 5px;margin-bottom:1.8rem;width:fit-content}
+.badge-dot{width:26px;height:26px;border-radius:50%;background:var(--orange);color:var(--white);font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.badge-txt{font-size:12px;font-weight:500;color:var(--orange2);letter-spacing:.02em}
+
+.hero-h1{font-family:'DM Serif Display',serif;font-size:clamp(36px,4.5vw,58px);color:var(--white);line-height:1.06;letter-spacing:-.035em;margin-bottom:1rem}
+.hero-h1 em{font-style:italic;color:var(--orange);font-size:1.22em;display:block;line-height:1}
+.hero-h2{font-family:'DM Serif Display',serif;font-size:clamp(16px,2vw,22px);font-weight:400;color:var(--gray2);line-height:1.35;letter-spacing:-.015em;max-width:460px}
+.hero-h2 strong{color:var(--orange2);font-weight:500}
+
+.cupos-band{background:var(--dark);border-top:1px solid rgba(255,255,255,.08);padding:1.4rem 3.5rem;display:flex;align-items:center;gap:2rem}
+.cb-title{font-family:'DM Serif Display',serif;font-size:17px;color:var(--white);letter-spacing:-.02em;white-space:nowrap}
+.cb-sub{font-size:11px;color:var(--gray3);margin-top:2px;white-space:nowrap}
+.cb-num{font-family:'DM Serif Display',serif;font-size:26px;color:var(--orange);line-height:1;flex-shrink:0}
+.cb-num-lbl{font-size:10px;color:var(--gray3);margin-top:2px}
+.cb-bar{flex:1;min-width:140px}
+.cb-track{height:5px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
+.cb-fill{height:100%;width:23%;background:var(--orange);border-radius:3px;animation:grow 1.4s ease-out}
+@keyframes grow{from{width:0}to{width:23%}}
+.cb-bar-lbl{font-size:10px;color:var(--gray3);margin-top:4px;text-align:right}
+.cb-urg{font-size:11px;color:var(--gray3);flex-shrink:0;text-align:right}
+.cb-urg b{display:block;color:#E35050;font-size:12px;font-weight:600}
+
+.pilares-section{padding:4rem 3.5rem 5rem;background:var(--white)}
+.sec-eyebrow{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--orange);margin-bottom:12px}
+.sec-title{font-family:'DM Serif Display',serif;font-size:clamp(24px,2.8vw,38px);letter-spacing:-.03em;line-height:1.1;color:var(--dark);margin-bottom:.6rem}
+.sec-sub{font-size:14px;color:var(--gray3);max-width:480px;line-height:1.7;margin-bottom:2.5rem}
+
+.grid22{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.pilar{border:1.5px solid var(--gray1);border-radius:16px;padding:1.8rem;background:var(--cream);position:relative;overflow:hidden;transition:border-color .2s,transform .18s}
+.pilar:hover{border-color:var(--orange);transform:translateY(-2px)}
+.pilar::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--orange);opacity:0;transition:opacity .2s}
+.pilar:hover::before{opacity:1}
+.pilar-bg-num{font-family:'DM Serif Display',serif;font-size:72px;color:var(--gray1);position:absolute;bottom:-10px;right:14px;line-height:1;pointer-events:none;user-select:none;transition:color .2s}
+.pilar:hover .pilar-bg-num{color:rgba(255,103,1,.1)}
+.pilar-icon{width:40px;height:40px;border-radius:10px;background:var(--gray1);display:flex;align-items:center;justify-content:center;margin-bottom:1rem;transition:background .2s}
+.pilar:hover .pilar-icon{background:var(--orangeL)}
+.pilar-num-lbl{font-size:10px;font-weight:600;color:var(--orange);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.35rem}
+.pilar h3{font-size:16px;font-weight:600;color:var(--dark);margin-bottom:.5rem;line-height:1.3;position:relative}
+.pilar-stat{display:inline-flex;align-items:baseline;gap:4px;margin-bottom:.7rem}
+.pilar-stat-val{font-family:'DM Serif Display',serif;font-size:30px;color:var(--orange);letter-spacing:-.02em;line-height:1}
+.pilar-stat-lbl{font-size:11px;color:var(--gray3);line-height:1.3}
+.pilar p{font-size:13px;color:var(--gray3);line-height:1.7;position:relative}
+
+.col-right{position:fixed;top:0;right:0;width:420px;height:100vh;background:var(--white);box-shadow:-6px 0 40px rgba(0,0,0,.14);display:flex;flex-direction:column;justify-content:center;padding:2.5rem 2.2rem;z-index:10;overflow-y:auto}
+.col-right::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--orange)}
+
+.sf-title{font-family:'DM Serif Display',serif;font-size:26px;color:var(--dark);letter-spacing:-.03em;margin-bottom:8px;line-height:1.15}
+.sf-title em{font-style:italic;color:var(--orange)}
+.sf-sub{font-size:13px;color:var(--gray3);margin-bottom:2rem;line-height:1.65;max-width:320px;border-bottom:1px solid var(--gray1);padding-bottom:1.5rem}
+
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px}
+.ff{display:flex;flex-direction:column;gap:4px}
+.ff label{font-size:11px;font-weight:600;color:var(--gray3);letter-spacing:.04em;text-transform:uppercase}
+.ff input{padding:11px 13px;border:1.5px solid #E2DAD4;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--dark);background:var(--white);outline:none;transition:border-color .15s}
+.ff input:focus{border-color:var(--orange)}
+.ff input::placeholder{color:#C4B8AE}
+
+.btn-submit{width:100%;padding:14px 20px;background:var(--orange);color:var(--white);border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;margin-top:1.5rem;letter-spacing:-.01em;transition:background .15s,transform .1s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-submit:hover{background:#E55A00}
+.btn-submit:active{transform:scale(.98)}
+.btn-arr{transition:transform .2s}
+.btn-submit:hover .btn-arr{transform:translateX(4px)}
+.f-disc{font-size:11.5px;color:var(--gray3);text-align:center;margin-top:14px;line-height:1.55}
+
+.success{display:none;text-align:center;padding:1.5rem 0}
+.s-icon{width:52px;height:52px;border-radius:50%;background:var(--green);color:var(--white);font-size:20px;display:flex;align-items:center;justify-content:center;margin:0 auto .8rem}
+.s-title{font-family:'DM Serif Display',serif;font-size:20px;color:var(--dark);margin-bottom:8px}
+.s-sub{font-size:13px;color:var(--gray3);line-height:1.6;max-width:260px;margin:0 auto}
+.s-cupo{margin-top:12px;padding:10px 18px;background:var(--greenL);border-radius:8px;font-size:13px;font-weight:600;color:var(--green)}
+
+.alianza-section{padding:5rem 3.5rem;background:var(--dark);position:relative;overflow:hidden}
+.alianza-section::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 80% at 50% 100%, rgba(255,103,1,.1) 0%, transparent 65%);pointer-events:none}
+.alianza-section>*{position:relative;z-index:1}
+.alianza-section .sec-eyebrow{color:var(--orange2)}
+.alianza-section .sec-title{color:var(--white);margin-bottom:.5rem}
+.alianza-section .sec-sub{color:var(--gray2);max-width:520px;margin-bottom:3rem}
+
+.alianza-conector{display:flex;align-items:center;gap:0;margin-bottom:3rem;overflow:hidden;border-radius:12px}
+.ac-item{flex:1;padding:1.2rem 1.5rem;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
+.ac-item:first-child{border-radius:12px 0 0 12px}
+.ac-item:last-child{border-radius:0 12px 12px 0}
+.ac-arrow{width:32px;height:32px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--orange);color:var(--white);font-size:14px;z-index:1}
+.ac-name{font-size:13px;font-weight:600;color:var(--white)}
+.ac-rol{font-size:11px;color:var(--gray3);margin-top:1px}
+
+.alianza-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.empresa-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:2rem;position:relative;overflow:hidden;transition:border-color .2s,background .2s}
+.empresa-card:hover{background:rgba(255,255,255,.07);border-color:rgba(255,103,1,.4)}
+.empresa-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.ec-houm::before{background:var(--orange)}
+.ec-renta::before{background:#5DCAA5}
+.ec-bci::before{background:#F5A623}
+
+.ec-logo{font-family:'DM Serif Display',serif;font-size:22px;letter-spacing:-.02em;margin-bottom:4px;line-height:1}
+.ec-houm .ec-logo{color:var(--orange)}
+.ec-renta .ec-logo{color:#5DCAA5}
+.ec-bci .ec-logo{color:#F5A623}
+
+.ec-rol-badge{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 10px;border-radius:20px;margin-bottom:1.2rem}
+.ec-houm .ec-rol-badge{background:rgba(255,103,1,.15);color:var(--orange2)}
+.ec-renta .ec-rol-badge{background:rgba(93,202,165,.12);color:#9FE1CB}
+.ec-bci .ec-rol-badge{background:rgba(245,166,35,.12);color:#D4890A}
+
+.ec-stat-val{font-family:'DM Serif Display',serif;font-size:36px;color:var(--white);letter-spacing:-.03em;line-height:1;margin-bottom:3px}
+.ec-stat-lbl{font-size:11px;color:var(--gray3);margin-bottom:1.2rem}
+.ec-divider{height:1px;background:rgba(255,255,255,.08);margin-bottom:1.2rem}
+.ec-body{font-size:13px;color:var(--gray2);line-height:1.7}
+.ec-body strong{color:var(--white);font-weight:500}
+
+.alianza-pie{margin-top:2.5rem;padding:1.5rem 2rem;background:rgba(255,103,1,.1);border:1px solid rgba(255,103,1,.25);border-radius:12px;display:flex;align-items:center;gap:1.5rem}
+.ap-icon{width:44px;height:44px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;color:var(--white)}
+.ap-txt{font-size:14px;color:var(--white);line-height:1.6}
+.ap-txt strong{color:var(--orange2)}
+
+.como-section{padding:5rem 3.5rem;background:var(--cream)}
+.como-section .sec-title{margin-bottom:.5rem}
+.como-section .sec-sub{margin-bottom:3.5rem}
+
+.steps-wrap{display:flex;flex-direction:column;gap:0;position:relative}
+.steps-wrap::before{content:'';position:absolute;left:27px;top:56px;bottom:56px;width:2px;background:linear-gradient(to bottom, var(--orange), rgba(255,103,1,.1))}
+
+.step-row{display:grid;grid-template-columns:56px 1fr;gap:1.5rem;align-items:start;padding:0 0 2.2rem;position:relative}
+.step-row:last-child{padding-bottom:0}
+.step-circle{width:56px;height:56px;border-radius:50%;background:var(--white);border:2px solid var(--orange);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;z-index:1}
+.step-circle-num{font-family:'DM Serif Display',serif;font-size:22px;color:var(--orange);line-height:1;letter-spacing:-.02em}
+.step-row:last-child .step-circle{background:var(--orange);border-color:var(--orange)}
+.step-row:last-child .step-circle-num{color:var(--white)}
+.step-body{padding-top:.6rem}
+.step-tag{font-size:10px;font-weight:600;color:var(--orange);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.35rem}
+.step-title{font-family:'DM Serif Display',serif;font-size:20px;color:var(--dark);letter-spacing:-.02em;line-height:1.2;margin-bottom:.5rem}
+.step-desc{font-size:13.5px;color:var(--gray3);line-height:1.7;max-width:520px}
+.step-desc strong{color:var(--dark);font-weight:500}
+
+.uvn-section{padding:5rem 3.5rem;background:var(--white)}
+.uvn-section .sec-sub{margin-bottom:3rem}
+
+.uvn-table{width:100%;border-collapse:collapse;margin-bottom:2.5rem}
+.uvn-table thead tr th{padding:1rem 1.2rem;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;text-align:left}
+.uvn-table thead .th-label{color:var(--gray3);background:transparent}
+.uvn-table thead .th-nueva{background:var(--purpleL,#EEEDFE);color:#3C3489;border-radius:10px 10px 0 0;text-align:center}
+.uvn-table thead .th-usada{background:var(--orangeL);color:#CC4E00;border-radius:10px 10px 0 0;text-align:center}
+.uvn-table tbody tr td{padding:.9rem 1.2rem;font-size:13.5px;border-bottom:1px solid var(--gray1);vertical-align:middle}
+.uvn-table tbody tr:last-child td{border-bottom:none}
+.uvn-table tbody .td-label{color:var(--gray3);font-size:13px}
+.uvn-table tbody .td-nueva{background:#F7F6FF;text-align:center;font-weight:500}
+.uvn-table tbody .td-usada{background:#FFF8F2;text-align:center;font-weight:500}
+.tag-mejor{color:var(--green);font-weight:600}
+.tag-peor{color:var(--red,#A32D2D);font-weight:500}
+.tag-neutro{color:var(--gray3)}
+.tir-row td{border-bottom:none!important;padding-top:1.2rem!important}
+.tir-nueva{background:#EEEDFE!important;font-family:'DM Serif Display',serif;font-size:28px!important;color:#534AB7!important;text-align:center}
+.tir-usada{background:var(--orangeL)!important;font-family:'DM Serif Display',serif;font-size:28px!important;color:var(--orange)!important;text-align:center}
+.tir-label{font-size:11px;display:block;font-family:'DM Sans',sans-serif;font-weight:600;letter-spacing:.03em;margin-top:2px}
+
+.diff-badge{display:inline-flex;align-items:center;gap:8px;background:var(--orangeL);border:1px solid rgba(255,103,1,.3);border-radius:50px;padding:10px 20px;margin-bottom:2.5rem}
+.diff-val{font-family:'DM Serif Display',serif;font-size:28px;color:var(--orange);letter-spacing:-.02em;line-height:1}
+.diff-txt{font-size:13px;color:#CC4E00;line-height:1.4;max-width:200px}
+
+.uvn-insights{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.uvn-insight{border-radius:12px;padding:1.4rem;background:var(--cream);border:1.5px solid var(--gray1)}
+.uvn-insight h4{font-size:14px;font-weight:600;color:var(--dark);margin-bottom:.4rem;line-height:1.3}
+.uvn-insight p{font-size:12.5px;color:var(--gray3);line-height:1.65}
+.uvn-insight .insight-icon{width:32px;height:32px;border-radius:8px;background:var(--orangeL);display:flex;align-items:center;justify-content:center;margin-bottom:.8rem}
+
+.site-header{position:sticky;top:0;z-index:100;background:rgba(0,31,48,.96);backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,255,255,.08);padding:0 3.5rem;display:flex;align-items:center;justify-content:space-between;height:56px}
+.sh-logo{text-decoration:none;white-space:nowrap;display:flex;align-items:center;opacity:.85;transition:opacity .15s}
+.sh-logo:hover{opacity:1}
+.sh-nav{display:flex;align-items:center;gap:0}
+.sh-nav a{font-size:12px;font-weight:500;color:var(--gray2);text-decoration:none;padding:0 14px;height:56px;display:flex;align-items:center;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;white-space:nowrap}
+.sh-nav a:hover{color:var(--white);border-bottom-color:var(--orange)}
+.sh-cta{background:var(--orange);color:var(--white)!important;padding:8px 18px!important;height:auto!important;border-radius:8px;border-bottom:none!important;font-size:12px!important;font-weight:600!important;transition:background .15s!important}
+.sh-cta:hover{background:#E55A00!important;color:var(--white)!important}
+
+.faq-section{padding:5rem 3.5rem;background:var(--cream)}
+.faq-section .sec-sub{margin-bottom:2.5rem}
+.faq-list{display:flex;flex-direction:column;gap:0}
+.faq-item{border-bottom:1px solid var(--gray1);overflow:hidden}
+.faq-item:first-child{border-top:1px solid var(--gray1)}
+.faq-q{width:100%;background:transparent;border:none;cursor:pointer;padding:1.2rem 0;display:flex;align-items:center;justify-content:space-between;gap:1rem;text-align:left}
+.faq-q-txt{font-size:15px;font-weight:500;color:var(--dark);line-height:1.4}
+.faq-icon{width:28px;height:28px;border-radius:50%;background:var(--gray1);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;color:var(--gray3);transition:background .2s,transform .25s}
+.faq-item.open .faq-icon{background:var(--orange);color:var(--white);transform:rotate(45deg)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .35s ease,padding .35s ease;font-size:13.5px;color:var(--gray3);line-height:1.75}
+.faq-item.open .faq-a{max-height:200px;padding-bottom:1.2rem}
+
+.site-footer{background:var(--dark);padding:3.5rem 3.5rem 2rem;border-top:1px solid rgba(255,255,255,.08)}
+.footer-top{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:2rem;padding-bottom:2.5rem;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:1.8rem}
+.footer-tagline{font-size:12px;color:var(--gray3);line-height:1.6;margin-bottom:1.2rem;max-width:220px}
+.footer-alianza{font-size:11px;color:var(--gray3);line-height:1.8}
+.footer-alianza strong{color:var(--gray2);font-weight:500}
+.footer-col h5{font-size:11px;font-weight:600;color:var(--gray2);letter-spacing:.07em;text-transform:uppercase;margin-bottom:.9rem}
+.footer-col a,.footer-col p{display:block;font-size:12.5px;color:var(--gray3);text-decoration:none;margin-bottom:.5rem;line-height:1.5;transition:color .15s}
+.footer-col a:hover{color:var(--white)}
+.footer-bottom{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--gray3);flex-wrap:wrap;gap:.5rem}
+.footer-bottom a{color:var(--gray3);text-decoration:none}
+.footer-bottom a:hover{color:var(--white)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.hero>*{animation:fadeUp .65s ease-out both}
+.hero>*:nth-child(1){animation-delay:.0s}
+.hero>*:nth-child(2){animation-delay:.08s}
+.hero>*:nth-child(3){animation-delay:.16s}
+.hero>*:nth-child(4){animation-delay:.24s}
+
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .col-right{position:relative;height:auto}
+  .hero{padding:2.5rem 1.5rem}
+  .cupos-band{padding:1.2rem 1.5rem;flex-wrap:wrap;gap:1rem}
+  .pilares-section{padding:3rem 1.5rem}
+  .grid22{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body><script>
+(function(){
+  var s = window.location.search;
+  if(s && s.indexOf('v=') > -1 && !sessionStorage.getItem('reloaded_'+s)){
+    sessionStorage.setItem('reloaded_'+s, '1');
+    window.location.replace(window.location.pathname + s + window.location.hash);
+  }
+})();
+</script>
+
+<header class="site-header">
+  <a href="#top" class="sh-logo"><svg width="140" height="30" viewBox="0 0 140 30" fill="none" xmlns="http://www.w3.org/2000/svg"><polyline points="16.3,3.6 2.8,15.0 16.3,26.4" stroke="#4A6B8A" stroke-width="3.0" stroke-linecap="square" stroke-linejoin="miter" fill="none"/><polyline points="27.5,3.6 14.0,15.0 27.5,26.4" stroke="#CC4A28" stroke-width="3.0" stroke-linecap="square" stroke-linejoin="miter" fill="none"/><text x="46.2" y="21.6" font-family="'DM Sans',system-ui,sans-serif" font-size="15.6" font-weight="300" letter-spacing="2.4" fill="#EDE0CC">MAXRENT</text></svg></a>
+  <nav class="sh-nav">
+    <a href="#pilares">La oportunidad</a>
+    <a href="#uvn">Los números</a>
+    <a href="#alianza">Quiénes somos</a>
+    <a href="#como">Cómo funciona</a>
+    <a href="#faq">FAQ</a>
+    <a href="vendedor.html" style="color:var(--gray2)">Vender propiedad</a>
+    <a href="#top" class="sh-cta">Reservar cupo</a>
+  </nav>
+</header>
+
+<div class="layout">
+  <div class="col-left">
+
+    <section class="hero" id="top">
+      <div class="logo">
+        <svg width="200" height="44" viewBox="0 0 200 44" fill="none" xmlns="http://www.w3.org/2000/svg"><polyline points="23.8,5.3 4.0,22.0 23.8,38.7" stroke="#4A6B8A" stroke-width="4.4" stroke-linecap="square" stroke-linejoin="miter" fill="none"/><polyline points="39.8,5.3 20.0,22.0 39.8,38.7" stroke="#CC4A28" stroke-width="4.4" stroke-linecap="square" stroke-linejoin="miter" fill="none"/><text x="66.0" y="31.7" font-family="'DM Sans',system-ui,sans-serif" font-size="22.9" font-weight="300" letter-spacing="3.5" fill="#EDE0CC">MAXRENT</text></svg>
+      </div>
+
+      <div class="badge">
+        <div class="badge-dot">100</div>
+        <span class="badge-txt">100 cupos · Lanzamiento exclusivo</span>
+      </div>
+
+      <h1 class="hero-h1">
+        Invierte en propiedades usadas<br>
+        <em>sin poner pie.</em>
+      </h1>
+
+      <p class="hero-h2">
+        Rentabilidades <strong>30% más altas</strong><br>
+        que en una propiedad nueva.
+      </p>
+    </section>
+
+    <div class="cupos-band">
+      <div>
+        <div class="cb-title">Reserva tu cupo</div>
+        <div class="cb-sub">Solo 100 inversionistas entran al piloto</div>
+      </div>
+      <div>
+        <div class="cb-num" id="cupos-num">77</div>
+        <div class="cb-num-lbl">cupos libres</div>
+      </div>
+      <div class="cb-bar">
+        <div class="cb-track"><div class="cb-fill"></div></div>
+        <div class="cb-bar-lbl">23 de 100 reservados</div>
+      </div>
+      <div class="cb-urg"><b>¡Activo!</b>cerrando rápido</div>
+    </div>
+
+    <section class="pilares-section" id="pilares">
+      <div class="sec-eyebrow">Por qué este modelo es diferente</div>
+      <h2 class="sec-title">4 condiciones que ninguna<br>propiedad nueva te ofrece.</h2>
+      <p class="sec-sub">Disponibles solo en este piloto de 100 cupos, en alianza con Houm, Renta Capital y Banco Aliado.</p>
+
+      <div class="grid22">
+        <div class="pilar">
+          <div class="pilar-bg-num">01</div>
+          <div class="pilar-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2L3 5.5V10.5c0 3.5 3 6.5 7 7 4-.5 7-3.5 7-7V5.5L10 2z" stroke="#7A6E68" stroke-width="1.5"/><path d="M7 10l2 2 4-4" stroke="#7A6E68" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+          <div class="pilar-num-lbl">Pilar 01</div>
+          <h3>Invierte sin poner pie</h3>
+          <div class="pilar-stat"><span class="pilar-stat-val">0 UF</span><span class="pilar-stat-lbl">desembolso<br>inicial</span></div>
+          <p>El pie se paga en 24 cuotas mensuales post compraventa — no el día de la escritura. Y el arriendo que recibes desde el día 1 cubre ese pago mes a mes. Sin estrés de liquidez.</p>
+        </div>
+        <div class="pilar">
+          <div class="pilar-bg-num">02</div>
+          <div class="pilar-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="7" width="14" height="10" rx="2" stroke="#7A6E68" stroke-width="1.5"/><path d="M7 7V5a3 3 0 016 0v2" stroke="#7A6E68" stroke-width="1.5"/></svg></div>
+          <div class="pilar-num-lbl">Pilar 02</div>
+          <h3>Financiamiento a la medida con el Banco Aliado</h3>
+          <div class="pilar-stat"><span class="pilar-stat-val">90%</span><span class="pilar-stat-lbl">financiamiento<br>+ 24m gracia</span></div>
+          <p>El Banco Aliado entrega financiamiento hasta el 90% del valor. Los primeros 24 meses pagas solo el 50% del dividendo — el arriendo cubre esa cuota y tu flujo mensual neto es casi cero.</p>
+        </div>
+        <div class="pilar">
+          <div class="pilar-bg-num">03</div>
+          <div class="pilar-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="#7A6E68" stroke-width="1.5"/><path d="M10 7v3l2.5 2" stroke="#7A6E68" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+          <div class="pilar-num-lbl">Pilar 03</div>
+          <h3>Renta garantizada los primeros 24 meses</h3>
+          <div class="pilar-stat"><span class="pilar-stat-val">24 m</span><span class="pilar-stat-lbl">renta asegurada<br>por Houm</span></div>
+          <p>Houm garantiza el arriendo los primeros 24 meses. Estos flujos, más el descuento en el dividendo, te permiten pagar el pie sin estrés financiero. Si el arrendatario sale, Houm paga igual.</p>
+        </div>
+        <div class="pilar">
+          <div class="pilar-bg-num">04</div>
+          <div class="pilar-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 14L8 9l3 3 5-6" stroke="#7A6E68" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="pilar-num-lbl">Pilar 04</div>
+          <h3>Activo superior — renta conocida desde hoy</h3>
+          <div class="pilar-stat"><span class="pilar-stat-val">+4,5%</span><span class="pilar-stat-lbl">cap rate real vs<br>~3% en nuevas</span></div>
+          <p>Cap rates por sobre 4,5% verificados hoy en contrato. Versus propiedades nuevas que pueden entregar ~3% — y solo en 3 años. La renta es conocida, no una proyección.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="uvn-section" id="uvn">
+      <div class="sec-eyebrow">Usada vs nueva — los números</div>
+      <h2 class="sec-title">El mismo precio.<br>No la misma rentabilidad.</h2>
+      <p class="sec-sub">Mismos 2.500 UF, mismo banco, misma cuota. La diferencia está en el cap rate real, en cuándo llega el arriendo y en cuánto ganas al final.</p>
+
+      <table class="uvn-table">
+        <thead>
+          <tr>
+            <th class="th-label"></th>
+            <th class="th-nueva">Propiedad nueva</th>
+            <th class="th-usada">Usada</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="td-label">Cap rate</td><td class="td-nueva"><span class="tag-peor">3,6%</span><br><small style="color:var(--gray3);font-size:11px">proyectado a 3 años</small></td><td class="td-usada"><span class="tag-mejor">Entre 4,5% y 5%</span><br><small style="color:var(--green);font-size:11px">rango referencial del piloto</small></td></tr>
+          <tr><td class="td-label">Arriendo mensual bruto</td><td class="td-nueva"><span class="tag-peor">7,50 UF</span></td><td class="td-usada"><span class="tag-mejor">10,21 UF</span></td></tr>
+          <tr><td class="td-label">Primer arriendo</td><td class="td-nueva"><span class="tag-peor">Mes 37–40</span><br><small style="color:var(--gray3);font-size:11px">36 meses sin ingresos</small></td><td class="td-usada"><span class="tag-mejor">Día 1</span><br><small style="color:var(--green);font-size:11px">propiedad ya arrendada</small></td></tr>
+          <tr><td class="td-label">Pie</td><td class="td-nueva"><span class="tag-peor">36 cuotas durante la obra</span></td><td class="td-usada"><span class="tag-mejor">24 cuotas post escritura</span></td></tr>
+          <tr><td class="td-label">Riesgo arrendatario</td><td class="td-nueva"><span class="tag-peor">Por encontrar al entregar</span></td><td class="td-usada"><span class="tag-mejor">Historial verificado por Houm</span></td></tr>
+          <tr><td class="td-label">Renta garantizada</td><td class="td-nueva"><span class="tag-peor">No existe</span></td><td class="td-usada"><span class="tag-mejor">24 meses — Houm garantiza</span></td></tr>
+          <tr><td class="td-label">Riesgo crédito</td><td class="td-nueva"><span class="tag-peor">Hipotecario en 3 años</span><br><small style="color:var(--gray3);font-size:11px">condiciones desconocidas</small></td><td class="td-usada"><span class="tag-mejor">Aprobado hoy con el Banco Aliado</span><br><small style="color:var(--green);font-size:11px">condiciones conocidas</small></td></tr>
+          <tr><td class="td-label">Comisión de compra</td><td class="td-nueva"><span class="tag-neutro">0% — inmobiliaria paga</span></td><td class="td-usada"><span class="tag-neutro">0% — institucional paga</span></td></tr>
+          <tr class="tir-row"><td class="td-label" style="font-weight:600;color:var(--dark);font-size:14px">TIR anual a 10 años</td><td class="tir-nueva">7,9%<span class="tir-label">nueva</span></td><td class="tir-usada">10,0%<span class="tir-label">usada</span></td></tr>
+        </tbody>
+      </table>
+
+      <p style="font-size:10px;color:var(--gray3);max-width:42rem;line-height:1.55;margin:0.35rem 0 2.5rem">Cifras con fines ilustrativos y supuestos de mercado; no constituyen oferta ni garantía de rentabilidad y pueden variar en cada operación.</p>
+
+      <div style="display:flex;align-items:center;gap:1.5rem;margin-bottom:3rem;flex-wrap:wrap">
+        <div class="diff-badge"><span class="diff-val">+2,1 pp</span><span class="diff-txt">más rentabilidad anual<br>durante 10 años</span></div>
+        <p style="font-size:13px;color:var(--gray3);max-width:380px;line-height:1.65">Sobre una inversión de 2.500 UF a 10 años, esa diferencia se traduce en cientos de UF adicionales en tu patrimonio.</p>
+      </div>
+
+      <div class="uvn-insights">
+        <div class="uvn-insight"><div class="insight-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2L2 5V9c0 2.5 2.5 4.5 6 5 3.5-.5 6-2.5 6-5V5L8 2z" stroke="#FF6701" stroke-width="1.2"/><path d="M5.5 8l1.8 1.8L11 6" stroke="#FF6701" stroke-width="1.2" stroke-linecap="round"/></svg></div><h4>La plusvalía parte de una base real</h4><p>La nueva pierde la prima de "nuevo" al entregarse y entra a competir en el mercado secundario a precios más bajos. La usada ya está valorizada al precio real de mercado — sin ajuste sorpresa al vender.</p></div>
+        <div class="uvn-insight"><div class="insight-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 10L6 6.5l2.5 2.5L13 4" stroke="#FF6701" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h4>36 meses sin arriendo es un costo real</h4><p>En una propiedad nueva pagas el pie durante 3 años sin recibir nada. En la usada ese mismo dinero llega como arriendo desde el día 1 — y Houm lo garantiza los primeros 24 meses.</p></div>
+        <div class="uvn-insight"><div class="insight-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="#FF6701" stroke-width="1.2"/><path d="M8 5.5v2.5l1.5 1.5" stroke="#FF6701" stroke-width="1.2" stroke-linecap="round"/></svg></div><h4>El riesgo de crédito en 3 años es real</h4><p>Firmas la promesa hoy pero el hipotecario se aprueba en 3 años — con tasas, condiciones e ingresos desconocidos. En la usada el crédito del Banco Aliado se aprueba hoy, con las condiciones de hoy.</p></div>
+        <div class="uvn-insight"><div class="insight-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="3" stroke="#FF6701" stroke-width="1.2"/><path d="M5.5 8l1.8 1.8L11 5.5" stroke="#FF6701" stroke-width="1.2" stroke-linecap="round"/></svg></div><h4>Cap rate conocido vs proyectado</h4><p>En la usada trabajamos con un cap rate entre 4,5% y 5% según el contrato de arriendo vigente — no es una proyección a futuro. El 3,6% de la nueva es una estimación a 3 años en un mercado que puede cambiar.</p></div>
+      </div>
+    </section>
+
+    <span id="alianza"></span>
+    <section class="alianza-section">
+      <div class="sec-eyebrow">La super alianza</div>
+      <h2 class="sec-title">Tres líderes.<br>Un solo producto.</h2>
+      <p class="sec-sub">Cada empresa aporta lo que las otras no tienen. Juntas hacen posible algo que no existía en el mercado chileno.</p>
+
+      <div class="alianza-conector">
+        <div class="ac-item ec-houm"><div><div class="ac-name">Houm</div><div class="ac-rol">Administración + garantía</div></div></div>
+        <div class="ac-arrow">+</div>
+        <div class="ac-item ec-renta"><div><div class="ac-name">Renta Capital</div><div class="ac-rol">Canal de ventas</div></div></div>
+        <div class="ac-arrow">+</div>
+        <div class="ac-item ec-bci"><div><div class="ac-name">Banco Aliado</div><div class="ac-rol">Financiamiento</div></div></div>
+      </div>
+
+      <div class="alianza-grid">
+        <div class="empresa-card ec-houm">
+          <div class="ec-logo">houm</div>
+          <div style="display:block;height:8px"></div>
+          <div class="ec-rol-badge">Administración · Garantía · Escala</div>
+          <div class="ec-stat-val">20.000+</div>
+          <div class="ec-stat-lbl">propiedades administradas</div>
+          <div class="ec-divider"></div>
+          <div class="ec-body">Líder en administración de propiedades en <strong>Chile, Colombia y México</strong>. <strong>Garantiza el arriendo los primeros 24 meses</strong> y certifica el historial de cada arrendatario antes de la venta.</div>
+        </div>
+        <div class="empresa-card ec-renta">
+          <div class="ec-logo">Renta Capital</div>
+          <div style="display:block;height:8px"></div>
+          <div class="ec-rol-badge">Canal de ventas · Inversionistas</div>
+          <div class="ec-stat-val">+UF 3M</div>
+          <div class="ec-stat-lbl">en ventas de propiedades de inversión</div>
+          <div class="ec-divider"></div>
+          <div class="ec-body">Fundada por Antonio Roa, cofundador de Buydepa — <strong>20 años de experiencia</strong> en el mercado inmobiliario de inversión.</div>
+        </div>
+        <div class="empresa-card ec-bci">
+          <div class="ec-logo">Banco Aliado</div>
+          <div style="display:block;height:8px"></div>
+          <div class="ec-rol-badge">Financiamiento · Banco aliado</div>
+          <div class="ec-stat-val">90%</div>
+          <div class="ec-stat-lbl">financiamiento + 24 meses de gracia</div>
+          <div class="ec-divider"></div>
+          <div class="ec-body"><strong>Financia hasta el 90% del valor</strong> con tasa 4,5% UF a 30 años. Los primeros 24 meses solo pagas el 50% del dividendo — el arriendo cubre esa cuota.</div>
+        </div>
+      </div>
+
+      <div class="alianza-pie">
+        <div class="ap-icon">✦</div>
+        <div class="ap-txt">Juntos tienen el activo, el canal de ventas y el financiamiento. <strong>Lo que no existía por separado, existe unido.</strong></div>
+      </div>
+    </section>
+
+    <section class="como-section" id="como">
+      <div class="sec-eyebrow">Cómo funciona</div>
+      <h2 class="sec-title">De tu primer contacto<br>a tu primera renta.</h2>
+      <p class="sec-sub">5 pasos simples — un especialista te acompaña en cada uno.</p>
+
+      <div class="steps-wrap">
+        <div class="step-row"><div class="step-circle"><span class="step-circle-num">1</span></div><div class="step-body"><div class="step-tag">Paso 01</div><div class="step-title">Deja tus datos de contacto</div><p class="step-desc">Completa el formulario en esta página. Solo necesitamos tu nombre, email y WhatsApp — sin compromiso, sin costo.</p></div></div>
+        <div class="step-row"><div class="step-circle"><span class="step-circle-num">2</span></div><div class="step-body"><div class="step-tag">Paso 02</div><div class="step-title">Asesoría financiera personalizada</div><p class="step-desc">Un ejecutivo de <strong>Renta Capital</strong> se contacta contigo en menos de 24 horas.</p></div></div>
+        <div class="step-row"><div class="step-circle"><span class="step-circle-num">3</span></div><div class="step-body"><div class="step-tag">Paso 03</div><div class="step-title">Acompañamiento en el crédito hipotecario</div><p class="step-desc">Te acompañamos en la <strong>aprobación del crédito hipotecario con el Banco Aliado</strong> — hasta el 90% de financiamiento, con 24 meses de gracia.</p></div></div>
+        <div class="step-row"><div class="step-circle"><span class="step-circle-num">4</span></div><div class="step-body"><div class="step-tag">Paso 04</div><div class="step-title">Pago de reserva de propiedad</div><p class="step-desc">Una vez aprobado el crédito, reservas la propiedad que elegiste.</p></div></div>
+        <div class="step-row"><div class="step-circle"><span class="step-circle-num">5</span></div><div class="step-body"><div class="step-tag">Paso 05</div><div class="step-title">Firma de la compraventa</div><p class="step-desc">Firmas la escritura de compraventa. <strong>Desde ese día recibes el arriendo</strong> — la propiedad ya está ocupada y Houm administra todo.</p></div></div>
+        <div class="step-row"><div class="step-circle"><span class="step-circle-num">6</span></div><div class="step-body"><div class="step-tag">Paso 06 · Tu inversión trabaja</div><div class="step-title">Propiedad bajo administración Houm — renta asegurada 24 meses</div><p class="step-desc">Houm administra tu propiedad y <strong>garantiza el pago del arriendo los primeros 24 meses</strong>. Tu inversión genera ingresos desde el primer día.</p></div></div>
+      </div>
+    </section>
+
+    <section class="faq-section" id="faq">
+      <div class="sec-eyebrow">Preguntas frecuentes</div>
+      <h2 class="sec-title">Todo lo que necesitas saber.</h2>
+      <p class="sec-sub">Si tienes alguna duda adicional, un especialista de Renta Capital la responde en tu primera llamada.</p>
+      <div class="faq-list">
+        <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-txt">¿Tengo que poner plata el día que firmo la compraventa?</span><span class="faq-icon">+</span></button><div class="faq-a">No. El pie (10–20% del precio) se paga en 24 cuotas mensuales después de la escritura — no el día de la firma. El arriendo que recibes desde el día 1 cubre gran parte de esas cuotas.</div></div>
+        <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-txt">¿Cuándo empiezo a recibir el arriendo?</span><span class="faq-icon">+</span></button><div class="faq-a">Desde el día de la escritura. La propiedad ya está arrendada con un contrato vigente y un arrendatario con historial verificado por Houm.</div></div>
+        <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-txt">¿Qué pasa si el arrendatario deja de pagar o se va?</span><span class="faq-icon">+</span></button><div class="faq-a">Houm garantiza el pago del arriendo los primeros 24 meses aunque el arrendatario salga o deje de pagar.</div></div>
+        <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-txt">¿Es obligatorio usar el Banco Aliado?</span><span class="faq-icon">+</span></button><div class="faq-a">El período de gracia de 24 meses al 50% del dividendo es una condición exclusiva estructurada con el Banco Aliado para este piloto.</div></div>
+        <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-txt">¿Cuántas propiedades hay disponibles y dónde están?</span><span class="faq-icon">+</span></button><div class="faq-a">El piloto cuenta con 100 cupos — departamentos ubicados principalmente en San Miguel y Quinta Normal, ya arrendados, con cap rates típicos entre 4,5% y 5% y precio desde 2.000 UF.</div></div>
+        <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-txt">¿Cuánto cobra Houm por la administración?</span><span class="faq-icon">+</span></button><div class="faq-a">Houm cobra una comisión del 7% del arriendo bruto — ya incorporado en el modelo. La TIR de 10,0% ya descuenta este cobro. La propiedad debe mantenerse bajo administración Houm por mínimo 4 años.</div></div>
+        <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)"><span class="faq-q-txt">¿Puedo vender la propiedad antes de los 10 años?</span><span class="faq-icon">+</span></button><div class="faq-a">Sí. La propiedad es tuya y puedes venderla cuando quieras — después del período mínimo de 4 años. Houm y Renta Capital gestionan la venta por ti.</div></div>
+      </div>
+    </section>
+
+  </div><!-- fin col-left -->
+
+  <div class="col-right">
+    <div id="form-state">
+      <div class="sf-title">Inscríbete ahora<br>y no pierdas<br><em>la oportunidad.</em></div>
+      <p class="sf-sub">Un especialista de Renta Capital te contacta en menos de 24 horas con las propiedades disponibles para tu perfil.</p>
+      <form id="lead-form" onsubmit="handleSubmit(event)">
+        <div class="fgrid">
+          <div class="ff"><label>Nombre</label><input type="text" placeholder="Tu nombre" required></div>
+          <div class="ff"><label>Apellido</label><input type="text" placeholder="Tu apellido" required></div>
+          <div class="ff"><label>Email</label><input type="email" placeholder="tu@email.com" required></div>
+          <div class="ff"><label>WhatsApp</label><input type="tel" placeholder="+56 9 XXXX XXXX" required></div>
+        </div>
+        <button type="submit" class="btn-submit">Reservar mi cupo <span class="btn-arr">→</span></button>
+        <p class="f-disc">Sin costo · Sin compromiso · Respuesta en 24 horas</p>
+      </form>
+    </div>
+    <div class="success" id="success-state">
+      <div class="s-icon">✓</div>
+      <div class="s-title">¡Cupo asegurado!</div>
+      <p class="s-sub">Un especialista de Renta Capital te contacta por WhatsApp en menos de 24 horas.</p>
+      <div class="s-cupo">Cupo #<span id="cupo-number">24</span> de 100 reservado</div>
+    </div>
+  </div>
+
+</div><!-- fin layout -->
+
+<footer class="site-footer">
+  <div class="footer-top">
+    <div class="footer-brand">
+      <div class="footer-logo" style="margin-bottom:.5rem">
+        <svg width="160" height="34" viewBox="0 0 160 34" fill="none" xmlns="http://www.w3.org/2000/svg"><polyline points="18.5,4.1 3.2,17.0 18.5,29.9" stroke="#4A6B8A" stroke-width="3.4" stroke-linecap="square" stroke-linejoin="miter" fill="none"/><polyline points="31.3,4.1 16.0,17.0 31.3,29.9" stroke="#CC4A28" stroke-width="3.4" stroke-linecap="square" stroke-linejoin="miter" fill="none"/><text x="52.8" y="24.5" font-family="'DM Sans',system-ui,sans-serif" font-size="17.7" font-weight="300" letter-spacing="2.7" fill="#EDE0CC">MAXRENT</text></svg>
+      </div>
+      <p class="footer-tagline">Inversión en propiedades usadas sin poner pie. Rentabilidades 30% más altas que en una nueva.</p>
+      <div class="footer-alianza"><strong>La alianza</strong><br>Houm · Renta Capital · Banco Aliado<br>Santiago, Chile</div>
+    </div>
+    <div class="footer-col">
+      <h5>El producto</h5>
+      <a href="#pilares">La oportunidad</a>
+      <a href="#uvn">Los números</a>
+      <a href="#alianza">Quiénes somos</a>
+      <a href="#como">Cómo funciona</a>
+      <a href="#faq">Preguntas frecuentes</a>
+    </div>
+    <div class="footer-col">
+      <h5>Las empresas</h5>
+      <a href="https://houm.com" target="_blank">Houm</a>
+      <a href="#" target="_blank">Renta Capital</a>
+      <a href="https://bci.cl" target="_blank">Banco Aliado</a>
+    </div>
+    <div class="footer-col">
+      <h5>Contacto</h5>
+      <p>Un especialista te contacta en menos de 24 horas tras dejar tus datos.</p>
+      <a href="#top" style="color:var(--orange);font-weight:500;margin-top:.4rem">Reservar mi cupo →</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 MaxRent · Houm SpA · Renta Capital · En alianza con Banco Aliado</span>
+    <span>Solo para inversionistas calificados · Confidencial</span>
+  </div>
+</footer>
+
+<script>
+function toggleFaq(btn) {
+  const item = btn.parentElement;
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+let cupos=77;
+function handleSubmit(e){
+  e.preventDefault();
+  cupos=Math.max(0,cupos-1);
+  document.getElementById('cupo-number').textContent=100-cupos;
+  document.getElementById('form-state').style.display='none';
+  document.getElementById('success-state').style.display='block';
+}
+function baja(){
+  if(cupos>58){
+    cupos--;
+    const el=document.getElementById('cupos-num');
+    if(el){el.textContent=cupos;el.style.transform='scale(1.15)';setTimeout(()=>{el.style.transform='scale(1)'},350);}
+  }
+}
+function sched(){setTimeout(()=>{baja();sched();},(25+Math.random()*35)*1000);}
+setTimeout(sched,10000);
+</script>
+</body>
+</html>
