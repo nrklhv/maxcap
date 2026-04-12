@@ -189,7 +189,7 @@ export function VendedorLanding() {
             Lo que nos preguntan los propietarios.
           </h2>
           <p className="mb-10 max-w-lg text-sm leading-relaxed text-gray-3">
-            Si tienes alguna duda adicional, un ejecutivo de Renta Capital te la responde en la primera llamada.
+            Si tienes alguna duda adicional, un especialista te la responde en la primera llamada.
           </p>
           <FaqList items={vendedorFaqItems} accent="teal" />
         </section>

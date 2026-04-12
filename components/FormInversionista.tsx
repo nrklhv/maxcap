@@ -80,7 +80,7 @@ export function FormInversionista({ onReserved }: Props) {
         </div>
         <div className="mb-1.5 font-serif text-xl text-dark">¡Recibimos tus datos!</div>
         <p className="mx-auto max-w-sm text-sm leading-relaxed text-gray-3">
-          Un especialista de Renta Capital te contactará por WhatsApp en menos de 24 horas. El cupo no queda
+          Un especialista te contactará por WhatsApp en menos de 24 horas. El cupo no queda
           reservado con este paso: depende de la evaluación y del pago de la reserva.
         </p>
         <button
@@ -107,8 +107,7 @@ export function FormInversionista({ onReserved }: Props) {
         <em className="text-orange not-italic">la oportunidad.</em>
       </div>
       <p className="mb-5 max-w-md border-b border-gray-1 pb-4 text-sm leading-snug text-gray-3">
-        Un especialista de Renta Capital te contacta en menos de 24 horas con las propiedades disponibles para tu
-        perfil.
+        Un especialista te contacta en menos de 24 horas con las propiedades disponibles para tu perfil.
       </p>
       <form onSubmit={handleSubmit}>
         <div className="mb-2 grid grid-cols-2 gap-2.5">

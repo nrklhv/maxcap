@@ -363,11 +363,7 @@ export function InvestorLanding() {
               step={2}
               tag="Paso 02"
               title="Asesoría financiera personalizada"
-              description={
-                <>
-                  Un ejecutivo de <strong>Renta Capital</strong> se contacta contigo en menos de 24 horas.
-                </>
-              }
+              description="Un especialista se contacta contigo en menos de 24 horas."
             />
             <StepRow
               step={3}
@@ -413,7 +409,7 @@ export function InvestorLanding() {
             Todo lo que necesitas saber.
           </h2>
           <p className="mb-10 max-w-xl text-sm leading-relaxed text-gray-3">
-            Si tienes alguna duda adicional, un especialista de Renta Capital la responde en tu primera llamada.
+            Si tienes alguna duda adicional, un especialista la responde en tu primera llamada.
           </p>
           <FaqList items={investorFaqItems} accent="orange" />
         </section>
