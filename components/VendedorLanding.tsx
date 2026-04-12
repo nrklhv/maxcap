@@ -16,7 +16,7 @@ export function VendedorLanding() {
       <Header variant="vendedor" />
       <div className="md:mr-[420px] md:pb-0 xl:mr-[480px] 2xl:mr-[520px] pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]">
         <section
-          className="hero-animate-vend relative overflow-hidden bg-dark px-4 pb-12 pt-10 md:px-10 md:pb-14 md:pt-16"
+          className="hero-animate-vend relative overflow-hidden bg-dark px-4 pb-10 pt-9 md:px-10 md:pb-11 md:pt-12"
           id="top"
         >
           <div
@@ -24,18 +24,21 @@ export function VendedorLanding() {
             aria-hidden
           />
           <div className="relative z-[1]">
-            <div className="mb-8 inline-flex w-fit items-center gap-2 rounded-full border border-orange/30 bg-orange/10 py-1 pl-2 pr-3.5">
+            <div className="mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-orange/30 bg-orange/10 py-1 pl-2 pr-3.5">
               <div className="h-2 w-2 animate-pulseDot rounded-full bg-orange" />
               <span className="text-xs font-medium tracking-wide text-orange-2">
                 Piloto en curso · Segundo lanzamiento próximo
               </span>
             </div>
-            <h1 className="mb-4 font-serif text-4xl leading-[1.06] tracking-tight text-white md:text-6xl xl:text-7xl 2xl:text-8xl">
-              Le damos liquidez
-              <br />
-              <em className="block font-serif text-5xl not-italic text-teal-2 md:text-[1.18em]">a tu propiedad.</em>
+            <h1 className="mb-3 max-w-5xl font-serif tracking-tight">
+              <span className="block text-4xl font-medium leading-[1.06] text-white md:text-5xl xl:text-6xl 2xl:text-6xl">
+                Le damos liquidez
+              </span>
+              <span className="mt-1.5 block font-serif text-lg font-normal leading-snug text-teal-2/85 md:mt-2 md:text-xl xl:text-xl">
+                a tu propiedad.
+              </span>
             </h1>
-            <p className="max-w-lg font-serif text-lg font-normal leading-snug tracking-tight text-gray-2 md:text-xl xl:max-w-2xl xl:text-2xl">
+            <p className="max-w-lg font-serif text-base font-normal leading-snug tracking-tight text-gray-2 md:text-lg xl:max-w-2xl xl:text-xl">
               Vendemos tu propiedad a inversionistas calificados —{" "}
               <strong className="font-medium text-[#9FE1CB]">
                 canal exclusivo, sin portales, sin complicaciones.

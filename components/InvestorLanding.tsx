@@ -45,7 +45,7 @@ export function InvestorLanding() {
       <Header variant="inversionista" />
       <div className="md:mr-[420px] md:pb-0 xl:mr-[480px] 2xl:mr-[520px] pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]">
         <section
-          className="hero-animate relative overflow-hidden bg-dark px-4 pb-12 pt-10 md:px-10 md:pb-12 md:pt-14"
+          className="hero-animate relative overflow-hidden bg-dark px-4 pb-10 pt-9 md:px-10 md:pb-10 md:pt-11"
           id="top"
         >
           <div
@@ -53,7 +53,7 @@ export function InvestorLanding() {
             aria-hidden
           />
           <div className="relative z-[1]">
-            <div className="mb-10 flex items-center gap-2.5">
+            <div className="mb-8 flex items-center gap-2.5">
               <Logo size="lg" />
             </div>
             <div className="mb-7 inline-flex w-fit items-center gap-2 rounded-full border border-orange/35 bg-orange/10 py-1 pl-1 pr-3.5">
@@ -62,15 +62,14 @@ export function InvestorLanding() {
               </div>
               <span className="text-xs font-medium tracking-wide text-orange-2">100 cupos · Lanzamiento exclusivo</span>
             </div>
-            <h1 className="mb-4 font-serif text-4xl leading-[1.06] tracking-tight text-white md:text-6xl xl:text-7xl 2xl:text-8xl">
+            <h1 className="mb-3 max-w-5xl font-serif text-4xl leading-[1.06] tracking-tight text-white md:text-5xl xl:text-6xl 2xl:text-6xl">
               Invierte en propiedades usadas
               <br />
-              <em className="block font-serif text-5xl not-italic text-orange md:text-[1.22em]">sin poner pie.</em>
+              <em className="block font-serif text-[1.12em] not-italic text-orange md:text-[1.08em]">sin poner pie.</em>
             </h1>
-            <p className="max-w-md font-serif text-lg font-normal leading-snug tracking-tight text-gray-2 md:max-w-lg md:text-[22px] md:leading-snug xl:max-w-2xl xl:text-2xl">
-              Rentabilidades <strong className="font-medium text-orange-2">30% más altas</strong>
-              <br />
-              que en una propiedad nueva.
+            <p className="max-w-5xl text-balance font-serif text-base font-normal leading-snug tracking-tight text-gray-2 md:text-lg md:leading-snug xl:text-xl">
+              Rentabilidades <strong className="font-medium text-orange-2">30% más altas</strong> que en una propiedad
+              nueva.
             </p>
           </div>
         </section>
