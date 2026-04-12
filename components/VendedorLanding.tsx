@@ -14,7 +14,7 @@ export function VendedorLanding() {
   return (
     <>
       <Header variant="vendedor" />
-      <div className="md:mr-[420px] pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
+      <div className="md:mr-[420px] md:pb-0 xl:mr-[480px] 2xl:mr-[520px] pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]">
         <section
           className="hero-animate-vend relative overflow-hidden bg-dark px-4 pb-12 pt-10 md:px-10 md:pb-14 md:pt-16"
           id="top"
@@ -30,12 +30,12 @@ export function VendedorLanding() {
                 Piloto en curso · Segundo lanzamiento próximo
               </span>
             </div>
-            <h1 className="mb-4 font-serif text-4xl leading-[1.06] tracking-tight text-white md:text-6xl">
+            <h1 className="mb-4 font-serif text-4xl leading-[1.06] tracking-tight text-white md:text-6xl xl:text-7xl 2xl:text-8xl">
               Le damos liquidez
               <br />
               <em className="block font-serif text-5xl not-italic text-teal-2 md:text-[1.18em]">a tu propiedad.</em>
             </h1>
-            <p className="max-w-lg font-serif text-lg font-normal leading-snug tracking-tight text-gray-2 md:text-xl">
+            <p className="max-w-lg font-serif text-lg font-normal leading-snug tracking-tight text-gray-2 md:text-xl xl:max-w-2xl xl:text-2xl">
               Vendemos tu propiedad a inversionistas calificados —{" "}
               <strong className="font-medium text-[#9FE1CB]">
                 canal exclusivo, sin portales, sin complicaciones.
@@ -44,7 +44,7 @@ export function VendedorLanding() {
             </p>
             <div className="mt-8 max-w-lg rounded-xl border border-white/10 bg-white/5 p-5">
               <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-teal-2">Sobre el piloto</div>
-              <p className="text-[13px] leading-relaxed text-gray-2">
+              <p className="text-sm leading-relaxed text-gray-2">
                 El primer lanzamiento ya está en marcha con una cartera de propiedades seleccionadas. Si tu propiedad
                 califica, <strong className="font-medium text-white">inscríbete ahora para ser considerado en el segundo lanzamiento.</strong>
               </p>
@@ -53,8 +53,8 @@ export function VendedorLanding() {
         </section>
 
         <section className="bg-white px-4 py-16 md:px-10 md:py-[4.5rem]" id="requisitos">
-          <div className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-teal">Lo que necesitamos de ti</div>
-          <h2 className="mb-2 font-serif text-3xl tracking-tight text-dark md:text-[clamp(24px,2.8vw,38px)]">
+          <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-teal">Lo que necesitamos de ti</div>
+          <h2 className="mb-2 font-serif text-3xl tracking-tight text-dark md:text-[clamp(24px,2.2vw+14px,52px)]">
             4 condiciones para
             <br />
             calificar al programa.
@@ -136,8 +136,8 @@ export function VendedorLanding() {
             aria-hidden
           />
           <div className="relative z-[1]">
-            <div className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-teal-2">Por qué lo logramos</div>
-            <h2 className="mb-10 font-serif text-3xl tracking-tight text-white md:text-[clamp(24px,2.8vw,38px)]">
+            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-teal-2">Por qué lo logramos</div>
+            <h2 className="mb-10 font-serif text-3xl tracking-tight text-white md:text-[clamp(24px,2.2vw+14px,52px)]">
               El canal que ningún corredor
               <br />
               tradicional tiene.
@@ -184,8 +184,8 @@ export function VendedorLanding() {
         <Calculadora />
 
         <section className="bg-white px-4 py-16 md:px-10 md:py-[4.5rem]" id="faq">
-          <div className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-teal">Preguntas frecuentes</div>
-          <h2 className="mb-2 font-serif text-3xl tracking-tight text-dark md:text-[clamp(24px,2.8vw,38px)]">
+          <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-teal">Preguntas frecuentes</div>
+          <h2 className="mb-2 font-serif text-3xl tracking-tight text-dark md:text-[clamp(24px,2.2vw+14px,52px)]">
             Lo que nos preguntan los propietarios.
           </h2>
           <p className="mb-10 max-w-lg text-sm leading-relaxed text-gray-3">
@@ -197,7 +197,7 @@ export function VendedorLanding() {
         <Footer variant="vendedor" />
 
         <aside
-          className="relative z-10 w-full scroll-mt-20 border-t border-gray-1 bg-white px-5 py-6 md:fixed md:right-0 md:top-14 md:flex md:h-[calc(100vh-3.5rem)] md:max-w-[420px] md:flex-col md:justify-center md:border-l md:border-t-0 md:scroll-mt-0 md:px-7 md:py-6 md:shadow-[-6px_0_40px_rgba(0,0,0,0.14)]"
+          className="relative z-10 w-full scroll-mt-20 border-t border-gray-1 bg-white px-5 py-6 md:fixed md:right-0 md:top-14 md:flex md:h-[calc(100vh-3.5rem)] md:max-w-[420px] md:flex-col md:justify-center md:border-l md:border-t-0 md:scroll-mt-0 md:px-7 md:py-6 md:shadow-[-6px_0_40px_rgba(0,0,0,0.14)] xl:max-w-[480px] xl:px-9 xl:py-8 2xl:max-w-[520px] 2xl:px-10"
           id="form"
         >
           <div className="pointer-events-none absolute left-0 right-0 top-0 z-[1] hidden h-1 bg-teal md:block" aria-hidden />
@@ -216,9 +216,9 @@ function StatCard({ stat, label, body }: { stat: ReactNode; label: string; body:
     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-7 transition-colors hover:border-teal/40 hover:bg-white/[0.07]">
       <div className="mb-3 h-[3px] w-7 rounded-sm bg-teal" />
       <div className="mb-1 font-serif text-4xl tracking-tight text-white">{stat}</div>
-      <div className="mb-3 text-[11px] font-medium text-teal-2">{label}</div>
+      <div className="mb-3 text-xs font-medium text-teal-2">{label}</div>
       <div className="mb-3 h-px bg-white/10" />
-      <p className="text-[13px] leading-relaxed text-gray-2 [&_strong]:font-medium">{body}</p>
+      <p className="text-sm leading-relaxed text-gray-2 [&_strong]:font-medium">{body}</p>
     </div>
   );
 }

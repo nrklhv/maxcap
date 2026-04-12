@@ -6,6 +6,13 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Widen rem-based scale from laptop widths up (px-[…] stays fixed unless migrated to rem). */
+@media (min-width: 1024px) {
+  html {
+    font-size: clamp(16px, 0.2vw + 14.6px, 21px);
+  }
+}
+
 body {
   @apply bg-cream text-dark antialiased overflow-x-hidden;
 }

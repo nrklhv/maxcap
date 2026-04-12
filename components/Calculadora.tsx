@@ -36,8 +36,8 @@ export function Calculadora() {
 
   return (
     <section className="bg-cream px-4 py-16 md:px-10 md:py-[4.5rem]" id="calculadora">
-      <div className="eyebrow mb-3 text-[11px] font-semibold uppercase tracking-widest text-teal">Calculadora de valor</div>
-      <h2 className="mb-2 font-serif text-3xl tracking-tight text-dark md:text-[clamp(24px,2.8vw,38px)]">
+      <div className="eyebrow mb-3 text-xs font-semibold uppercase tracking-widest text-teal">Calculadora de valor</div>
+      <h2 className="mb-2 font-serif text-3xl tracking-tight text-dark md:text-[clamp(24px,2.2vw+14px,52px)]">
         ¿Cuánto vale tu propiedad?
       </h2>
       <p className="mb-10 max-w-xl text-sm leading-relaxed text-gray-3">
@@ -47,7 +47,7 @@ export function Calculadora() {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-8">
         <div className="rounded-2xl border-[1.5px] border-gray-1 bg-white p-8">
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-teal">Arriendo mensual actual</div>
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-teal">Arriendo mensual actual</div>
           <div className="relative mb-6">
             <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-lg font-medium text-gray-3">
               $
@@ -55,7 +55,7 @@ export function Calculadora() {
             <input
               type="text"
               inputMode="numeric"
-              className="h-[58px] w-full rounded-[10px] border-[1.5px] border-[#E2DAD4] py-0 pl-8 pr-3.5 font-sans text-[22px] font-medium text-dark outline-none transition-colors focus:border-teal"
+              className="h-[58px] w-full rounded-[10px] border-[1.5px] border-[#E2DAD4] py-0 pl-8 pr-3.5 font-sans text-2xl font-medium text-dark outline-none transition-colors focus:border-teal"
               placeholder="400.000"
               value={raw}
               onChange={(e) => setRaw(e.target.value)}
@@ -66,26 +66,26 @@ export function Calculadora() {
             <span className="text-lg font-semibold text-dark">{formatPesosAnnual(anual)}</span>
           </div>
           <div className="mt-6">
-            <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-teal">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-teal">
               Cap rate — rango del mercado
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-lg border border-gray-1 bg-cream px-3 py-2.5 text-center">
-                <div className="mb-1 text-[10px] uppercase tracking-wide text-gray-3">Mínimo</div>
+                <div className="mb-1 text-xs uppercase tracking-wide text-gray-3">Mínimo</div>
                 <div className="text-lg font-semibold text-teal">4,5%</div>
-                <div className="mt-0.5 text-[10px] text-gray-3">umbral del mercado</div>
+                <div className="mt-0.5 text-xs text-gray-3">umbral del mercado</div>
               </div>
               <div className="rounded-lg border border-gray-1 bg-cream px-3 py-2.5 text-center">
-                <div className="mb-1 text-[10px] uppercase tracking-wide text-gray-3">Atractivo</div>
+                <div className="mb-1 text-xs uppercase tracking-wide text-gray-3">Atractivo</div>
                 <div className="text-lg font-semibold text-orange-2">6,0%</div>
-                <div className="mt-0.5 text-[10px] text-gray-3">muy competitivo</div>
+                <div className="mt-0.5 text-xs text-gray-3">muy competitivo</div>
               </div>
             </div>
           </div>
         </div>
 
         <div>
-          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-gray-3">
+          <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-3">
             Valor estimado según cap rate
           </div>
           <p className="mb-2 text-xs leading-relaxed text-gray-3">

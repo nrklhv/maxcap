@@ -21,15 +21,15 @@ export function StepRow({
         }`}
       >
         <span
-          className={`font-serif text-[22px] tracking-tight ${isLast ? "text-white" : "text-orange"}`}
+          className={`font-serif text-2xl tracking-tight ${isLast ? "text-white" : "text-orange"}`}
         >
           {step}
         </span>
       </div>
       <div className="pt-2.5">
-        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-orange">{tag}</div>
+        <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-orange">{tag}</div>
         <div className="mb-2 font-serif text-xl tracking-tight text-dark">{title}</div>
-        <p className="max-w-[520px] text-[13.5px] leading-relaxed text-gray-3 [&_strong]:font-medium [&_strong]:text-dark">
+        <p className="max-w-[520px] text-sm leading-relaxed text-gray-3 [&_strong]:font-medium [&_strong]:text-dark">
           {description}
         </p>
       </div>

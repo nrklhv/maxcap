@@ -12,6 +12,9 @@ import {
 } from "@/lib/nativeValidityEs";
 import { readStoredAttribution } from "@/lib/marketingAttribution";
 
+const inputClass =
+  "h-11 rounded-lg border-[1.5px] border-[#E2DAD4] bg-white px-3 text-sm text-dark outline-none focus:border-teal";
+
 export function FormVendedor() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -70,16 +73,16 @@ export function FormVendedor() {
   if (submitted) {
     return (
       <div className="py-4 text-center">
-        <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-teal text-lg text-white">
+        <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-teal text-xl text-white">
           ✓
         </div>
-        <div className="mb-1.5 font-serif text-lg text-dark">¡Recibimos tus datos!</div>
-        <p className="mx-auto max-w-[280px] text-[12.5px] leading-relaxed text-gray-3">
+        <div className="mb-1.5 font-serif text-xl text-dark">¡Recibimos tus datos!</div>
+        <p className="mx-auto max-w-sm text-sm leading-relaxed text-gray-3">
           Hemos registrado tus datos. Nos pondremos pronto en contacto contigo.
         </p>
         <button
           type="button"
-          className="mt-4 flex w-full cursor-pointer items-center justify-center rounded-[9px] border-[1.5px] border-teal bg-white py-2.5 text-[13px] font-semibold text-teal transition-colors hover:bg-teal/5"
+          className="mt-4 flex w-full cursor-pointer items-center justify-center rounded-[9px] border-[1.5px] border-teal bg-white py-3 text-sm font-semibold text-teal transition-colors hover:bg-teal/5"
           onClick={() => {
             setSubmitError(null);
             setSubmitted(false);
@@ -93,60 +96,60 @@ export function FormVendedor() {
 
   return (
     <>
-      <div className="mb-1 font-serif text-[22px] leading-[1.12] tracking-tight text-dark md:text-[24px]">
+      <div className="mb-2 font-serif text-2xl leading-[1.12] tracking-tight text-dark md:text-3xl">
         Vende tus
         <br />
         <em className="text-teal not-italic">propiedades.</em>
       </div>
-      <p className="mb-4 border-b border-gray-1 pb-3 text-[12.5px] leading-snug text-gray-3">
+      <p className="mb-4 border-b border-gray-1 pb-3 text-sm leading-snug text-gray-3">
         Evaluamos si califican y te contactamos para el próximo lanzamiento. Sin compromisos.
       </p>
-      <div className="mb-3 flex items-center gap-2 rounded-lg border border-[#9FE1CB] bg-teal-light px-2.5 py-1.5">
-        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-teal text-[10px] text-white">
+      <div className="mb-3 flex items-center gap-2.5 rounded-lg border border-[#9FE1CB] bg-teal-light px-3 py-2">
+        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal text-xs text-white">
           ✦
         </div>
-        <div className="text-left text-[10px] leading-snug text-teal">
+        <div className="text-left text-xs leading-snug text-teal">
           <strong className="block font-semibold leading-tight">Lista de espera · 2do lanzamiento</strong>
         </div>
       </div>
       <form onSubmit={handleSubmit}>
-        <div className="mb-2 grid grid-cols-2 gap-2">
-          <label className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-3">Nombre</span>
+        <div className="mb-2 grid grid-cols-2 gap-2.5">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-gray-3">Nombre</span>
             <input
               required
               name="nombre"
               onInvalid={(e: InvalidEvent<HTMLInputElement>) => nativeInvalidMessageEs(e, "Nombre")}
               onInput={clearNativeValidity}
-              className="h-[38px] rounded-lg border-[1.5px] border-[#E2DAD4] bg-white px-2.5 text-[13px] text-dark outline-none focus:border-teal"
+              className={inputClass}
               placeholder="Tu nombre"
             />
           </label>
-          <label className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-3">Apellido</span>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-gray-3">Apellido</span>
             <input
               required
               name="apellido"
               onInvalid={(e: InvalidEvent<HTMLInputElement>) => nativeInvalidMessageEs(e, "Apellido")}
               onInput={clearNativeValidity}
-              className="h-[38px] rounded-lg border-[1.5px] border-[#E2DAD4] bg-white px-2.5 text-[13px] text-dark outline-none focus:border-teal"
+              className={inputClass}
               placeholder="Tu apellido"
             />
           </label>
-          <label className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-3">Email</span>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-gray-3">Email</span>
             <input
               required
               type="email"
               name="email"
               onInvalid={(e: InvalidEvent<HTMLInputElement>) => nativeInvalidMessageEs(e, "Email")}
               onInput={clearNativeValidity}
-              className="h-[38px] rounded-lg border-[1.5px] border-[#E2DAD4] bg-white px-2.5 text-[13px] text-dark outline-none focus:border-teal"
+              className={inputClass}
               placeholder="tu@email.com"
             />
           </label>
-          <label className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-3">WhatsApp</span>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-gray-3">WhatsApp</span>
             <input
               required
               type="tel"
@@ -155,20 +158,20 @@ export function FormVendedor() {
               autoComplete="tel"
               onInvalid={spanishWhatsAppInvalid}
               onInput={clearWhatsAppValidity}
-              className="h-[38px] rounded-lg border-[1.5px] border-[#E2DAD4] bg-white px-2.5 text-[13px] text-dark outline-none focus:border-teal"
+              className={inputClass}
               placeholder="+56 9 XXXX XXXX"
             />
           </label>
         </div>
         <div className="my-2 flex items-center gap-2">
-          <span className="whitespace-nowrap text-[10px] font-semibold uppercase tracking-wide text-teal">
+          <span className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-teal">
             Tus propiedades
           </span>
           <span className="h-px flex-1 bg-gray-1" />
         </div>
-        <div className="mb-2 flex flex-col gap-2">
-          <label className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wide leading-snug text-gray-3">
+        <div className="mb-2 flex flex-col gap-2.5">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold uppercase tracking-wide leading-snug text-gray-3">
               ¿Cuántas propiedades tienes para la venta?
             </span>
             <select
@@ -179,7 +182,7 @@ export function FormVendedor() {
                 nativeInvalidMessageEs(e, "¿Cuántas propiedades tienes para la venta?")
               }
               onChange={clearNativeValidity}
-              className="h-[38px] w-full appearance-none rounded-lg border-[1.5px] border-[#E2DAD4] bg-white px-2.5 pr-8 text-[13px] text-dark outline-none focus:border-teal"
+              className={`${inputClass} w-full appearance-none pr-8`}
             >
               <option value="" disabled>
                 Selecciona
@@ -191,15 +194,15 @@ export function FormVendedor() {
               <option value="5+">5 o más</option>
             </select>
           </label>
-          <label className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-3">¿Están arrendadas?</span>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-gray-3">¿Están arrendadas?</span>
             <select
               required
               name="arrendadas"
               defaultValue=""
               onInvalid={(e: InvalidEvent<HTMLSelectElement>) => nativeInvalidMessageEs(e, "¿Están arrendadas?")}
               onChange={clearNativeValidity}
-              className="h-[38px] w-full appearance-none rounded-lg border-[1.5px] border-[#E2DAD4] bg-white px-2.5 pr-8 text-[13px] text-dark outline-none focus:border-teal"
+              className={`${inputClass} w-full appearance-none pr-8`}
             >
               <option value="" disabled>
                 Selecciona
@@ -209,17 +212,19 @@ export function FormVendedor() {
               <option value="no_ninguna">No, ninguna está arrendada</option>
             </select>
           </label>
-          <label className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-3">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-gray-3">
               ¿Bajo administración Houm?
             </span>
             <select
               required
               name="admin_houm"
               defaultValue=""
-              onInvalid={(e: InvalidEvent<HTMLSelectElement>) => nativeInvalidMessageEs(e, "¿Bajo administración Houm?")}
+              onInvalid={(e: InvalidEvent<HTMLSelectElement>) =>
+                nativeInvalidMessageEs(e, "¿Bajo administración Houm?")
+              }
               onChange={clearNativeValidity}
-              className="h-[38px] w-full appearance-none rounded-lg border-[1.5px] border-[#E2DAD4] bg-white px-2.5 pr-8 text-[13px] text-dark outline-none focus:border-teal"
+              className={`${inputClass} w-full appearance-none pr-8`}
             >
               <option value="" disabled>
                 Selecciona
@@ -231,14 +236,14 @@ export function FormVendedor() {
           </label>
         </div>
         {submitError ? (
-          <p className="mb-2 text-center text-[12px] font-medium text-[#c53030]" role="alert">
+          <p className="mb-2 text-center text-sm font-medium text-[#c53030]" role="alert">
             {submitError}
           </p>
         ) : null}
         <button
           type="submit"
           disabled={submitting}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-[9px] bg-teal py-3 text-[14px] font-semibold text-white transition-colors hover:bg-[#085041] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-[9px] bg-teal py-3.5 text-base font-semibold text-white transition-colors hover:bg-[#085041] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
         >
           {submitting ? "Enviando…" : (
             <>
@@ -246,7 +251,7 @@ export function FormVendedor() {
             </>
           )}
         </button>
-        <p className="mt-2 text-center text-[11px] leading-relaxed text-gray-3">
+        <p className="mt-2.5 text-center text-xs leading-relaxed text-gray-3">
           Sin costo · Sin compromiso · Te contactamos para evaluar
         </p>
       </form>

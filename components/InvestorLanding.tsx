@@ -43,7 +43,7 @@ export function InvestorLanding() {
   return (
     <>
       <Header variant="inversionista" />
-      <div className="md:mr-[420px] pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
+      <div className="md:mr-[420px] md:pb-0 xl:mr-[480px] 2xl:mr-[520px] pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]">
         <section
           className="hero-animate relative overflow-hidden bg-dark px-4 pb-12 pt-10 md:px-10 md:pb-12 md:pt-14"
           id="top"
@@ -57,17 +57,17 @@ export function InvestorLanding() {
               <Logo size="lg" />
             </div>
             <div className="mb-7 inline-flex w-fit items-center gap-2 rounded-full border border-orange/35 bg-orange/10 py-1 pl-1 pr-3.5">
-              <div className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-orange text-[11px] font-semibold text-white">
+              <div className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-orange text-xs font-semibold text-white">
                 100
               </div>
               <span className="text-xs font-medium tracking-wide text-orange-2">100 cupos · Lanzamiento exclusivo</span>
             </div>
-            <h1 className="mb-4 font-serif text-4xl leading-[1.06] tracking-tight text-white md:text-6xl">
+            <h1 className="mb-4 font-serif text-4xl leading-[1.06] tracking-tight text-white md:text-6xl xl:text-7xl 2xl:text-8xl">
               Invierte en propiedades usadas
               <br />
               <em className="block font-serif text-5xl not-italic text-orange md:text-[1.22em]">sin poner pie.</em>
             </h1>
-            <p className="max-w-md font-serif text-lg font-normal leading-snug tracking-tight text-gray-2 md:text-[22px] md:leading-snug">
+            <p className="max-w-md font-serif text-lg font-normal leading-snug tracking-tight text-gray-2 md:max-w-lg md:text-[22px] md:leading-snug xl:max-w-2xl xl:text-2xl">
               Rentabilidades <strong className="font-medium text-orange-2">30% más altas</strong>
               <br />
               que en una propiedad nueva.
@@ -77,17 +77,17 @@ export function InvestorLanding() {
 
         <div className="flex flex-wrap items-center gap-6 border-t border-white/10 bg-dark px-4 py-5 md:flex-nowrap md:px-10 md:py-5">
           <div className="min-w-0 shrink-0">
-            <div className="font-serif text-[17px] tracking-tight text-white">Reserva tu cupo</div>
-            <div className="mt-0.5 whitespace-nowrap text-[11px] text-gray-3">Solo 100 inversionistas entran al piloto</div>
+            <div className="font-serif text-lg tracking-tight text-white">Reserva tu cupo</div>
+            <div className="mt-0.5 whitespace-nowrap text-xs text-gray-3">Solo 100 inversionistas entran al piloto</div>
           </div>
           <div className="shrink-0">
             <div
-              className="font-serif text-[26px] leading-none text-orange transition-transform duration-300"
+              className="font-serif text-3xl leading-none text-orange transition-transform duration-300"
               style={{ transform: bump ? "scale(1.15)" : "scale(1)" }}
             >
               {cupos}
             </div>
-            <div className="mt-0.5 text-[10px] text-gray-3">cupos libres</div>
+            <div className="mt-0.5 text-xs text-gray-3">cupos libres</div>
           </div>
           <div className="min-w-[140px] flex-1 basis-full md:basis-auto">
             <div className="h-[5px] overflow-hidden rounded bg-white/10">
@@ -96,19 +96,19 @@ export function InvestorLanding() {
                 style={{ width: `${barPct}%` }}
               />
             </div>
-            <div className="mt-1 text-right text-[10px] text-gray-3">
+            <div className="mt-1 text-right text-xs text-gray-3">
               {reservados} de 100 reservados
             </div>
           </div>
-          <div className="shrink-0 text-right text-[11px] text-gray-3">
+          <div className="shrink-0 text-right text-xs text-gray-3">
             <b className="block text-xs font-semibold text-[#E35050]">¡Activo!</b>
             cerrando rápido
           </div>
         </div>
 
         <section className="bg-white px-4 py-12 md:px-10 md:py-16" id="pilares">
-          <div className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-orange">Por qué este modelo es diferente</div>
-          <h2 className="mb-2 font-serif text-3xl tracking-tight text-dark md:text-[clamp(24px,2.8vw,38px)]">
+          <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-orange">Por qué este modelo es diferente</div>
+          <h2 className="mb-2 font-serif text-3xl tracking-tight text-dark md:text-[clamp(24px,2.2vw+14px,52px)]">
             4 condiciones que ninguna
             <br />
             propiedad nueva te ofrece.
@@ -211,8 +211,8 @@ export function InvestorLanding() {
         </section>
 
         <section className="bg-white px-4 py-16 md:px-10 md:py-20" id="uvn">
-          <div className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-orange">Usada vs nueva — los números</div>
-          <h2 className="mb-2 font-serif text-3xl tracking-tight text-dark md:text-[clamp(24px,2.8vw,38px)]">
+          <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-orange">Usada vs nueva — los números</div>
+          <h2 className="mb-2 font-serif text-3xl tracking-tight text-dark md:text-[clamp(24px,2.2vw+14px,52px)]">
             El mismo precio.
             <br />
             No la misma rentabilidad.
@@ -224,21 +224,21 @@ export function InvestorLanding() {
 
           <UvnComparison />
 
-          <p className="mb-10 mt-1.5 max-w-2xl text-[10px] leading-relaxed text-gray-3 md:mb-12 md:mt-2">
+          <p className="mb-10 mt-1.5 max-w-2xl text-xs leading-relaxed text-gray-3 md:mb-12 md:mt-2">
             Cifras con fines ilustrativos y supuestos de mercado; no constituyen oferta ni garantía de rentabilidad y
             pueden variar en cada operación.
           </p>
 
           <div className="mb-12 flex flex-wrap items-center gap-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-orange/30 bg-orange-light py-2.5 pl-5 pr-5">
-              <span className="font-serif text-[28px] tracking-tight text-orange">+2,1 pp</span>
-              <span className="max-w-[200px] text-[13px] leading-snug text-[#CC4E00]">
+              <span className="font-serif text-3xl tracking-tight text-orange">+2,1 pp</span>
+              <span className="max-w-[200px] text-sm leading-snug text-[#CC4E00]">
                 más rentabilidad anual
                 <br />
                 durante 10 años
               </span>
             </div>
-            <p className="max-w-sm text-[13px] leading-relaxed text-gray-3">
+            <p className="max-w-sm text-sm leading-relaxed text-gray-3">
               Sobre una inversión de 2.500 UF a 10 años, esa diferencia se traduce en cientos de UF adicionales en tu
               patrimonio.
             </p>
@@ -270,8 +270,8 @@ export function InvestorLanding() {
             aria-hidden
           />
           <div className="relative z-[1]">
-            <div className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-orange-2">La super alianza</div>
-            <h2 className="mb-2 font-serif text-3xl tracking-tight text-white md:text-[clamp(24px,2.8vw,38px)]">
+            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-orange-2">La super alianza</div>
+            <h2 className="mb-2 font-serif text-3xl tracking-tight text-white md:text-[clamp(24px,2.2vw+14px,52px)]">
               Tres líderes.
               <br />
               Un solo producto.
@@ -284,24 +284,24 @@ export function InvestorLanding() {
             <div className="mb-12">
               <div className="divide-y divide-white/10 overflow-hidden rounded-xl border border-white/10 bg-white/5 sm:hidden">
                 <div className="px-5 py-4">
-                  <div className="text-[13px] font-semibold text-white">Houm</div>
-                  <div className="mt-0.5 text-[11px] text-gray-3">Administración + garantía</div>
+                  <div className="text-sm font-semibold text-white">Houm</div>
+                  <div className="mt-0.5 text-xs text-gray-3">Administración + garantía</div>
                 </div>
                 <div className="px-5 py-4">
-                  <div className="text-[13px] font-semibold text-white">Renta Capital</div>
-                  <div className="mt-0.5 text-[11px] text-gray-3">Canal de ventas</div>
+                  <div className="text-sm font-semibold text-white">Renta Capital</div>
+                  <div className="mt-0.5 text-xs text-gray-3">Canal de ventas</div>
                 </div>
                 <div className="px-5 py-4">
-                  <div className="text-[13px] font-semibold text-white">Banco Aliado</div>
-                  <div className="mt-0.5 text-[11px] text-gray-3">Financiamiento</div>
+                  <div className="text-sm font-semibold text-white">Banco Aliado</div>
+                  <div className="mt-0.5 text-xs text-gray-3">Financiamiento</div>
                 </div>
               </div>
 
               <div className="hidden overflow-hidden rounded-xl border border-white/10 sm:flex sm:flex-row">
                 <div className="flex flex-1 items-center gap-2.5 bg-white/5 px-5 py-4 sm:rounded-l-xl">
                   <div>
-                    <div className="text-[13px] font-semibold text-white">Houm</div>
-                    <div className="mt-0.5 text-[11px] text-gray-3">Administración + garantía</div>
+                    <div className="text-sm font-semibold text-white">Houm</div>
+                    <div className="mt-0.5 text-xs text-gray-3">Administración + garantía</div>
                   </div>
                 </div>
                 <div className="flex w-8 shrink-0 items-center justify-center self-stretch bg-orange text-sm font-semibold text-white">
@@ -309,8 +309,8 @@ export function InvestorLanding() {
                 </div>
                 <div className="flex flex-1 items-center bg-white/5 px-5 py-4">
                   <div>
-                    <div className="text-[13px] font-semibold text-white">Renta Capital</div>
-                    <div className="mt-0.5 text-[11px] text-gray-3">Canal de ventas</div>
+                    <div className="text-sm font-semibold text-white">Renta Capital</div>
+                    <div className="mt-0.5 text-xs text-gray-3">Canal de ventas</div>
                   </div>
                 </div>
                 <div className="flex w-8 shrink-0 items-center justify-center self-stretch bg-orange text-sm font-semibold text-white">
@@ -318,8 +318,8 @@ export function InvestorLanding() {
                 </div>
                 <div className="flex flex-1 items-center bg-white/5 px-5 py-4 sm:rounded-r-xl">
                   <div>
-                    <div className="text-[13px] font-semibold text-white">Banco Aliado</div>
-                    <div className="mt-0.5 text-[11px] text-gray-3">Financiamiento</div>
+                    <div className="text-sm font-semibold text-white">Banco Aliado</div>
+                    <div className="mt-0.5 text-xs text-gray-3">Financiamiento</div>
                   </div>
                 </div>
               </div>
@@ -344,8 +344,8 @@ export function InvestorLanding() {
         </section>
 
         <section className="bg-cream px-4 py-16 md:px-10 md:py-20" id="como">
-          <div className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-orange">Cómo funciona</div>
-          <h2 className="mb-2 font-serif text-3xl tracking-tight text-dark md:text-[clamp(24px,2.8vw,38px)]">
+          <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-orange">Cómo funciona</div>
+          <h2 className="mb-2 font-serif text-3xl tracking-tight text-dark md:text-[clamp(24px,2.2vw+14px,52px)]">
             De tu primer contacto
             <br />a tu primera renta.
           </h2>
@@ -408,8 +408,8 @@ export function InvestorLanding() {
         </section>
 
         <section className="bg-cream px-4 py-16 md:px-10 md:py-20" id="faq">
-          <div className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-orange">Preguntas frecuentes</div>
-          <h2 className="mb-2 font-serif text-3xl tracking-tight text-dark md:text-[clamp(24px,2.8vw,38px)]">
+          <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-orange">Preguntas frecuentes</div>
+          <h2 className="mb-2 font-serif text-3xl tracking-tight text-dark md:text-[clamp(24px,2.2vw+14px,52px)]">
             Todo lo que necesitas saber.
           </h2>
           <p className="mb-10 max-w-xl text-sm leading-relaxed text-gray-3">
@@ -419,7 +419,7 @@ export function InvestorLanding() {
         </section>
 
         <aside
-          className="relative z-10 w-full scroll-mt-20 border-t border-gray-1 bg-white px-5 py-6 md:fixed md:right-0 md:top-14 md:flex md:h-[calc(100vh-3.5rem)] md:max-w-[420px] md:flex-col md:justify-center md:border-l md:border-t-0 md:scroll-mt-0 md:px-7 md:py-6 md:shadow-[-6px_0_40px_rgba(0,0,0,0.14)]"
+          className="relative z-10 w-full scroll-mt-20 border-t border-gray-1 bg-white px-5 py-6 md:fixed md:right-0 md:top-14 md:flex md:h-[calc(100vh-3.5rem)] md:max-w-[420px] md:flex-col md:justify-center md:border-l md:border-t-0 md:scroll-mt-0 md:px-7 md:py-6 md:shadow-[-6px_0_40px_rgba(0,0,0,0.14)] xl:max-w-[480px] xl:px-9 xl:py-8 2xl:max-w-[520px] 2xl:px-10"
           id="form"
         >
           <div className="pointer-events-none absolute left-0 right-0 top-0 z-[1] hidden h-1 bg-orange md:block" aria-hidden />
@@ -444,7 +444,7 @@ function Insight({ title, children }: { title: string; children: ReactNode }) {
         </svg>
       </div>
       <h4 className="mb-1.5 text-sm font-semibold text-dark">{title}</h4>
-      <p className="text-[12.5px] leading-relaxed text-gray-3">{children}</p>
+      <p className="text-sm leading-relaxed text-gray-3">{children}</p>
     </div>
   );
 }
@@ -490,30 +490,30 @@ function EmpresaCard({ variant }: { variant: "houm" | "renta" | "bci" }) {
   const head =
     variant === "houm" ? (
       <>
-        <div className={`font-serif text-[22px] tracking-tight ${styles.logo}`}>houm</div>
-        <div className={`mt-2 inline-block text-[10px] font-semibold uppercase tracking-wide ${styles.badge}`}>
+        <div className={`font-serif text-2xl tracking-tight ${styles.logo}`}>houm</div>
+        <div className={`mt-2 inline-block text-xs font-semibold uppercase tracking-wide ${styles.badge}`}>
           Administración · Garantía · Escala
         </div>
         <div className="mt-4 font-serif text-4xl tracking-tight text-white">20.000+</div>
-        <div className="mb-4 text-[11px] text-gray-3">propiedades administradas</div>
+        <div className="mb-4 text-xs text-gray-3">propiedades administradas</div>
       </>
     ) : variant === "renta" ? (
       <>
-        <div className={`font-serif text-[22px] tracking-tight ${styles.logo}`}>Renta Capital</div>
-        <div className={`mt-2 inline-block text-[10px] font-semibold uppercase tracking-wide ${styles.badge}`}>
+        <div className={`font-serif text-2xl tracking-tight ${styles.logo}`}>Renta Capital</div>
+        <div className={`mt-2 inline-block text-xs font-semibold uppercase tracking-wide ${styles.badge}`}>
           Canal de ventas · Inversionistas
         </div>
         <div className="mt-4 font-serif text-4xl tracking-tight text-white">+UF 3M</div>
-        <div className="mb-4 text-[11px] text-gray-3">en ventas de propiedades de inversión</div>
+        <div className="mb-4 text-xs text-gray-3">en ventas de propiedades de inversión</div>
       </>
     ) : (
       <>
-        <div className={`font-serif text-[17px] leading-tight tracking-tight ${styles.logo}`}>Banco Aliado</div>
-        <div className={`mt-2 inline-block text-[10px] font-semibold uppercase tracking-wide ${styles.badge}`}>
+        <div className={`font-serif text-lg leading-tight tracking-tight ${styles.logo}`}>Banco Aliado</div>
+        <div className={`mt-2 inline-block text-xs font-semibold uppercase tracking-wide ${styles.badge}`}>
           Financiamiento
         </div>
         <div className="mt-4 font-serif text-4xl tracking-tight text-white">90%</div>
-        <div className="mb-4 text-[11px] text-gray-3">financiamiento + 24 meses de gracia</div>
+        <div className="mb-4 text-xs text-gray-3">financiamiento + 24 meses de gracia</div>
       </>
     );
 
@@ -523,7 +523,7 @@ function EmpresaCard({ variant }: { variant: "houm" | "renta" | "bci" }) {
     >
       {head}
       <div className="mb-4 h-px bg-white/10" />
-      <div className="text-[13px] leading-relaxed text-gray-2">{body}</div>
+      <div className="text-sm leading-relaxed text-gray-2">{body}</div>
     </div>
   );
 }

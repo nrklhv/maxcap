@@ -16,6 +16,9 @@ type Props = {
   onReserved: () => void;
 };
 
+const inputClass =
+  "h-11 rounded-lg border-[1.5px] border-[#E2DAD4] bg-white px-3 text-sm text-dark outline-none transition-colors placeholder:text-gray-2 focus:border-orange";
+
 export function FormInversionista({ onReserved }: Props) {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -72,17 +75,17 @@ export function FormInversionista({ onReserved }: Props) {
   if (submitted) {
     return (
       <div className="py-4 text-center">
-        <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-green text-lg text-white">
+        <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-green text-xl text-white">
           ✓
         </div>
-        <div className="mb-1.5 font-serif text-lg text-dark">¡Recibimos tus datos!</div>
-        <p className="mx-auto max-w-[280px] text-[12.5px] leading-relaxed text-gray-3">
+        <div className="mb-1.5 font-serif text-xl text-dark">¡Recibimos tus datos!</div>
+        <p className="mx-auto max-w-sm text-sm leading-relaxed text-gray-3">
           Un especialista de Renta Capital te contactará por WhatsApp en menos de 24 horas. El cupo no queda
           reservado con este paso: depende de la evaluación y del pago de la reserva.
         </p>
         <button
           type="button"
-          className="mt-4 flex w-full cursor-pointer items-center justify-center rounded-[9px] border-[1.5px] border-orange bg-white py-2.5 text-[13px] font-semibold text-orange transition-colors hover:bg-orange/5"
+          className="mt-4 flex w-full cursor-pointer items-center justify-center rounded-[9px] border-[1.5px] border-orange bg-white py-3 text-sm font-semibold text-orange transition-colors hover:bg-orange/5"
           onClick={() => {
             setSubmitError(null);
             setSubmitted(false);
@@ -96,55 +99,55 @@ export function FormInversionista({ onReserved }: Props) {
 
   return (
     <>
-      <div className="mb-1.5 font-serif text-[22px] leading-[1.12] tracking-tight text-dark md:text-[24px]">
+      <div className="mb-2 font-serif text-2xl leading-[1.12] tracking-tight text-dark md:text-3xl">
         Inscríbete ahora
         <br />
         y no pierdas
         <br />
         <em className="text-orange not-italic">la oportunidad.</em>
       </div>
-      <p className="mb-5 max-w-[320px] border-b border-gray-1 pb-4 text-[12.5px] leading-snug text-gray-3">
+      <p className="mb-5 max-w-md border-b border-gray-1 pb-4 text-sm leading-snug text-gray-3">
         Un especialista de Renta Capital te contacta en menos de 24 horas con las propiedades disponibles para tu
         perfil.
       </p>
       <form onSubmit={handleSubmit}>
-        <div className="mb-2 grid grid-cols-2 gap-2">
-          <label className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-3">Nombre</span>
+        <div className="mb-2 grid grid-cols-2 gap-2.5">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-gray-3">Nombre</span>
             <input
               required
               name="nombre"
               onInvalid={(e: InvalidEvent<HTMLInputElement>) => nativeInvalidMessageEs(e, "Nombre")}
               onInput={clearNativeValidity}
-              className="h-[38px] rounded-lg border-[1.5px] border-[#E2DAD4] bg-white px-2.5 text-[13px] text-dark outline-none transition-colors placeholder:text-gray-2 focus:border-orange"
+              className={inputClass}
               placeholder="Tu nombre"
             />
           </label>
-          <label className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-3">Apellido</span>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-gray-3">Apellido</span>
             <input
               required
               name="apellido"
               onInvalid={(e: InvalidEvent<HTMLInputElement>) => nativeInvalidMessageEs(e, "Apellido")}
               onInput={clearNativeValidity}
-              className="h-[38px] rounded-lg border-[1.5px] border-[#E2DAD4] bg-white px-2.5 text-[13px] text-dark outline-none transition-colors placeholder:text-gray-2 focus:border-orange"
+              className={inputClass}
               placeholder="Tu apellido"
             />
           </label>
-          <label className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-3">Email</span>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-gray-3">Email</span>
             <input
               required
               type="email"
               name="email"
               onInvalid={(e: InvalidEvent<HTMLInputElement>) => nativeInvalidMessageEs(e, "Email")}
               onInput={clearNativeValidity}
-              className="h-[38px] rounded-lg border-[1.5px] border-[#E2DAD4] bg-white px-2.5 text-[13px] text-dark outline-none transition-colors placeholder:text-gray-2 focus:border-orange"
+              className={inputClass}
               placeholder="tu@email.com"
             />
           </label>
-          <label className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-3">WhatsApp</span>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-gray-3">WhatsApp</span>
             <input
               required
               type="tel"
@@ -153,20 +156,20 @@ export function FormInversionista({ onReserved }: Props) {
               autoComplete="tel"
               onInvalid={spanishWhatsAppInvalid}
               onInput={clearWhatsAppValidity}
-              className="h-[38px] rounded-lg border-[1.5px] border-[#E2DAD4] bg-white px-2.5 text-[13px] text-dark outline-none transition-colors placeholder:text-gray-2 focus:border-orange"
+              className={inputClass}
               placeholder="+56 9 XXXX XXXX"
             />
           </label>
         </div>
         {submitError ? (
-          <p className="mb-2 text-center text-[12px] font-medium text-[#c53030]" role="alert">
+          <p className="mb-2 text-center text-sm font-medium text-[#c53030]" role="alert">
             {submitError}
           </p>
         ) : null}
         <button
           type="submit"
           disabled={submitting}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-[9px] bg-orange py-3 text-[14px] font-semibold text-white transition-colors hover:bg-[#E55A00] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-[9px] bg-orange py-3.5 text-base font-semibold text-white transition-colors hover:bg-[#E55A00] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
         >
           {submitting ? "Enviando…" : (
             <>
@@ -174,7 +177,7 @@ export function FormInversionista({ onReserved }: Props) {
             </>
           )}
         </button>
-        <p className="mt-2 text-center text-[11px] leading-relaxed text-gray-3">
+        <p className="mt-2.5 text-center text-xs leading-relaxed text-gray-3">
           Sin costo · Sin compromiso · Respuesta en 24 horas
         </p>
       </form>

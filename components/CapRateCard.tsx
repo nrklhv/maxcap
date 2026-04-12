@@ -28,11 +28,11 @@ export function CapRateCard({
         {rateLabel}
       </div>
       <div className="min-w-0">
-        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-3">{tag}</div>
-        <div className={`font-serif text-[26px] tracking-tight ${recommended ? "text-teal" : "text-dark"}`}>
+        <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-3">{tag}</div>
+        <div className={`font-serif text-3xl tracking-tight ${recommended ? "text-teal" : "text-dark"}`}>
           {hasValue ? formatPesosCompact(pesos) : "—"}
         </div>
-        <div className="mt-1 text-[11px] text-gray-3">
+        <div className="mt-1 text-xs text-gray-3">
           {hasValue ? formatUFApprox(pesos) : "ingresa el arriendo para calcular"}
         </div>
       </div>
