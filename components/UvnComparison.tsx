@@ -94,12 +94,15 @@ const UVN_ROWS: UvnRow[] = [
   },
 ];
 
+const dataCellClass =
+  "min-w-0 break-words border-b border-gray-1 px-4 py-3.5 text-center align-top text-sm font-medium";
+
 function TableRow({ label, nueva, usada }: { label: string; nueva: ReactNode; usada: ReactNode }) {
   return (
     <tr>
-      <td className="border-b border-gray-1 px-5 py-3.5 text-sm text-gray-3">{label}</td>
-      <td className="border-b border-gray-1 bg-[#F7F6FF] px-5 py-3.5 text-center text-sm font-medium">{nueva}</td>
-      <td className="border-b border-gray-1 bg-[#FFF8F2] px-5 py-3.5 text-center text-sm font-medium">{usada}</td>
+      <td className="border-b border-gray-1 px-5 py-3.5 align-top text-sm text-gray-3">{label}</td>
+      <td className={`${dataCellClass} bg-[#F7F6FF]`}>{nueva}</td>
+      <td className={`${dataCellClass} bg-[#FFF8F2]`}>{usada}</td>
     </tr>
   );
 }
@@ -167,14 +170,19 @@ export function UvnComparison() {
   return (
     <div className="mb-1 md:mb-2">
       <div className="hidden md:block">
-        <table className="w-full border-collapse">
+        <table className="w-full table-fixed border-collapse">
+          <colgroup>
+            <col style={{ width: "40%" }} />
+            <col style={{ width: "30%" }} />
+            <col style={{ width: "30%" }} />
+          </colgroup>
           <thead>
             <tr>
               <th className="p-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-3" />
-              <th className="rounded-t-[10px] bg-purpleL p-4 text-center text-xs font-semibold uppercase tracking-wide text-[#3C3489]">
+              <th className="min-w-0 rounded-t-[10px] bg-purpleL p-4 text-center text-xs font-semibold uppercase tracking-wide text-[#3C3489]">
                 Propiedad nueva
               </th>
-              <th className="rounded-t-[10px] bg-orange-light p-4 text-center text-xs font-semibold uppercase tracking-wide text-[#CC4E00]">
+              <th className="min-w-0 rounded-t-[10px] bg-orange-light p-4 text-center text-xs font-semibold uppercase tracking-wide text-[#CC4E00]">
                 Usada
               </th>
             </tr>
@@ -184,14 +192,16 @@ export function UvnComparison() {
               <TableRow key={row.id} label={row.label} nueva={row.nueva} usada={row.usada} />
             ))}
             <tr>
-              <td className="border-b-0 px-5 pb-0 pt-5 text-sm font-semibold text-dark">TIR anual a 10 años</td>
-              <td className="rounded-b-[10px] bg-[#EEEDFE] px-5 pb-5 pt-5 text-center font-serif text-3xl text-[#534AB7]">
+              <td className="border-b-0 px-5 pb-0 pt-5 align-top text-sm font-semibold text-dark">
+                TIR anual a 10 años
+              </td>
+              <td className="min-w-0 rounded-b-[10px] bg-[#EEEDFE] px-4 pb-5 pt-5 text-center font-serif text-3xl text-[#534AB7]">
                 7,9%
                 <span className="mt-0.5 block font-sans text-xs font-semibold tracking-wide text-[#534AB7]">
                   nueva
                 </span>
               </td>
-              <td className="rounded-b-[10px] bg-orange-light px-5 pb-5 pt-5 text-center font-serif text-3xl text-orange">
+              <td className="min-w-0 rounded-b-[10px] bg-orange-light px-4 pb-5 pt-5 text-center font-serif text-3xl text-orange">
                 10,0%
                 <span className="mt-0.5 block font-sans text-xs font-semibold tracking-wide text-orange">
                   usada
