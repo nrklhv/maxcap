@@ -200,11 +200,11 @@ export function VendedorLanding() {
         <Footer variant="vendedor" />
 
         <aside
-          className="relative z-10 w-full scroll-mt-20 border-t border-gray-1 bg-white px-5 py-6 md:fixed md:right-0 md:top-14 md:flex md:h-[calc(100vh-3.5rem)] md:max-w-[420px] md:flex-col md:justify-center md:border-l md:border-t-0 md:scroll-mt-0 md:px-7 md:py-6 md:shadow-[-6px_0_40px_rgba(0,0,0,0.14)] xl:max-w-[480px] xl:px-9 xl:py-8 2xl:max-w-[520px] 2xl:px-10"
+          className="relative z-10 w-full scroll-mt-20 border-t border-gray-1 bg-white px-5 py-6 md:fixed md:right-0 md:top-14 md:flex md:h-[calc(100vh-3.5rem)] md:max-w-[420px] md:min-h-0 md:flex-col md:justify-start md:border-l md:border-t-0 md:scroll-mt-0 md:px-6 md:py-4 md:shadow-[-6px_0_40px_rgba(0,0,0,0.14)] xl:max-w-[480px] xl:px-7 xl:py-5 2xl:max-w-[520px] 2xl:px-8"
           id="form"
         >
           <div className="pointer-events-none absolute left-0 right-0 top-0 z-[1] hidden h-1 bg-teal md:block" aria-hidden />
-          <div className="relative max-h-[min(100vh,900px)] overflow-y-auto md:max-h-full md:py-3">
+          <div className="relative min-h-0 w-full flex-1 overflow-y-auto overscroll-contain py-1 md:py-1">
             <FormVendedor />
           </div>
         </aside>

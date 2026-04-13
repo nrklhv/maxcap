@@ -12,8 +12,9 @@ import {
 } from "@/lib/nativeValidityEs";
 import { readStoredAttribution } from "@/lib/marketingAttribution";
 
+/** Slightly shorter fields so the vendedor sidebar fits above the fold on typical laptop heights. */
 const inputClass =
-  "h-11 rounded-lg border-[1.5px] border-[#E2DAD4] bg-white px-3 text-sm text-dark outline-none focus:border-teal";
+  "h-10 rounded-lg border-[1.5px] border-[#E2DAD4] bg-white px-2.5 text-sm text-dark outline-none focus:border-teal";
 
 export function FormVendedor() {
   const [submitted, setSubmitted] = useState(false);
@@ -96,25 +97,25 @@ export function FormVendedor() {
 
   return (
     <>
-      <div className="mb-2 font-serif text-2xl leading-[1.12] tracking-tight text-dark md:text-3xl">
+      <div className="mb-1.5 font-serif text-xl leading-[1.12] tracking-tight text-dark md:text-2xl">
         Vende tus
         <br />
         <em className="text-teal not-italic">propiedades.</em>
       </div>
-      <p className="mb-4 border-b border-gray-1 pb-3 text-sm leading-snug text-gray-3">
+      <p className="mb-2 border-b border-gray-1 pb-2 text-xs leading-snug text-gray-3 md:text-[13px]">
         Evaluamos si califican y te contactamos para el próximo lanzamiento. Sin compromisos.
       </p>
-      <div className="mb-3 flex items-center gap-2.5 rounded-lg border border-[#9FE1CB] bg-teal-light px-3 py-2">
-        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal text-xs text-white">
+      <div className="mb-2 flex items-center gap-2 rounded-lg border border-[#9FE1CB] bg-teal-light px-2.5 py-1.5">
+        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-teal text-[10px] text-white">
           ✦
         </div>
-        <div className="text-left text-xs leading-snug text-teal">
+        <div className="text-left text-[11px] leading-snug text-teal md:text-xs">
           <strong className="block font-semibold leading-tight">Lista de espera · 2do lanzamiento</strong>
         </div>
       </div>
       <form onSubmit={handleSubmit}>
-        <div className="mb-2 grid grid-cols-2 gap-2.5">
-          <label className="flex flex-col gap-1">
+        <div className="mb-1.5 grid grid-cols-2 gap-2">
+          <label className="flex flex-col gap-0.5">
             <span className="text-xs font-semibold uppercase tracking-wide text-gray-3">Nombre</span>
             <input
               required
@@ -125,7 +126,7 @@ export function FormVendedor() {
               placeholder="Tu nombre"
             />
           </label>
-          <label className="flex flex-col gap-1">
+          <label className="flex flex-col gap-0.5">
             <span className="text-xs font-semibold uppercase tracking-wide text-gray-3">Apellido</span>
             <input
               required
@@ -136,7 +137,7 @@ export function FormVendedor() {
               placeholder="Tu apellido"
             />
           </label>
-          <label className="flex flex-col gap-1">
+          <label className="flex flex-col gap-0.5">
             <span className="text-xs font-semibold uppercase tracking-wide text-gray-3">Email</span>
             <input
               required
@@ -148,7 +149,7 @@ export function FormVendedor() {
               placeholder="tu@email.com"
             />
           </label>
-          <label className="flex flex-col gap-1">
+          <label className="flex flex-col gap-0.5">
             <span className="text-xs font-semibold uppercase tracking-wide text-gray-3">WhatsApp</span>
             <input
               required
@@ -163,14 +164,14 @@ export function FormVendedor() {
             />
           </label>
         </div>
-        <div className="my-2 flex items-center gap-2">
+        <div className="my-1.5 flex items-center gap-2">
           <span className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-teal">
             Tus propiedades
           </span>
           <span className="h-px flex-1 bg-gray-1" />
         </div>
-        <div className="mb-2 flex flex-col gap-2.5">
-          <label className="flex flex-col gap-1">
+        <div className="mb-1.5 flex flex-col gap-2">
+          <label className="flex flex-col gap-0.5">
             <span className="text-xs font-semibold uppercase tracking-wide leading-snug text-gray-3">
               ¿Cuántas propiedades tienes para la venta?
             </span>
@@ -194,7 +195,7 @@ export function FormVendedor() {
               <option value="5+">5 o más</option>
             </select>
           </label>
-          <label className="flex flex-col gap-1">
+          <label className="flex flex-col gap-0.5">
             <span className="text-xs font-semibold uppercase tracking-wide text-gray-3">¿Están arrendadas?</span>
             <select
               required
@@ -212,7 +213,7 @@ export function FormVendedor() {
               <option value="no_ninguna">No, ninguna está arrendada</option>
             </select>
           </label>
-          <label className="flex flex-col gap-1">
+          <label className="flex flex-col gap-0.5">
             <span className="text-xs font-semibold uppercase tracking-wide text-gray-3">
               ¿Bajo administración Houm?
             </span>
@@ -243,7 +244,7 @@ export function FormVendedor() {
         <button
           type="submit"
           disabled={submitting}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-[9px] bg-teal py-3.5 text-base font-semibold text-white transition-colors hover:bg-[#085041] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-[9px] bg-teal py-3 text-sm font-semibold text-white transition-colors hover:bg-[#085041] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 md:text-base"
         >
           {submitting ? "Enviando…" : (
             <>
@@ -251,7 +252,7 @@ export function FormVendedor() {
             </>
           )}
         </button>
-        <p className="mt-2.5 text-center text-xs leading-relaxed text-gray-3">
+        <p className="mt-1.5 text-center text-[11px] leading-relaxed text-gray-3 md:text-xs">
           Sin costo · Sin compromiso · Te contactamos para evaluar
         </p>
       </form>
