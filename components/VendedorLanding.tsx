@@ -34,7 +34,7 @@ export function VendedorLanding() {
               <span className="block text-4xl font-medium leading-[1.06] text-teal-2 md:text-5xl xl:text-6xl 2xl:text-6xl">
                 Le damos liquidez
               </span>
-              <span className="mt-2 block font-serif text-xl font-normal leading-snug text-white md:mt-2.5 md:text-2xl xl:text-2xl">
+              <span className="mt-2 block font-serif text-2xl font-normal leading-snug text-white md:mt-2.5 md:text-3xl xl:text-4xl 2xl:text-4xl">
                 a tu propiedad.
               </span>
             </h1>
