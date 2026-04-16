@@ -1,0 +1,14 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: { absolute: "MaxRent - Inversionista" },
+  description: "Ingresa al portal de inversionistas MaxRent",
+};
+
+export default function LoginLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return children;
+}

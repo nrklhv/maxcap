@@ -1,0 +1,163 @@
+# MaxRent Portal — Contexto para Cursor AI
+
+## Qué es este proyecto
+
+Portal web para clientes/leads de MaxRent donde pueden:
+1. Registrarse e iniciar sesión (Google OAuth o magic link)
+2. Completar su perfil (RUT, teléfono, dirección)
+3. Solicitar evaluación crediticia (integración con Floid API)
+4. Ver resultados de su evaluación (score, riesgo, monto aprobado)
+5. Reservar una propiedad y pagar la reserva (pasarela de pago)
+
+El MVP cubre hasta reserva con pago. A futuro, todo el proceso de compra se verá por aquí.
+
+## Stack tecnológico
+
+- **Framework**: Next.js 14 (App Router, carpeta `app/`)
+- **Lenguaje**: TypeScript estricto
+- **UI**: React 18 + Tailwind CSS 3.4
+- **ORM**: Prisma 6 con PostgreSQL
+- **Auth**: NextAuth.js v5 (Auth.js) con Prisma Adapter
+- **Validación**: Zod
+- **Fuentes**: DM Sans (texto) + DM Serif Display (headings)
+- **Iconos**: lucide-react
+- **Emails**: Resend
+- **Hosting previsto**: Vercel + Neon (PostgreSQL serverless)
+
+## Arquitectura
+
+### Patrón: Monolito modular con BFF
+- Las API Routes de Next.js actúan como BFF (Backend for Frontend)
+- La lógica de negocio está en `src/lib/services/` — nunca en las routes directamente
+- Las API routes validan auth → validan input (Zod) → llaman al service → responden
+- El frontend NUNCA llama a APIs externas directamente (Floid, pasarela de pago)
+- Todo pasa por nuestras API routes que actúan como proxy/orquestador
+
+### Estructura de carpetas
+```
+src/
+├── app/
+│   ├── (auth)/login/         → Login público (Google + magic link)
+│   ├── (portal)/             → Rutas protegidas (requieren auth)
+│   │   ├── layout.tsx        → Layout con sidebar
+│   │   ├── dashboard/        → Vista principal del usuario
+│   │   ├── perfil/           → Formulario de perfil (onboarding)
+│   │   ├── evaluacion/       → Resultado crediticio Floid
+│   │   └── reserva/          → Lista y gestión de reservas
+│   ├── staff/                → Panel interno (/staff/login, /staff/*)
+│   ├── api/
+│   │   ├── auth/[...nextauth]/ → NextAuth (automático)
+│   │   ├── floid/            → Evaluación crediticia
+│   │   ├── payments/         → Checkout + webhooks
+│   │   ├── reservations/     → CRUD reservas
+│   │   ├── staff/            → APIs internas (super admin)
+│   │   └── users/profile/    → Perfil de usuario
+│   ├── layout.tsx            → Root layout + SessionProvider
+│   └── page.tsx              → Landing pública
+├── components/
+│   ├── portal/sidebar.tsx    → Sidebar de navegación
+│   ├── ui/                   → Componentes reutilizables (botones, inputs, cards)
+│   └── auth/                 → Componentes de auth (si se necesitan)
+├── lib/
+│   ├── auth.ts               → Config de NextAuth.js v5
+│   ├── prisma.ts             → Singleton Prisma Client
+│   ├── validations.ts        → Schemas Zod compartidos
+│   └── services/
+│       ├── floid.service.ts      → [STUB] Integración Floid
+│       └── payment.service.ts    → [STUB] Integración pasarela de pago
+└── middleware.ts             → Protección de rutas + redirect a onboarding
+```
+
+### Protección de rutas (middleware.ts)
+- Rutas públicas: `/`, `/login`, `/brokers`, `/staff/login`
+- Rutas protegidas: portal bajo `/(portal)/` y broker bajo `/broker/*` requieren autenticación; `/staff/*` (excepto login) requiere `staffRole = SUPER_ADMIN`
+- Si el usuario no completó onboarding → redirige a `/perfil` (no aplica mientras navega broker/staff)
+- Si el usuario logueado va a `/login` → redirige según `canInvest` / staff / broker
+- Los webhooks de pago (`/api/payments/webhook`) no requieren auth de usuario
+- Legacy `/admin/*` → redirect 308 a `/staff/*`
+
+## Modelo de datos (Prisma)
+
+**Documentación visual y checklist de enums:** [`docs/DATABASE.md`](docs/DATABASE.md). Cualquier cambio en `prisma/schema.prisma` debe ir acompañado de actualización de ese Markdown (regla en `.cursor/rules/database-documentation.mdc`).
+
+### Modelos principales
+- **User**: NextAuth + **`canInvest`**, **`staffRole`** (NONE | SUPER_ADMIN), broker (`brokerAccessStatus`, `brokerReviewedAt`) + relación opcional a **Lead**. Misma cuenta puede combinar inversionista + broker + staff.
+- **Profile**: Datos personales (RUT, teléfono, dirección) + `onboardingCompleted` + `additionalData` JSON
+- **CreditEvaluation**: Resultado Floid (score, riskLevel, maxApprovedAmount, `rawResponse` JSON)
+- **Reservation**: Reserva de propiedad y estado de pago (`propertyId` como string; sin FK a Property en el schema actual)
+- **Lead**: Leads; vinculación por email al registrarse en el portal
+- **Property**: Inventario (staff + listado broker): `status`, `metadata` JSON, `visibleToBrokers`
+
+### Enums importantes
+- `EvaluationStatus`: PENDING → PROCESSING → COMPLETED | FAILED | EXPIRED
+- `ReservationStatus`: PENDING_PAYMENT → PAYMENT_PROCESSING → PAID → CONFIRMED | CANCELLED | EXPIRED
+- `RiskLevel`: LOW | MEDIUM | HIGH
+- `StaffRole`: NONE | SUPER_ADMIN
+- `BrokerAccessStatus`: PENDING | APPROVED | REJECTED
+- `PropertyStatus`: AVAILABLE | RESERVED | SOLD | ARCHIVED
+
+## Servicios stub (pendientes de integración)
+
+### FloidService (`lib/services/floid.service.ts`)
+- **Estado**: STUB con datos simulados
+- **Qué falta**: Reemplazar `callFloidApi()` con la llamada real a Floid
+- **Patrón**: Crear registro PENDING → llamar API → guardar resultado → COMPLETED/FAILED
+- La respuesta completa de Floid se guarda en `rawResponse` (JSON) para auditoría
+- Al frontend solo se expone score, riskLevel, maxApprovedAmount, summary
+
+### PaymentService (`lib/services/payment.service.ts`)
+- **Estado**: STUB
+- **Qué falta**: Integrar Mercado Pago Checkout Pro (o Stripe)
+- **Patrón**: Crear preferencia de pago → redirigir usuario → webhook confirma
+- El código comentado muestra la implementación exacta para Mercado Pago
+
+## Autenticación (NextAuth.js v5)
+
+- **Providers**: Google OAuth + Resend (magic link por email)
+- **Sesión**: JWT con maxAge 30 días (usuario queda logueado)
+- **Adapter**: Prisma (sincroniza usuarios con la BD)
+- **Custom claims en JWT**: `id`, `canInvest`, `staffRole`, `onboardingCompleted`, `brokerAccessStatus`
+- **Evento createUser**: Crea Profile vacío + vincula con Lead existente por email
+
+## Convenciones de código
+
+- **Schema Prisma:** si tocas `prisma/schema.prisma` o el modelo de datos, actualiza `docs/DATABASE.md` (diagrama Mermaid, notas, enums). Ver `.cursor/rules/database-documentation.mdc`.
+- Archivos de página: `page.tsx` (Next.js App Router)
+- Componentes client-side: empiezan con `"use client";`
+- Server Components por defecto (dashboard.tsx es server component)
+- API routes: `route.ts` con funciones nombradas GET, POST, PUT, DELETE
+- Validación: definir schema Zod en `lib/validations.ts`, usar `.safeParse()` en API routes
+- Servicios: clases en `lib/services/`, exportar singleton
+- Estilos: Tailwind utility classes, no CSS modules
+- No usar `any` — preferir `unknown` + type narrowing
+- Imports con alias `@/` (mapea a `src/`)
+
+## Variables de entorno requeridas
+
+```
+NEXTAUTH_URL, NEXTAUTH_SECRET
+DATABASE_URL
+GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+RESEND_API_KEY, EMAIL_FROM
+FLOID_API_KEY, FLOID_API_URL (cuando se integre)
+MERCADOPAGO_ACCESS_TOKEN (cuando se integre)
+```
+
+## Próximos pasos de implementación (en orden de prioridad)
+
+1. Hacer funcionar auth + perfil + dashboard (lo que ya está)
+2. Integrar Floid cuando se tenga la doc de la API
+3. Integrar pasarela de pago (Mercado Pago Checkout Pro)
+4. Agregar catálogo de propiedades (modelo Property o conexión a API existente)
+5. Emails transaccionales (confirmación de registro, evaluación, pago)
+6. Panel staff (`/staff`, `/staff/login`) para gestión interna (`staffRole = SUPER_ADMIN`)
+7. Tests (vitest + testing-library)
+
+## Errores comunes a evitar
+
+- NO llamar APIs externas desde componentes client — siempre por nuestras API routes
+- NO exponer `rawResponse` de Floid al frontend (puede tener datos sensibles)
+- NO hacer auth checks en componentes — usar el middleware
+- NO commitear `.env.local` — usar `.env.example` como referencia
+- NO usar `prisma` directamente en componentes client — solo en API routes y server components
+- El webhook de pagos NO tiene auth de usuario — validar con firma de la pasarela

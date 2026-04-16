@@ -1,0 +1,254 @@
+// =============================================================================
+// MaxRent Portal — Prisma Schema
+// =============================================================================
+// Modelos compatibles con NextAuth.js v5 + portal de clientes
+// Ref: https://authjs.dev/getting-started/adapters/prisma
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// AUTH — Modelos requeridos por NextAuth.js (Prisma Adapter)
+// =============================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  /// Portal inversionista (misma cuenta puede ser broker y staff)
+  canInvest Boolean @default(true)
+
+  /// Acceso interno MaxRent (solo /staff/*); no se auto-asigna en registro público
+  staffRole StaffRole @default(NONE)
+
+  // NextAuth relations
+  accounts Account[]
+  sessions Session[]
+
+  // Portal relations
+  profile           Profile?
+  creditEvaluations CreditEvaluation[]
+  reservations      Reservation[]
+
+  // Relación con leads existentes (opcional, para vincular)
+  leadId String? @unique
+  lead   Lead?   @relation(fields: [leadId], references: [id])
+
+  /// null = nunca solicitó ser broker; PENDING/APPROVED/REJECTED
+  brokerAccessStatus BrokerAccessStatus?
+  brokerReviewedAt   DateTime?
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// =============================================================================
+// PORTAL — Modelos del negocio
+// =============================================================================
+
+model Profile {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  firstName            String?
+  lastName             String?
+  contactEmail         String?  @unique // Email de contacto (no es el email de login NextAuth)
+  rut                  String?  @unique
+  phone                String?
+  address              String?
+  commune              String?  // Comuna
+  city                 String?
+  onboardingCompleted  Boolean  @default(false)
+  additionalData       Json?    // Datos extra que se vayan necesitando
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model CreditEvaluation {
+  id               String              @id @default(cuid())
+  userId           String
+  status           EvaluationStatus    @default(PENDING)
+  score            Int?
+  riskLevel        RiskLevel?
+  maxApprovedAmount Decimal?           @db.Decimal(12, 2)
+  summary          String?             @db.Text
+  rawResponse      Json?               // Respuesta completa de Floid
+  errorMessage     String?             // Si falló, por qué
+  requestedAt      DateTime            @default(now())
+  completedAt      DateTime?
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+
+  @@index([userId, status])
+  @@map("credit_evaluations")
+}
+
+model Reservation {
+  id               String            @id @default(cuid())
+  userId           String
+  evaluationId     String?
+  propertyId       String            // ID de la propiedad (puede venir de otro sistema)
+  propertyName     String?           // Nombre/dirección para mostrar
+  status           ReservationStatus @default(PENDING_PAYMENT)
+  amount           Decimal           @db.Decimal(12, 2)
+  currency         String            @default("CLP")
+
+  // Pago
+  paymentExternalId String?          // ID de Mercado Pago / Stripe
+  paymentMethod     String?
+  paymentUrl        String?          // URL de checkout generada
+  paidAt            DateTime?
+
+  // Metadata
+  notes            String?           @db.Text
+  metadata         Json?             // Datos extra del pago o propiedad
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  expiresAt        DateTime?         // Cuándo expira la reserva si no se paga
+
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  evaluation CreditEvaluation? @relation(fields: [evaluationId], references: [id])
+
+  @@index([userId, status])
+  @@index([paymentExternalId])
+  @@map("reservations")
+}
+
+// =============================================================================
+// LEADS — Modelo existente (simplificado, ajustar a tu schema actual)
+// =============================================================================
+
+model Lead {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  phone     String?
+  source    String?  // De dónde vino el lead
+  status    String?  // Estado del lead en tu CRM
+  data      Json?    // Datos adicionales del lead
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relación con usuario del portal (cuando el lead se registra)
+  user User?
+
+  @@map("leads")
+}
+
+// =============================================================================
+// INVENTARIO — Catálogo (staff + portal broker)
+// =============================================================================
+
+model Property {
+  id               String         @id @default(cuid())
+  title            String
+  status           PropertyStatus @default(AVAILABLE)
+  visibleToBrokers Boolean        @default(true)
+  metadata         Json?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([status])
+  @@map("properties")
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum StaffRole {
+  NONE
+  SUPER_ADMIN
+}
+
+enum BrokerAccessStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PropertyStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+  ARCHIVED
+}
+
+enum EvaluationStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  EXPIRED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ReservationStatus {
+  PENDING_PAYMENT
+  PAYMENT_PROCESSING
+  PAID
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+  REFUNDED
+}
