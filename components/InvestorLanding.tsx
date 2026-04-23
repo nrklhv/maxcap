@@ -14,7 +14,7 @@ import { UvnComparison } from "./UvnComparison";
 import { investorFaqItems } from "@/lib/faqInvestor";
 
 export function InvestorLanding() {
-  const [cupos, setCupos] = useState(77);
+  const [cupos, setCupos] = useState(76);
   const [bump, setBump] = useState(false);
   const skipBumpRef = useRef(true);
 

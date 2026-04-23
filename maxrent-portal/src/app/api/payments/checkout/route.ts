@@ -40,7 +40,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3002";
     const result = await paymentService.createCheckout(
       reservationId,
       `${baseUrl}/reserva`

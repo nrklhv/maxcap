@@ -38,29 +38,31 @@ export function BrokerPropertyList() {
   }, []);
 
   if (loading) {
-    return <p className="text-sm text-gray-500">Cargando…</p>;
+    return <p className="text-sm text-broker-muted">Cargando…</p>;
   }
   if (error) {
     return <p className="text-sm text-red-600">{error}</p>;
   }
   if (items.length === 0) {
     return (
-      <p className="text-sm text-gray-600 rounded-lg border border-dashed border-gray-300 p-8 text-center">
+      <p className="rounded-2xl border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-broker-muted">
         Aún no hay propiedades publicadas para brokers.
       </p>
     );
   }
 
   return (
-    <ul className="divide-y divide-gray-200 rounded-xl border border-gray-200 bg-white">
+    <ul className="divide-y divide-gray-100 rounded-2xl border border-gray-200 bg-white shadow-sm">
       {items.map((p) => (
         <li key={p.id}>
           <Link
             href={`/broker/oportunidades/${p.id}`}
-            className="flex items-center justify-between gap-4 px-4 py-4 hover:bg-gray-50"
+            className="flex items-center justify-between gap-4 px-4 py-4 transition-colors hover:bg-broker-canvas/60"
           >
-            <span className="font-medium text-gray-900">{p.title}</span>
-            <span className="text-xs uppercase text-gray-500">{p.status}</span>
+            <span className="font-medium text-broker-navy">{p.title}</span>
+            <span className="text-xs font-medium uppercase tracking-wide text-broker-muted">
+              {p.status}
+            </span>
           </Link>
         </li>
       ))}

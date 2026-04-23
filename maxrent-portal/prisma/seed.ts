@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { seedDraftDemoProperties } from "./seed-properties";
 
 const prisma = new PrismaClient();
 
@@ -13,6 +14,8 @@ async function main() {
     },
     update: {},
   });
+
+  await seedDraftDemoProperties(prisma);
 }
 
 main()

@@ -8,7 +8,7 @@ export async function GET() {
   if (!session) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
-  const items = await propertyService.listPropertiesForAdmin();
+  const items = await propertyService.listPropertiesForStaffInventory();
   return NextResponse.json({ properties: items });
 }
 
@@ -32,6 +32,7 @@ export async function POST(req: Request) {
     status: parsed.data.status,
     visibleToBrokers: parsed.data.visibleToBrokers,
     metadata: parsed.data.metadata ?? undefined,
+    inventoryCode: parsed.data.inventoryCode ?? undefined,
   });
 
   return NextResponse.json({ property: created });

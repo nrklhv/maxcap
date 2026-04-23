@@ -7,6 +7,7 @@ import Google from "next-auth/providers/google";
 import Resend from "next-auth/providers/resend";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
+import { isInvestorPerfilCompleteForPortal } from "@/lib/portal/profile-labor";
 import { prisma } from "./prisma";
 import type { BrokerAccessStatus, StaffRole } from "@prisma/client";
 
@@ -34,6 +35,52 @@ type AppJwt = {
   onboardingCompleted?: boolean;
   brokerAccessStatus?: BrokerAccessStatus | null;
 };
+
+/**
+ * Auth.js requires a non-empty `secret`. Use `NEXTAUTH_SECRET` or `AUTH_SECRET` in env.
+ * In development only, a fixed placeholder is used if unset (common when `.env.local` is
+ * copied from a template with `KEY=  # comment`, which parses as empty).
+ */
+/** True while Next is compiling (incl. workers where NEXT_PHASE is unset). */
+function isLikelyNextBuildPhase(): boolean {
+  if (process.env.NEXT_PHASE === "phase-production-build") return true;
+  if (process.env.npm_lifecycle_event === "build") return true;
+  const argv = process.argv;
+  if (!argv.includes("build")) return false;
+  return argv.some(
+    (a) =>
+      typeof a === "string" &&
+      (a.includes("node_modules/next/") ||
+        a.includes("node_modules\\next\\") ||
+        a.endsWith("/next") ||
+        a.endsWith("\\next.exe"))
+  );
+}
+
+function resolveAuthSecret(): string {
+  const fromEnv =
+    process.env.NEXTAUTH_SECRET?.trim() || process.env.AUTH_SECRET?.trim();
+  if (fromEnv) return fromEnv;
+  // `next build` runs with NODE_ENV=production while collecting page data; env may be empty in CI.
+  if (process.env.NODE_ENV === "production" && isLikelyNextBuildPhase()) {
+    return "maxrent-next-build-placeholder-not-used-at-runtime";
+  }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Set NEXTAUTH_SECRET or AUTH_SECRET for production.");
+  }
+  return "maxrent-dev-placeholder-secret-not-for-production";
+}
+
+/**
+ * Auth.js middleware (Edge) resolves `AUTH_SECRET` from `process.env`. Mirror the resolved
+ * secret there so MissingSecret does not occur when only `secret` is passed to NextAuth().
+ */
+function ensureAuthSecretEnv(): string {
+  const secret = resolveAuthSecret();
+  if (!process.env.AUTH_SECRET?.trim()) process.env.AUTH_SECRET = secret;
+  if (!process.env.NEXTAUTH_SECRET?.trim()) process.env.NEXTAUTH_SECRET = secret;
+  return secret;
+}
 
 /** Emails con rol staff vía env (coma o espacio). Útil en dev / primer admin sin tocar BD. */
 function staffSuperAdminAllowlist(): Set<string> {
@@ -160,6 +207,7 @@ function buildAuthProviders() {
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
+  secret: ensureAuthSecretEnv(),
   adapter: PrismaAdapter(prisma),
 
   providers: buildAuthProviders(),
@@ -198,8 +246,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         "";
 
       const includeProfile = {
-        profile: { select: { onboardingCompleted: true } },
+        profile: { select: { onboardingCompleted: true, additionalData: true } },
       };
+
+      let profileSnapshot: {
+        onboardingCompleted: boolean;
+        additionalData: unknown;
+      } | null = null;
 
       try {
         let dbUser =
@@ -225,8 +278,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           const email = dbUser.email?.trim().toLowerCase();
           t.staffRole =
             email && allow.has(email) ? "SUPER_ADMIN" : dbUser.staffRole;
-          t.onboardingCompleted = dbUser.profile?.onboardingCompleted ?? false;
+          t.onboardingCompleted = isInvestorPerfilCompleteForPortal(dbUser.profile);
           t.brokerAccessStatus = dbUser.brokerAccessStatus ?? null;
+          if (dbUser.profile) {
+            profileSnapshot = {
+              onboardingCompleted: dbUser.profile.onboardingCompleted,
+              additionalData: dbUser.profile.additionalData,
+            };
+          }
         }
       } catch {
         // No romper el flujo de login si Prisma falla en este paso
@@ -235,6 +294,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (trigger === "update" && session) {
         t.onboardingCompleted =
           session.onboardingCompleted ?? t.onboardingCompleted;
+      }
+
+      if (profileSnapshot) {
+        t.onboardingCompleted = isInvestorPerfilCompleteForPortal(profileSnapshot);
       }
 
       return token;

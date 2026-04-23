@@ -12,7 +12,7 @@ import {
   Menu,
   X,
   Building2,
-  Shield,
+  Sparkles,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -20,6 +20,7 @@ const clientNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/perfil", label: "Mi Perfil", icon: User },
   { href: "/evaluacion", label: "Evaluación", icon: BarChart3 },
+  { href: "/oportunidades", label: "Oportunidades de inversión", icon: Sparkles },
   { href: "/reserva", label: "Reservas", icon: Home },
 ];
 
@@ -27,12 +28,8 @@ export function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const staffRole = session?.user?.staffRole;
   const brokerAccessStatus = session?.user?.brokerAccessStatus;
   const extra: { href: string; label: string; icon: typeof LayoutDashboard }[] = [];
-  if (staffRole === "SUPER_ADMIN") {
-    extra.push({ href: "/staff", label: "Staff", icon: Shield });
-  }
   if (brokerAccessStatus != null) {
     extra.push({ href: "/broker", label: "Portal broker", icon: Building2 });
   }
@@ -80,7 +77,7 @@ export function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="px-3 py-4 space-y-1">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;

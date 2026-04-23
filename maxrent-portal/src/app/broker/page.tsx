@@ -16,5 +16,5 @@ export default async function BrokerHomePage() {
   if (brokerAccessStatus === "REJECTED") {
     redirect("/broker/rechazado");
   }
-  redirect("/broker/solicitud");
+  redirect("/broker/perfil");
 }

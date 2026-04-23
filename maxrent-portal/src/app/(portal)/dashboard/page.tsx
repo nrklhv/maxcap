@@ -4,6 +4,7 @@
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isInvestorPerfilCompleteForPortal } from "@/lib/portal/profile-labor";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
@@ -13,17 +14,26 @@ export default async function DashboardPage() {
 
   // Obtener datos del usuario para el dashboard
   const [profile, latestEvaluation, reservations] = await Promise.all([
-    prisma.profile.findUnique({ where: { userId: session.user.id } }),
+    prisma.profile.findUnique({
+      where: { userId: session.user.id },
+      select: {
+        onboardingCompleted: true,
+        additionalData: true,
+        rut: true,
+      },
+    }),
     prisma.creditEvaluation.findFirst({
       where: { userId: session.user.id },
       orderBy: { requestedAt: "desc" },
     }),
     prisma.reservation.findMany({
-      where: { userId: session.user.id },
+      where: { userId: session.user.id, status: { in: ["PAID", "CONFIRMED"] } },
       orderBy: { createdAt: "desc" },
       take: 5,
     }),
   ]);
+
+  const perfilListo = isInvestorPerfilCompleteForPortal(profile);
 
   return (
     <div className="space-y-8">
@@ -42,13 +52,13 @@ export default async function DashboardPage() {
         {/* Perfil */}
         <StatusCard
           title="Perfil"
-          status={profile?.onboardingCompleted ? "completed" : "pending"}
-          statusLabel={profile?.onboardingCompleted ? "Completo" : "Pendiente"}
+          status={perfilListo ? "completed" : "pending"}
+          statusLabel={perfilListo ? "Completo" : "Pendiente"}
           href="/perfil"
           description={
-            profile?.onboardingCompleted
-              ? `RUT: ${profile.rut}`
-              : "Completa tus datos para continuar"
+            perfilListo
+              ? `RUT: ${profile?.rut ?? "—"}`
+              : "Completa tus datos personales y laborales para continuar"
           }
         />
 
@@ -58,8 +68,11 @@ export default async function DashboardPage() {
           status={
             !latestEvaluation
               ? "pending"
-              : latestEvaluation.status === "COMPLETED"
-              ? "completed"
+              : latestEvaluation.status === "COMPLETED" &&
+                  latestEvaluation.staffReservationApprovedAt
+                ? "completed"
+                : latestEvaluation.status === "COMPLETED"
+                  ? "processing"
               : latestEvaluation.status === "FAILED"
               ? "error"
               : "processing"
@@ -67,6 +80,9 @@ export default async function DashboardPage() {
           statusLabel={
             !latestEvaluation
               ? "No solicitada"
+              : latestEvaluation.status === "COMPLETED" &&
+                  !latestEvaluation.staffReservationApprovedAt
+                ? "Habilitación pendiente"
               : latestEvaluation.status === "COMPLETED"
               ? `Score: ${latestEvaluation.score}`
               : latestEvaluation.status === "FAILED"
@@ -108,7 +124,7 @@ export default async function DashboardPage() {
           <TimelineStep
             step={1}
             title="Completa tu perfil"
-            done={profile?.onboardingCompleted || false}
+            done={perfilListo}
           />
           <TimelineStep
             step={2}

@@ -9,6 +9,7 @@
 // =============================================================================
 
 import { prisma } from "@/lib/prisma";
+import { reconcilePropertyAfterInvestorReservationChange } from "@/lib/services/property.service";
 
 export interface CheckoutResult {
   checkoutUrl: string;       // URL donde redirigir al usuario para pagar
@@ -50,7 +51,7 @@ export class PaymentService {
     });
 
     // Guardar referencia de pago en la reserva
-    await prisma.reservation.update({
+    const updated = await prisma.reservation.update({
       where: { id: reservationId },
       data: {
         paymentExternalId: result.paymentExternalId,
@@ -58,6 +59,7 @@ export class PaymentService {
         status: "PAYMENT_PROCESSING",
       },
     });
+    await reconcilePropertyAfterInvestorReservationChange(updated.propertyId);
 
     return result;
   }
@@ -77,7 +79,7 @@ export class PaymentService {
     }
 
     if (payload.status === "approved") {
-      await prisma.reservation.update({
+      const after = await prisma.reservation.update({
         where: { id: reservation.id },
         data: {
           status: "PAID",
@@ -85,15 +87,17 @@ export class PaymentService {
           paidAt: payload.paidAt ? new Date(payload.paidAt) : new Date(),
         },
       });
+      await reconcilePropertyAfterInvestorReservationChange(after.propertyId);
 
       // TODO: Enviar email de confirmación
       // await notificationService.sendReservationConfirmation(reservation.id);
 
     } else if (payload.status === "rejected") {
-      await prisma.reservation.update({
+      const after = await prisma.reservation.update({
         where: { id: reservation.id },
         data: { status: "PENDING_PAYMENT" },
       });
+      await reconcilePropertyAfterInvestorReservationChange(after.propertyId);
     }
   }
 

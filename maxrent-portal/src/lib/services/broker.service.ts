@@ -1,4 +1,9 @@
 import { prisma } from "@/lib/prisma";
+import {
+  assertBrokerProfileCompleteOrThrow,
+  isBrokerProfileComplete,
+  type BrokerProfilePatchInput,
+} from "@/lib/broker/broker-profile-schema";
 
 export async function listBrokerUsers() {
   return prisma.user.findMany({
@@ -11,6 +16,15 @@ export async function listBrokerUsers() {
       createdAt: true,
       brokerAccessStatus: true,
       brokerReviewedAt: true,
+      brokerProfile: {
+        select: {
+          companyName: true,
+          jobTitle: true,
+          isIndependent: true,
+          websiteUrl: true,
+          linkedinUrl: true,
+        },
+      },
     },
   });
 }
@@ -62,9 +76,41 @@ export async function rejectBroker(userId: string) {
   });
 }
 
+export async function getBrokerProfileByUserId(userId: string) {
+  return prisma.brokerProfile.findUnique({
+    where: { userId },
+  });
+}
+
+export async function upsertBrokerProfile(userId: string, input: BrokerProfilePatchInput) {
+  return prisma.brokerProfile.upsert({
+    where: { userId },
+    create: {
+      userId,
+      companyName: input.companyName.trim(),
+      jobTitle: input.jobTitle.trim(),
+      isIndependent: input.isIndependent,
+      websiteUrl: input.websiteUrl ?? null,
+      linkedinUrl: input.linkedinUrl ?? null,
+      pitch: input.pitch ?? null,
+    },
+    update: {
+      companyName: input.companyName.trim(),
+      jobTitle: input.jobTitle.trim(),
+      isIndependent: input.isIndependent,
+      websiteUrl: input.websiteUrl ?? null,
+      linkedinUrl: input.linkedinUrl ?? null,
+      pitch: input.pitch ?? null,
+    },
+  });
+}
+
 /** Activa flujo broker en PENDING sin quitar acceso inversionista */
 export async function requestBrokerAccess(userId: string) {
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { brokerProfile: true },
+  });
   if (!user) throw new Error("Usuario no encontrado");
   if (user.brokerAccessStatus === "APPROVED") {
     throw new Error("Tu cuenta broker ya está aprobada");
@@ -72,6 +118,9 @@ export async function requestBrokerAccess(userId: string) {
   if (user.brokerAccessStatus === "PENDING") {
     return user;
   }
+
+  assertBrokerProfileCompleteOrThrow(user.brokerProfile);
+
   if (user.brokerAccessStatus === "REJECTED") {
     return prisma.user.update({
       where: { id: userId },
@@ -88,4 +137,10 @@ export async function requestBrokerAccess(userId: string) {
       brokerReviewedAt: null,
     },
   });
+}
+
+export async function userHasCompleteBrokerProfile(userId: string): Promise<boolean> {
+  const row = await getBrokerProfileByUserId(userId);
+  if (!row) return false;
+  return isBrokerProfileComplete(row);
 }

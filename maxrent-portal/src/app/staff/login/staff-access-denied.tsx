@@ -34,10 +34,16 @@ export function StaffAccessDenied({
                   (<span className="font-mono text-xs">{email}</span>)
                 </>
               ) : null}{" "}
-              no tiene rol <strong>SUPER_ADMIN</strong> en la base de datos. Pide que
-              actualicen tu usuario o usa{" "}
-              <code className="text-xs bg-white/80 px-1 rounded">STAFF_SUPER_ADMIN_EMAILS</code>{" "}
-              en <code className="text-xs bg-white/80 px-1 rounded">.env.local</code>.
+              no tiene permiso de <strong>staff</strong> (rol{" "}
+              <strong>SUPER_ADMIN</strong>). Ese rol se obtiene de la{" "}
+              <strong>base de datos</strong> (<code className="text-xs bg-white/80 px-1 rounded">
+                users.staffRole
+              </code>
+              ) o, en desarrollo, de la variable{" "}
+              <code className="text-xs bg-white/80 px-1 rounded">STAFF_SUPER_ADMIN_EMAILS</code> en{" "}
+              <code className="text-xs bg-white/80 px-1 rounded">.env.local</code> (reinicia el servidor
+              tras cambiarla). Tras actualizar, cierra sesión y vuelve a entrar por{" "}
+              <code className="text-xs bg-white/80 px-1 rounded">/staff/login</code>.
             </>
           )}
         </p>

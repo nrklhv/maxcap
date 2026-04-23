@@ -7,6 +7,14 @@ import { NextResponse } from "next/server";
 
 const PUBLIC_PATHS = new Set(["/", "/login", "/brokers", "/staff/login"]);
 
+function isPublicInvitePath(pathname: string): boolean {
+  return pathname.startsWith("/i/");
+}
+
+function isPublicApiPath(pathname: string): boolean {
+  return pathname.startsWith("/api/public/");
+}
+
 /** callbackUrl interno (misma app); evita open-redirect a //otro-dominio */
 function isSafeInternalCallback(callback: string | null): callback is string {
   return Boolean(callback && callback.startsWith("/") && !callback.startsWith("//"));
@@ -14,9 +22,20 @@ function isSafeInternalCallback(callback: string | null): callback is string {
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
+  // Defense-in-depth: never run auth redirects on Next assets / dev tooling (matcher should
+  // already skip these; this avoids unstyled HTML if the matcher misses an edge case).
+  if (
+    pathname.startsWith("/_next/") ||
+    pathname.startsWith("/__nextjs") ||
+    pathname === "/favicon.ico"
+  ) {
+    return NextResponse.next();
+  }
+
   const isLoggedIn = !!req.auth;
   const isApiAuth = pathname.startsWith("/api/auth");
   const isPaymentWebhook = pathname.startsWith("/api/payments/webhook");
+  const isFloidWebhook = pathname === "/api/floid/callback";
   const isApi = pathname.startsWith("/api");
 
   if (pathname.startsWith("/admin")) {
@@ -26,15 +45,18 @@ export default auth((req) => {
     return NextResponse.redirect(url, 308);
   }
 
-  if (isApiAuth || isPaymentWebhook) {
+  if (isApiAuth || isPaymentWebhook || isFloidWebhook) {
     return NextResponse.next();
   }
 
   if (!isLoggedIn && isApi) {
+    if (isPublicApiPath(pathname)) {
+      return NextResponse.next();
+    }
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
 
-  const isPublicRoute = PUBLIC_PATHS.has(pathname);
+  const isPublicRoute = PUBLIC_PATHS.has(pathname) || isPublicInvitePath(pathname);
 
   if (!isLoggedIn && pathname.startsWith("/staff") && pathname !== "/staff/login") {
     const login = new URL("/staff/login", req.nextUrl.origin);
@@ -120,6 +142,6 @@ export const config = {
      * Si el middleware de auth corre sobre esas rutas, el navegador puede no
      * cargar estilos y la app se ve “sin diseño”.
      */
-    "/((?!_next/|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|mjs|map|woff2|ttf|eot)$).*)",
   ],
 };

@@ -11,8 +11,13 @@ export async function GET(
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
+  const userId = session.user.id;
+  if (!userId) {
+    return NextResponse.json({ error: "Sesión inválida" }, { status: 401 });
+  }
+
   const { id } = params;
-  const property = await propertyService.getPropertyForBroker(id);
+  const property = await propertyService.getPropertyForBroker(id, userId);
   if (!property) {
     return NextResponse.json({ error: "No encontrada" }, { status: 404 });
   }

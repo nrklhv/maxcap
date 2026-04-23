@@ -7,7 +7,10 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { INVESTOR_ACTIVE_RESERVATION_STATUSES } from "@/lib/portal/investor-active-reservation-statuses";
+import { getInvestorReserveGatePayload } from "@/lib/portal/investor-reservation-gate";
 import { reservationSchema } from "@/lib/validations";
+import * as propertyService from "@/lib/services/property.service";
 
 export async function GET() {
   const session = await auth();
@@ -16,7 +19,10 @@ export async function GET() {
   }
 
   const reservations = await prisma.reservation.findMany({
-    where: { userId: session.user.id },
+    where: {
+      userId: session.user.id,
+      status: { in: [...INVESTOR_ACTIVE_RESERVATION_STATUSES] },
+    },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -26,6 +32,7 @@ export async function GET() {
       amount: true,
       currency: true,
       paymentMethod: true,
+      paymentUrl: true,
       paidAt: true,
       createdAt: true,
       expiresAt: true,
@@ -50,56 +57,109 @@ export async function POST(req: Request) {
     );
   }
 
-  const { propertyId, evaluationId } = result.data;
+  const { propertyId, evaluationId: evaluationIdFromBody } = result.data;
 
-  // Verificar que tiene una evaluación completada (opcional pero recomendado)
-  if (evaluationId) {
-    const evaluation = await prisma.creditEvaluation.findFirst({
-      where: {
-        id: evaluationId,
-        userId: session.user.id,
-        status: "COMPLETED",
-      },
-    });
-    if (!evaluation) {
-      return NextResponse.json(
-        { error: "Evaluación no válida" },
-        { status: 400 }
-      );
-    }
-  }
-
-  // Verificar que no tiene una reserva activa para la misma propiedad
-  const existingReservation = await prisma.reservation.findFirst({
-    where: {
-      userId: session.user.id,
-      propertyId,
-      status: { in: ["PENDING_PAYMENT", "PAYMENT_PROCESSING", "PAID", "CONFIRMED"] },
-    },
-  });
-
-  if (existingReservation) {
+  const gate = await getInvestorReserveGatePayload(session.user.id);
+  if (!gate.canReserve || !gate.evaluationId) {
     return NextResponse.json(
-      { error: "Ya tienes una reserva activa para esta propiedad" },
-      { status: 409 }
+      { error: "No tenés habilitado reservar. Completá la evaluación y esperá la aprobación del equipo." },
+      { status: 403 }
     );
   }
+  if (evaluationIdFromBody && evaluationIdFromBody !== gate.evaluationId) {
+    return NextResponse.json({ error: "Evaluación no válida" }, { status: 400 });
+  }
+  const evaluationIdToUse = gate.evaluationId;
 
   // TODO: Obtener monto de reserva desde catálogo de propiedades
   // Por ahora se recibe como parámetro o se usa un default
   const reservationAmount = body.amount || 500000; // 500.000 CLP default
 
-  const reservation = await prisma.reservation.create({
-    data: {
-      userId: session.user.id,
-      evaluationId,
-      propertyId,
-      propertyName: body.propertyName || null,
-      amount: reservationAmount,
-      currency: "CLP",
-      expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000), // Expira en 48h
-    },
-  });
+  try {
+    const reservation = await prisma.$transaction(async (tx) => {
+      const prop = await tx.property.findFirst({
+        where: {
+          id: propertyId,
+          status: "AVAILABLE",
+          visibleToBrokers: true,
+        },
+      });
 
-  return NextResponse.json({ reservation }, { status: 201 });
+      if (!prop) {
+        const p = await tx.property.findUnique({ where: { id: propertyId } });
+        if (!p) {
+          throw new Error("NOT_FOUND");
+        }
+        if (!p.visibleToBrokers) {
+          throw new Error("NOT_PUBLISHED");
+        }
+        throw new Error("NOT_AVAILABLE");
+      }
+
+      const anyActiveOnProperty = await tx.reservation.findFirst({
+        where: {
+          propertyId,
+          status: { in: [...INVESTOR_ACTIVE_RESERVATION_STATUSES] },
+        },
+      });
+      if (anyActiveOnProperty) {
+        throw new Error("PROPERTY_HELD");
+      }
+
+      const existingReservation = await tx.reservation.findFirst({
+        where: {
+          userId: session.user.id,
+          propertyId,
+          status: { in: [...INVESTOR_ACTIVE_RESERVATION_STATUSES] },
+        },
+      });
+      if (existingReservation) {
+        throw new Error("DUPLICATE_SELF");
+      }
+
+      const created = await tx.reservation.create({
+        data: {
+          userId: session.user.id,
+          evaluationId: evaluationIdToUse,
+          propertyId,
+          propertyName: body.propertyName || null,
+          amount: reservationAmount,
+          currency: "CLP",
+          expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000), // Expira en 48h
+        },
+      });
+
+      await propertyService.markPropertyReservedForInvestorSync(tx, propertyId, created);
+      return created;
+    });
+
+    return NextResponse.json({ reservation }, { status: 201 });
+  } catch (e) {
+    const code = e instanceof Error ? e.message : "";
+    if (code === "NOT_FOUND") {
+      return NextResponse.json({ error: "Propiedad no encontrada" }, { status: 404 });
+    }
+    if (code === "NOT_PUBLISHED") {
+      return NextResponse.json({ error: "Propiedad no publicada" }, { status: 403 });
+    }
+    if (code === "NOT_AVAILABLE" || code === "PROPERTY_HELD") {
+      return NextResponse.json(
+        {
+          error:
+            code === "PROPERTY_HELD"
+              ? "Esta propiedad ya tiene una reserva activa"
+              : "La propiedad no está disponible para reservar",
+        },
+        { status: 409 }
+      );
+    }
+    if (code === "DUPLICATE_SELF") {
+      return NextResponse.json(
+        { error: "Ya tienes una reserva activa para esta propiedad" },
+        { status: 409 }
+      );
+    }
+    console.error("[POST /api/reservations]", e);
+    return NextResponse.json({ error: "No se pudo crear la reserva" }, { status: 500 });
+  }
 }

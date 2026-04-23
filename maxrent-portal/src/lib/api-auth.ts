@@ -22,3 +22,11 @@ export async function requireApprovedBroker() {
   }
   return session;
 }
+
+/** Rutas inversionista (`canInvest`) — claim de invitación broker, etc. */
+export async function requireCanInvestUser() {
+  const session = await requireUser();
+  if (!session) return null;
+  if (!session.user.canInvest) return null;
+  return session;
+}

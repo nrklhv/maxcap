@@ -3,20 +3,27 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3001",
+    "dev": "next dev -p 3002",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:metadata-merge": "tsx scripts/verify-metadata-merge.ts",
     "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:push": "node scripts/prisma-with-merged-env.cjs db push",
+    "db:push:force": "node scripts/prisma-with-merged-env.cjs db push --accept-data-loss",
+    "db:migrate": "node scripts/prisma-with-merged-env.cjs migrate dev",
+    "db:studio": "node scripts/prisma-with-merged-env.cjs studio",
+    "db:seed": "node scripts/tsx-with-merged-env.cjs prisma/seed.ts",
+    "debug:db": "node scripts/debug-local-env.cjs",
+    "env:align-db": "node scripts/align-database-url.cjs"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.0",
     "@prisma/client": "^6.1.0",
     "@vercel/analytics": "^2.0.1",
+    "csv-parse": "^5.6.0",
     "lucide-react": "^0.468.0",
     "next": "14.2.21",
     "next-auth": "^5.0.0-beta.25",
@@ -36,6 +43,7 @@
     "prisma": "^6.1.0",
     "tailwindcss": "^3.4.16",
     "tsx": "^4.19.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.5"
   }
 }

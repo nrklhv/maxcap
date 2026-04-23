@@ -26,7 +26,7 @@ export default function BrokersLandingPage() {
 
         <div className="flex flex-col sm:flex-row gap-3">
           <Link
-            href="/login?callbackUrl=/broker/solicitud"
+            href="/login?callbackUrl=/broker"
             className="inline-flex justify-center items-center px-6 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
           >
             Inscribirme

@@ -50,6 +50,22 @@ model User {
   brokerAccessStatus BrokerAccessStatus?
   brokerReviewedAt   DateTime?
 
+  brokerProfile BrokerProfile?
+
+  /// Broker aprobado al que este inversionista queda asociado (staff o flujo de invitación).
+  sponsorBrokerUserId                String?
+  sponsorBrokerAssignedAt            DateTime?
+  sponsorBrokerAssignedByStaffUserId String?
+
+  sponsorBroker      User?  @relation("BrokerSponsorship", fields: [sponsorBrokerUserId], references: [id], onDelete: SetNull)
+  sponsoredInvestors User[] @relation("BrokerSponsorship")
+
+  /// Invites sent by this user when they act as an approved broker.
+  brokerInvestorInvitesSent BrokerInvestorInvite[] @relation("BrokerInvestorInviteBroker")
+  /// Invites consumed when this user registered / claimed as investor.
+  brokerInvestorInvitesConsumed BrokerInvestorInvite[] @relation("BrokerInvestorInviteRegistered")
+
+  @@index([sponsorBrokerUserId])
   @@map("users")
 }
 
@@ -118,6 +134,24 @@ model Profile {
   @@map("profiles")
 }
 
+/// Datos comerciales para postulación al canal broker (separado del Profile inversionista).
+model BrokerProfile {
+  userId        String  @id
+  companyName   String
+  jobTitle      String
+  isIndependent Boolean @default(false)
+  websiteUrl    String?
+  linkedinUrl   String?
+  pitch         String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("broker_profiles")
+}
+
 model CreditEvaluation {
   id               String              @id @default(cuid())
   userId           String
@@ -130,11 +164,21 @@ model CreditEvaluation {
   errorMessage     String?             // Si falló, por qué
   requestedAt      DateTime            @default(now())
   completedAt      DateTime?
+  /// Consentimiento explícito del inversionista antes de llamar a Floid
+  consentAt        DateTime?
+  consentVersion   String?
+  /// Identificador de caso devuelto por Floid (útil en flujos asíncronos / auditoría)
+  floidCaseId      String?
+  /// Staff habilitó al inversionista a usar «Reservar» (además de status COMPLETED).
+  staffReservationApprovedAt       DateTime?
+  /// Id del usuario staff que aprobó (sin FK para no duplicar relación User↔CreditEvaluation).
+  staffReservationApprovedByUserId String?
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   reservations Reservation[]
 
   @@index([userId, status])
+  @@index([floidCaseId])
   @@map("credit_evaluations")
 }
 
@@ -173,6 +217,24 @@ model Reservation {
 // LEADS — Modelo existente (simplificado, ajustar a tu schema actual)
 // =============================================================================
 
+/// Single-use link: approved broker invites an investor; claim sets `User.sponsorBrokerUserId`.
+model BrokerInvestorInvite {
+  id               String                     @id @default(cuid())
+  token            String                     @unique
+  brokerUserId     String
+  broker           User                       @relation("BrokerInvestorInviteBroker", fields: [brokerUserId], references: [id], onDelete: Cascade)
+  inviteeEmail     String?
+  status           BrokerInvestorInviteStatus @default(PENDING)
+  registeredUserId String?
+  registeredUser   User?                      @relation("BrokerInvestorInviteRegistered", fields: [registeredUserId], references: [id], onDelete: SetNull)
+  createdAt        DateTime                   @default(now())
+  expiresAt        DateTime
+  completedAt      DateTime?
+
+  @@index([brokerUserId])
+  @@map("broker_investor_invites")
+}
+
 model Lead {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -198,13 +260,43 @@ model Property {
   id               String         @id @default(cuid())
   title            String
   status           PropertyStatus @default(AVAILABLE)
-  visibleToBrokers Boolean        @default(true)
+  visibleToBrokers Boolean        @default(false)
   metadata         Json?
+  /// Stable business key for CSV / manual inventory upserts (before or alongside Houm).
+  inventoryCode    String?        @unique
+  /// Stable id from Houm (or upstream catalog) for sync upserts; optional for manual-only rows.
+  houmPropertyId   String?        @unique
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
+  catalogDraft PropertyCatalogDraft?
+
   @@index([status])
   @@map("properties")
+}
+
+/// Staging row (Houm sync or CSV import) until staff approves publication to `Property`.
+model PropertyCatalogDraft {
+  id                      String                       @id @default(cuid())
+  source                  CatalogDraftSource
+  houmPropertyId          String?                      @unique
+  inventoryCode           String?                      @unique
+  title                   String
+  metadata                Json?
+  status                  PropertyCatalogDraftStatus     @default(PENDING)
+  /// CSV-only: target status when promoted to `Property` (Houm uses env default on approve).
+  pendingPropertyStatus   PropertyStatus?
+  pendingVisibleToBrokers Boolean?
+  /// Set when approved: links to the official catalog row.
+  propertyId              String?                      @unique
+  property                Property?                    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  reviewedAt              DateTime?
+  reviewedByUserId        String?
+  rejectionReason         String?                      @db.Text
+  createdAt               DateTime                     @default(now())
+  updatedAt               DateTime                     @updatedAt
+
+  @@map("property_catalog_drafts")
 }
 
 // =============================================================================
@@ -222,11 +314,28 @@ enum BrokerAccessStatus {
   REJECTED
 }
 
+enum BrokerInvestorInviteStatus {
+  PENDING
+  COMPLETED
+  EXPIRED
+}
+
 enum PropertyStatus {
   AVAILABLE
   RESERVED
   SOLD
   ARCHIVED
+}
+
+enum CatalogDraftSource {
+  HOUM
+  CSV
+}
+
+enum PropertyCatalogDraftStatus {
+  PENDING
+  REJECTED
+  APPROVED
 }
 
 enum EvaluationStatus {

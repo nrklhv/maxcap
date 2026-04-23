@@ -7,6 +7,15 @@ export async function GET() {
   if (!session) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
-  const properties = await propertyService.listPropertiesForBrokers();
-  return NextResponse.json({ properties });
+
+  if (!session.user.id) {
+    return NextResponse.json({ error: "Sesión inválida" }, { status: 401 });
+  }
+
+  const available = await propertyService.listBrokerDisponiblesProperties();
+
+  return NextResponse.json({
+    available,
+    properties: available,
+  });
 }

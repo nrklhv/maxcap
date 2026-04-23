@@ -1,0 +1,3 @@
+{"sessionId":"00bace","hypothesisId":"H1-H4","location":"middleware.ts:entry","message":"mw_request","data":{"pathname":"/broker/invitar","isNextStatic":false,"isLoggedIn":true},"timestamp":1776697291474}
+{"sessionId":"00bace","hypothesisId":"H1-H4","location":"middleware.ts:entry","message":"mw_request","data":{"pathname":"/perfil","isNextStatic":false,"isLoggedIn":false},"timestamp":1776697296850}
+{"sessionId":"00bace","hypothesisId":"H1","location":"middleware.ts:redirect_login","message":"redirect_to_login","data":{"pathname":"/perfil","isNextStatic":false},"timestamp":1776697296850}

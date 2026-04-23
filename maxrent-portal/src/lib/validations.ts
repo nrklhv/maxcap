@@ -4,6 +4,11 @@
 
 import { z } from "zod";
 
+/** RUT sin puntos ni espacios, con guión antes del dígito verificador (ej. 12345678-9). */
+export function normalizeRutForProfile(rut: string): string {
+  return rut.replace(/\./g, "").replace(/\s/g, "").toUpperCase();
+}
+
 // Validar RUT chileno (formato: 12.345.678-9 o 12345678-9)
 export function isValidRut(rut: string): boolean {
   const clean = rut.replace(/\./g, "").replace(/-/g, "");
@@ -66,6 +71,7 @@ export const profileSchema = z.object({
   rut: z
     .string()
     .min(1, "El RUT es requerido")
+    .transform((s) => normalizeRutForProfile(s))
     .refine(isValidRut, "RUT inválido"),
   phone: z
     .string()
@@ -80,6 +86,59 @@ export const profileSchema = z.object({
   commune: z.string().trim().min(1, "La comuna es requerida").max(100),
   city: z.string().trim().min(1, "La ciudad es requerida").max(100),
 });
+
+/**
+ * Datos laborales y capacidad de pago persistidos en `Profile.additionalData.labor`.
+ *
+ * @domain portal
+ */
+export const laborProfileSchema = z
+  .discriminatedUnion("employmentType", [
+    z.object({
+      employmentType: z.literal("DEPENDENT"),
+      indefiniteContract: z.boolean(),
+      currentJobTenure: z.string().trim().min(1, "La antigüedad en el empleo actual es requerida"),
+      monthlyNetIncomeClp: z.coerce.number().int().min(0, "La renta debe ser un número ≥ 0"),
+      complementsIncomeWithCotitular: z.boolean(),
+      cotitularMonthlyNetIncomeClp: z.coerce.number().int().min(0).optional(),
+      monthlyDebtPaymentsClp: z.coerce.number().int().min(0, "Las deudas deben ser un número ≥ 0"),
+    }),
+    z.object({
+      employmentType: z.literal("INDEPENDENT"),
+      independentInvoicesYears: z.coerce.number().int().min(0, "Los años deben ser ≥ 0"),
+      independentActivity: z.string().trim().min(1, "El rubro o actividad es requerido"),
+      monthlyNetIncomeClp: z.coerce.number().int().min(0, "La renta debe ser un número ≥ 0"),
+      complementsIncomeWithCotitular: z.boolean(),
+      cotitularMonthlyNetIncomeClp: z.coerce.number().int().min(0).optional(),
+      monthlyDebtPaymentsClp: z.coerce.number().int().min(0, "Las deudas deben ser un número ≥ 0"),
+    }),
+  ])
+  .superRefine((data, ctx) => {
+    if (data.complementsIncomeWithCotitular) {
+      const v = data.cotitularMonthlyNetIncomeClp;
+      if (v === undefined || v < 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["cotitularMonthlyNetIncomeClp"],
+          message: "Indicá la renta mensual del cotitular",
+        });
+      }
+    }
+  });
+
+/**
+ * PUT perfil: datos personales obligatorios en cada guardado.
+ * `labor` es opcional en el payload (guardado por partes), pero `Profile.onboardingCompleted`
+ * solo pasa a true cuando exista un `additionalData.labor` válido (ver API + `isLaborProfileComplete`).
+ */
+export const profilePutSchema = profileSchema.merge(
+  z.object({
+    labor: laborProfileSchema.optional(),
+  })
+);
+
+export type LaborProfileInput = z.infer<typeof laborProfileSchema>;
+export type ProfilePutInput = z.infer<typeof profilePutSchema>;
 
 export const reservationSchema = z.object({
   propertyId: z.string().min(1, "La propiedad es requerida"),
@@ -96,11 +155,18 @@ const propertyStatusSchema = z.enum([
   "ARCHIVED",
 ]);
 
+/** Vacío o ausente se omite; si viene texto, 1–80 caracteres (clave CSV / inventario). */
+const optionalInventoryCodeField = z.preprocess(
+  (v) => (v === "" || v === null || v === undefined ? undefined : v),
+  z.string().trim().min(1, "Código de inventario inválido").max(80).optional()
+);
+
 export const propertyCreateSchema = z.object({
   title: z.string().trim().min(1, "Título requerido").max(300),
   status: propertyStatusSchema.optional(),
   visibleToBrokers: z.boolean().optional(),
   metadata: z.unknown().optional().nullable(),
+  inventoryCode: optionalInventoryCodeField,
 });
 
 export const propertyUpdateSchema = z.object({
@@ -108,6 +174,11 @@ export const propertyUpdateSchema = z.object({
   status: propertyStatusSchema.optional(),
   visibleToBrokers: z.boolean().optional(),
   metadata: z.unknown().optional().nullable(),
+  inventoryCode: z.union([
+    z.literal("").transform(() => undefined),
+    z.null(),
+    z.string().trim().min(1).max(80),
+  ]).optional(),
 });
 
 export type PropertyCreateInput = z.infer<typeof propertyCreateSchema>;

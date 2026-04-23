@@ -1,14 +1,24 @@
 import Link from "next/link";
-import { Building2, Clock, Users, UserCheck } from "lucide-react";
+import { Building2, ClipboardList, Clock, UserRound, Users, UserCheck } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 
+const ACTIVE_INVESTOR_RESERVATION_STATUSES = [
+  "PENDING_PAYMENT",
+  "PAYMENT_PROCESSING",
+  "PAID",
+  "CONFIRMED",
+] as const;
+
 export default async function StaffHomePage() {
-  const [propertyTotal, visibleToBrokers, brokerPending, brokerApproved] =
+  const [propertyTotal, visibleToBrokers, brokerPending, brokerApproved, activeInvestorReservations] =
     await Promise.all([
       prisma.property.count(),
       prisma.property.count({ where: { visibleToBrokers: true } }),
       prisma.user.count({ where: { brokerAccessStatus: "PENDING" } }),
       prisma.user.count({ where: { brokerAccessStatus: "APPROVED" } }),
+      prisma.reservation.count({
+        where: { status: { in: [...ACTIVE_INVESTOR_RESERVATION_STATUSES] } },
+      }),
     ]);
 
   return (
@@ -70,6 +80,42 @@ export default async function StaffHomePage() {
           Módulos
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Link
+          href="/staff/inversionistas"
+          className="group flex gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm ring-1 ring-gray-100 hover:border-blue-200 hover:ring-blue-100 hover:shadow-md transition-all"
+        >
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-800">
+            <UserRound className="h-5 w-5" aria-hidden />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-gray-900 group-hover:text-blue-800">
+              Inversionistas
+            </h2>
+            <p className="mt-1 text-sm text-gray-500 leading-snug">
+              Listado con evaluaciones Floid y habilitación de «Reservar» cuando corresponda.
+            </p>
+          </div>
+        </Link>
+        <Link
+          href="/staff/reservas"
+          className="group flex gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm ring-1 ring-gray-100 hover:border-blue-200 hover:ring-blue-100 hover:shadow-md transition-all"
+        >
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-700">
+            <ClipboardList className="h-5 w-5" aria-hidden />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-gray-900 group-hover:text-blue-800">
+              Reservas activas
+            </h2>
+            <p className="mt-1 text-sm text-gray-500 leading-snug">
+              Inversionistas y holds broker.{" "}
+              <span className="font-medium text-gray-700 tabular-nums">
+                {activeInvestorReservations}
+              </span>{" "}
+              reservas inversionista en curso.
+            </p>
+          </div>
+        </Link>
         <Link
           href="/staff/properties"
           className="group flex gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm ring-1 ring-gray-100 hover:border-blue-200 hover:ring-blue-100 hover:shadow-md transition-all"

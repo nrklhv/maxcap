@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { BrokerPropertyList } from "@/components/broker/broker-property-list";
+import { BrokerOpportunitiesFromApi } from "@/components/broker/broker-opportunities-from-api";
 
 export default async function BrokerOportunidadesPage() {
   const session = await auth();
@@ -13,12 +13,15 @@ export default async function BrokerOportunidadesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Oportunidades</h1>
-        <p className="mt-1 text-gray-600">
-          Propiedades disponibles para ofrecer a tus clientes.
+        <h1 className="font-serif text-2xl font-semibold tracking-tight text-broker-navy">
+          Oportunidades de Inversión
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-broker-muted">
+          Propiedades que el equipo publicó para brokers (mismo inventario que en Staff →
+          Propiedades, filtrado por publicada y disponible).
         </p>
       </div>
-      <BrokerPropertyList />
+      <BrokerOpportunitiesFromApi />
     </div>
   );
 }

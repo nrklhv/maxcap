@@ -2,6 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+type BrokerProfileBrief = {
+  companyName: string;
+  jobTitle: string;
+  isIndependent: boolean;
+  websiteUrl: string | null;
+  linkedinUrl: string | null;
+} | null;
+
 type BrokerRow = {
   id: string;
   name: string | null;
@@ -9,6 +17,7 @@ type BrokerRow = {
   createdAt: string;
   brokerAccessStatus: string | null;
   brokerReviewedAt: string | null;
+  brokerProfile: BrokerProfileBrief;
 };
 
 export function StaffBrokers() {
@@ -99,6 +108,10 @@ export function StaffBrokers() {
                 <tr className="bg-gray-50/90 text-left text-gray-600 border-b border-gray-100">
                   <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide">Email</th>
                   <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide">Nombre</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide">Empresa</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide">Cargo</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide">Indep.</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide">Web</th>
                   <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide">Estado</th>
                   <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide">Alta</th>
                   <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide">Acciones</th>
@@ -109,6 +122,29 @@ export function StaffBrokers() {
                   <tr key={b.id}>
                     <td className="px-4 py-2 text-gray-900">{b.email}</td>
                     <td className="px-4 py-2 text-gray-700">{b.name || "—"}</td>
+                    <td className="px-4 py-2 text-gray-700 max-w-[10rem] truncate" title={b.brokerProfile?.companyName}>
+                      {b.brokerProfile?.companyName?.trim() || "—"}
+                    </td>
+                    <td className="px-4 py-2 text-gray-600 max-w-[8rem] truncate" title={b.brokerProfile?.jobTitle}>
+                      {b.brokerProfile?.jobTitle?.trim() || "—"}
+                    </td>
+                    <td className="px-4 py-2 text-gray-600 text-xs">
+                      {b.brokerProfile ? (b.brokerProfile.isIndependent ? "Sí" : "No") : "—"}
+                    </td>
+                    <td className="px-4 py-2 text-xs">
+                      {b.brokerProfile?.websiteUrl ? (
+                        <a
+                          href={b.brokerProfile.websiteUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-700 hover:underline truncate max-w-[8rem] inline-block align-bottom"
+                        >
+                          Sitio
+                        </a>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-2">{statusBadge(b.brokerAccessStatus)}</td>
                     <td className="px-4 py-2 text-gray-500 whitespace-nowrap">
                       {new Date(b.createdAt).toLocaleDateString("es-CL")}
