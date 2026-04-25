@@ -1,7 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
 import { Header } from "./Header";
 import { Footer } from "./Footer";
 import { Logo } from "./Logo";
@@ -14,29 +13,7 @@ import { UvnComparison } from "./UvnComparison";
 import { investorFaqItems } from "@/lib/faqInvestor";
 
 export function InvestorLanding() {
-  const [cupos, setCupos] = useState(76);
-  const [bump, setBump] = useState(false);
-  const skipBumpRef = useRef(true);
-
-  useEffect(() => {
-    if (cupos <= 58) return;
-    const delay = (25 + Math.random() * 35) * 1000;
-    const id = window.setTimeout(() => {
-      setCupos((c) => (c > 58 ? c - 1 : c));
-    }, delay);
-    return () => clearTimeout(id);
-  }, [cupos]);
-
-  useEffect(() => {
-    if (skipBumpRef.current) {
-      skipBumpRef.current = false;
-      return;
-    }
-    setBump(true);
-    const t = window.setTimeout(() => setBump(false), 350);
-    return () => clearTimeout(t);
-  }, [cupos]);
-
+  const cupos = 75;
   const reservados = 100 - cupos;
   const barPct = Math.min(100, Math.max(0, reservados));
 
@@ -80,12 +57,7 @@ export function InvestorLanding() {
             <div className="mt-0.5 whitespace-nowrap text-xs text-gray-3">Solo 100 inversionistas entran al piloto</div>
           </div>
           <div className="shrink-0">
-            <div
-              className="font-serif text-3xl leading-none text-orange transition-transform duration-300"
-              style={{ transform: bump ? "scale(1.15)" : "scale(1)" }}
-            >
-              {cupos}
-            </div>
+            <div className="font-serif text-3xl leading-none text-orange">{cupos}</div>
             <div className="mt-0.5 text-xs text-gray-3">cupos libres</div>
           </div>
           <div className="min-w-[140px] flex-1 basis-full md:basis-auto">
@@ -419,7 +391,7 @@ export function InvestorLanding() {
         >
           <div className="pointer-events-none absolute left-0 right-0 top-0 z-[1] hidden h-1 bg-orange md:block" aria-hidden />
           <div className="relative max-h-[min(100vh,900px)] overflow-y-auto md:max-h-full md:py-3">
-            <FormInversionista onReserved={() => setCupos((c) => Math.max(58, c - 1))} />
+            <FormInversionista onReserved={() => {}} />
           </div>
         </aside>
       </div>
