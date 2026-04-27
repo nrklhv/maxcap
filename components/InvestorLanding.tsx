@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Header } from "./Header";
 import { Footer } from "./Footer";
 import { Logo } from "./Logo";
+import { Mascota } from "./Mascota";
 import { FormInversionista } from "./FormInversionista";
 import { PilarCard } from "./PilarCard";
 import { StepRow, StepsWrap } from "./StepRow";
@@ -29,6 +30,12 @@ export function InvestorLanding() {
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_70%_at_10%_60%,rgba(255,103,1,0.13)_0%,transparent_65%)]"
             aria-hidden
           />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -bottom-2 right-6 z-[2] hidden w-[170px] lg:block xl:right-10 xl:w-[200px]"
+          >
+            <Mascota className="h-auto w-full" />
+          </div>
           <div className="relative z-[1]">
             <div className="mb-8 flex items-center gap-2.5">
               <Logo size="lg" />
