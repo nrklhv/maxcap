@@ -1,5 +1,15 @@
 // =============================================================================
-// NextAuth.js v5 Configuration
+// NextAuth.js v5 Configuration (Node runtime)
+// =============================================================================
+//
+// Extiende `auth.config.ts` (Edge-safe) con:
+//   - Adapter Prisma
+//   - Providers reales (Google + Resend + Credentials dev)
+//   - Callback `jwt` que enriquece el token con datos de BD
+//   - Event `createUser` (Profile + Lead linking)
+//
+// El middleware NO importa este archivo (importa `auth.config.ts` directo)
+// para mantener el bundle Edge bajo el límite de 1 MB.
 // =============================================================================
 
 import NextAuth from "next-auth";
@@ -9,86 +19,19 @@ import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { isInvestorPerfilCompleteForPortal } from "@/lib/portal/profile-labor";
 import { prisma } from "./prisma";
-import type { BrokerAccessStatus, StaffRole } from "@prisma/client";
-
-declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string;
-      name?: string | null;
-      email?: string | null;
-      image?: string | null;
-      canInvest: boolean;
-      staffRole: StaffRole;
-      onboardingCompleted: boolean;
-      brokerAccessStatus: BrokerAccessStatus | null;
-    };
-  }
-}
-
-type AppJwt = {
-  id?: string;
-  /** Email en minúsculas; Resend/magic link a veces ponen el correo en `sub`, no el id de Prisma */
-  email?: string | null;
-  canInvest?: boolean;
-  staffRole?: StaffRole;
-  onboardingCompleted?: boolean;
-  brokerAccessStatus?: BrokerAccessStatus | null;
-};
-
-/**
- * Auth.js requires a non-empty `secret`. Use `NEXTAUTH_SECRET` or `AUTH_SECRET` in env.
- * In development only, a fixed placeholder is used if unset (common when `.env.local` is
- * copied from a template with `KEY=  # comment`, which parses as empty).
- */
-/** True while Next is compiling (incl. workers where NEXT_PHASE is unset). */
-function isLikelyNextBuildPhase(): boolean {
-  if (process.env.NEXT_PHASE === "phase-production-build") return true;
-  if (process.env.npm_lifecycle_event === "build") return true;
-  const argv = process.argv;
-  if (!argv.includes("build")) return false;
-  return argv.some(
-    (a) =>
-      typeof a === "string" &&
-      (a.includes("node_modules/next/") ||
-        a.includes("node_modules\\next\\") ||
-        a.endsWith("/next") ||
-        a.endsWith("\\next.exe"))
-  );
-}
-
-function resolveAuthSecret(): string {
-  const fromEnv =
-    process.env.NEXTAUTH_SECRET?.trim() || process.env.AUTH_SECRET?.trim();
-  if (fromEnv) return fromEnv;
-  // `next build` runs with NODE_ENV=production while collecting page data; env may be empty in CI.
-  if (process.env.NODE_ENV === "production" && isLikelyNextBuildPhase()) {
-    return "maxrent-next-build-placeholder-not-used-at-runtime";
-  }
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("Set NEXTAUTH_SECRET or AUTH_SECRET for production.");
-  }
-  return "maxrent-dev-placeholder-secret-not-for-production";
-}
+import { authConfig, staffSuperAdminAllowlist, type AppJwt } from "./auth.config";
 
 /**
  * Auth.js middleware (Edge) resolves `AUTH_SECRET` from `process.env`. Mirror the resolved
  * secret there so MissingSecret does not occur when only `secret` is passed to NextAuth().
  */
-function ensureAuthSecretEnv(): string {
-  const secret = resolveAuthSecret();
+function ensureAuthSecretEnv(): void {
+  const secret = authConfig.secret as string;
   if (!process.env.AUTH_SECRET?.trim()) process.env.AUTH_SECRET = secret;
   if (!process.env.NEXTAUTH_SECRET?.trim()) process.env.NEXTAUTH_SECRET = secret;
-  return secret;
 }
 
-/** Emails con rol staff vía env (coma o espacio). Útil en dev / primer admin sin tocar BD. */
-function staffSuperAdminAllowlist(): Set<string> {
-  const raw = process.env.STAFF_SUPER_ADMIN_EMAILS?.trim();
-  if (!raw) return new Set();
-  const parts = raw.split(/[,;\s]+/).map((e) => e.trim().toLowerCase());
-  return new Set(parts.filter(Boolean));
-}
+ensureAuthSecretEnv();
 
 function resolveJwtUserId(
   user: { id?: string } | undefined,
@@ -206,22 +149,12 @@ function buildAuthProviders() {
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  trustHost: true,
-  secret: ensureAuthSecretEnv(),
+  ...authConfig,
   adapter: PrismaAdapter(prisma),
-
   providers: buildAuthProviders(),
-
-  session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60,
-  },
-
-  pages: {
-    signIn: "/login",
-  },
-
   callbacks: {
+    ...authConfig.callbacks,
+
     async jwt({ token, user, trigger, session }) {
       const t = token as AppJwt;
       const u = user as { id?: string; email?: string | null } | undefined;
@@ -230,7 +163,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (u?.email) t.email = u.email.trim().toLowerCase();
 
       const resolvedFromToken = resolveJwtUserId(user, token);
-      // Solo usar como id de Prisma si parece cuid (no es un email en `sub`).
       if (resolvedFromToken && !resolvedFromToken.includes("@")) {
         t.id = resolvedFromToken;
       } else if (resolvedFromToken?.includes("@")) {
@@ -302,34 +234,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       return token;
     },
-
-    async session({ session, token }) {
-      const t = token as AppJwt;
-      const sub = typeof token.sub === "string" ? token.sub : undefined;
-      const stableId =
-        t.id ||
-        (sub && !sub.includes("@") && sub.length >= 20 ? sub : undefined);
-      if (stableId) {
-        session.user.id = stableId;
-      }
-      session.user.canInvest = t.canInvest ?? true;
-      session.user.staffRole = t.staffRole ?? "NONE";
-      session.user.onboardingCompleted = t.onboardingCompleted ?? false;
-      session.user.brokerAccessStatus = t.brokerAccessStatus ?? null;
-      return session;
-    },
-
-    async redirect({ url, baseUrl }) {
-      if (url.startsWith("/")) return `${baseUrl}${url}`;
-      if (new URL(url).origin === baseUrl) return url;
-      return baseUrl;
-    },
   },
 
   events: {
     async createUser({ user }) {
       if (!user.id) return;
-      // Upsert: el adapter u otros flujos pueden dejar perfil existente; un 2º create rompe OAuth.
       await prisma.profile.upsert({
         where: { userId: user.id },
         create: { userId: user.id },

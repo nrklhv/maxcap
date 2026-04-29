@@ -1,19 +1,21 @@
 "use client";
 
 /**
- * Staff table: all portal investors (`canInvest`). Floid columns reflect the latest evaluation
- * when any; otherwise they show empty. Distinguishes Floid outcome vs staff gate for catalog
- * reservations; enable or revoke `staffReservationApprovedAt` via staff APIs when applicable.
- * Row click (or "Ver ficha") opens a right drawer with full profile and evaluation history.
+ * Staff table: all portal investors (`canInvest`). Muestra resumen de la última
+ * evaluación Floid (sin scoring); el drawer abre detalle completo (FloidReportDetail)
+ * + notas internas editables + habilitación / revocación de reservas.
  *
  * @domain maxrent-portal
  * @see GET /api/staff/investors
  * @see GET /api/staff/investors/:id
  * @see POST /api/staff/credit-evaluations/:id/approve-reservation
  * @see POST /api/staff/credit-evaluations/:id/revoke-reservation-approval
+ * @see PATCH /api/staff/credit-evaluations/:id/notes
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { FloidReportSummary } from "@/components/floid/floid-report-summary";
+import { FloidReportDetail } from "@/components/floid/floid-report-detail";
 
 type InvestorEvaluation = {
   id: string;
@@ -37,10 +39,8 @@ type InvestorRow = {
 type InvestorDetailEvaluation = {
   id: string;
   status: string;
-  score: number | null;
-  riskLevel: string | null;
-  maxApprovedAmount: string | null;
   summary: string | null;
+  downloadPdfUrl: string | null;
   rawResponse: unknown;
   errorMessage: string | null;
   requestedAt: string;
@@ -48,6 +48,7 @@ type InvestorDetailEvaluation = {
   consentAt: string | null;
   consentVersion: string | null;
   floidCaseId: string | null;
+  staffNotes: string | null;
   staffReservationApprovedAt: string | null;
   staffReservationApprovedByUserId: string | null;
 };
@@ -297,22 +298,8 @@ export function StaffInvestors() {
     }
   }
 
-  function evalStatusBadge(status: string, compact?: boolean) {
-    const styles: Record<string, string> = {
-      PENDING: "bg-amber-100 text-amber-900 ring-1 ring-amber-200",
-      PROCESSING: "bg-sky-100 text-sky-900 ring-1 ring-sky-200",
-      COMPLETED: "bg-green-100 text-green-800 ring-1 ring-green-200",
-      FAILED: "bg-red-100 text-red-800 ring-1 ring-red-200",
-      EXPIRED: "bg-gray-100 text-gray-700 ring-1 ring-gray-200",
-    };
-    const cls = styles[status] || "bg-gray-100 text-gray-700 ring-1 ring-gray-200";
-    const sizing = compact
-      ? "rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-tight"
-      : "rounded-full px-2.5 py-0.5 text-xs font-semibold";
-    return (
-      <span className={`inline-flex items-center ${sizing} ${cls}`}>{status}</span>
-    );
-  }
+  // evalStatusBadge se movió a top-level del módulo (ver al final del archivo)
+  // para poder reusarse desde EvaluationStaffCard.
 
   const canEnable = (ev: InvestorEvaluation | null) =>
     Boolean(ev && ev.status === "COMPLETED" && !ev.staffReservationApprovedAt);
@@ -593,66 +580,23 @@ export function StaffInvestors() {
                     )}
                   </section>
 
-                  <section>
+                  <section className="space-y-4">
                     <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                       Evaluaciones ({detail.creditEvaluations.length})
                     </h3>
-                    <div className="mt-2 overflow-x-auto rounded-lg border border-gray-100">
-                      <table className="min-w-full text-xs">
-                        <thead>
-                          <tr className="bg-gray-50 text-left text-gray-600">
-                            <th className="px-2 py-2 font-semibold">Solicitud</th>
-                            <th className="px-2 py-2 font-semibold">Estado</th>
-                            <th className="px-2 py-2 font-semibold">Score</th>
-                            <th className="px-2 py-2 font-semibold">Riesgo</th>
-                            <th className="px-2 py-2 font-semibold">Máx.</th>
-                            <th className="px-2 py-2 font-semibold">Completada</th>
-                            <th className="px-2 py-2 font-semibold">Staff</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                          {detail.creditEvaluations.map((ev) => (
-                            <tr key={ev.id}>
-                              <td className="px-2 py-1.5 whitespace-nowrap tabular-nums text-gray-700">
-                                {formatDateTime(ev.requestedAt)}
-                              </td>
-                              <td className="px-2 py-1.5">{evalStatusBadge(ev.status)}</td>
-                              <td className="px-2 py-1.5 tabular-nums">{ev.score ?? "—"}</td>
-                              <td className="px-2 py-1.5">{ev.riskLevel ?? "—"}</td>
-                              <td className="px-2 py-1.5 tabular-nums">{ev.maxApprovedAmount ?? "—"}</td>
-                              <td className="px-2 py-1.5 whitespace-nowrap tabular-nums text-gray-600">
-                                {ev.completedAt ? formatDateTime(ev.completedAt) : "—"}
-                              </td>
-                              <td className="px-2 py-1.5 text-gray-700">
-                                {ev.staffReservationApprovedAt ? (
-                                  <span className="text-green-800 font-medium">Sí</span>
-                                ) : ev.status === "COMPLETED" ? (
-                                  <span className="text-amber-800">Pendiente</span>
-                                ) : (
-                                  "—"
-                                )}
-                                {ev.staffReservationApprovedByUserId ? (
-                                  <span className="block text-[10px] text-gray-500 truncate max-w-[7rem]">
-                                    por {ev.staffReservationApprovedByUserId}
-                                  </span>
-                                ) : null}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    {detail.creditEvaluations.map((ev) =>
-                      ev.rawResponse != null ? (
-                        <details key={`raw-${ev.id}`} className="mt-3 rounded border border-gray-100 p-2">
-                          <summary className="cursor-pointer text-xs font-medium text-gray-700">
-                            Respuesta raw Floid · {ev.id.slice(0, 8)}…
-                          </summary>
-                          <pre className="mt-2 max-h-64 overflow-auto rounded bg-gray-50 p-2 text-[10px] leading-relaxed text-gray-800">
-                            {JSON.stringify(ev.rawResponse, null, 2)}
-                          </pre>
-                        </details>
-                      ) : null
+                    {detail.creditEvaluations.length === 0 ? (
+                      <p className="text-sm text-gray-500">Sin evaluaciones todavía.</p>
+                    ) : (
+                      detail.creditEvaluations.map((ev) => (
+                        <EvaluationStaffCard
+                          key={ev.id}
+                          ev={ev}
+                          busy={busyEvaluationId === ev.id}
+                          onEnable={() => void enableReservations(ev.id)}
+                          onRevoke={() => openRevokeModal(ev.id)}
+                          onSavedNotes={() => setDetailFetchNonce((n) => n + 1)}
+                        />
+                      ))
                     )}
                   </section>
                 </div>
@@ -848,5 +792,231 @@ export function StaffInvestors() {
         )}
       </div>
     </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Helpers compartidos (top-level para usarse en sub-componentes)
+// ──────────────────────────────────────────────────────────────────────────────
+
+function evalStatusBadge(status: string, compact?: boolean) {
+  const styles: Record<string, string> = {
+    PENDING: "bg-amber-100 text-amber-900 ring-1 ring-amber-200",
+    PROCESSING: "bg-sky-100 text-sky-900 ring-1 ring-sky-200",
+    COMPLETED: "bg-green-100 text-green-800 ring-1 ring-green-200",
+    FAILED: "bg-red-100 text-red-800 ring-1 ring-red-200",
+    EXPIRED: "bg-gray-100 text-gray-700 ring-1 ring-gray-200",
+  };
+  const cls = styles[status] || "bg-gray-100 text-gray-700 ring-1 ring-gray-200";
+  const sizing = compact
+    ? "rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-tight"
+    : "rounded-full px-2.5 py-0.5 text-xs font-semibold";
+  return <span className={`inline-flex items-center ${sizing} ${cls}`}>{status}</span>;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Card de evaluación con resumen, detalle expandible, notas y acciones staff
+// ──────────────────────────────────────────────────────────────────────────────
+
+function EvaluationStaffCard({
+  ev,
+  busy,
+  onEnable,
+  onRevoke,
+  onSavedNotes,
+}: {
+  ev: InvestorDetailEvaluation;
+  busy: boolean;
+  onEnable: () => void;
+  onRevoke: () => void;
+  onSavedNotes: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [notesDraft, setNotesDraft] = useState(ev.staffNotes ?? "");
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [notesMessage, setNotesMessage] = useState<string | null>(null);
+
+  const isCompleted = ev.status === "COMPLETED";
+  const isApproved = Boolean(ev.staffReservationApprovedAt);
+  const showEnableBtn = isCompleted && !isApproved;
+  const showRevokeBtn = isCompleted && isApproved;
+  const dirty = (notesDraft || "") !== (ev.staffNotes ?? "");
+
+  async function saveNotes() {
+    setSavingNotes(true);
+    setNotesMessage(null);
+    try {
+      const res = await fetch(`/api/staff/credit-evaluations/${ev.id}/notes`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: notesDraft }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setNotesMessage(typeof data.error === "string" ? data.error : "No se pudo guardar");
+        return;
+      }
+      setNotesMessage("Notas guardadas.");
+      onSavedNotes();
+    } catch {
+      setNotesMessage("Error de red");
+    } finally {
+      setSavingNotes(false);
+    }
+  }
+
+  return (
+    <article className="rounded-xl border border-gray-200 bg-white shadow-sm">
+      <header className="px-4 py-3 border-b border-gray-100 flex items-start justify-between gap-3 flex-wrap">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-xs">
+            {evalStatusBadge(ev.status)}
+            <span className="text-gray-500">Solicitada {formatDateTime(ev.requestedAt)}</span>
+            {ev.completedAt && (
+              <span className="text-gray-500">· Completada {formatDateTime(ev.completedAt)}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 text-[11px] text-gray-500">
+            <span>ID {ev.id.slice(0, 8)}…</span>
+            {ev.floidCaseId && <span>· Floid case {ev.floidCaseId.slice(0, 8)}…</span>}
+            {isApproved ? (
+              <span className="text-green-800 font-medium">
+                · Reservas habilitadas {formatDateTime(ev.staffReservationApprovedAt)}
+              </span>
+            ) : isCompleted ? (
+              <span className="text-amber-800 font-medium">· Pendiente staff</span>
+            ) : null}
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          {ev.downloadPdfUrl && (
+            <a
+              href={ev.downloadPdfUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="text-[11px] text-blue-700 hover:underline"
+            >
+              Descargar PDF (Floid)
+            </a>
+          )}
+          <div className="flex gap-1.5">
+            {showEnableBtn && (
+              <button
+                type="button"
+                disabled={busy}
+                className="inline-flex justify-center rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-800 hover:bg-blue-100 transition-colors disabled:opacity-50"
+                onClick={onEnable}
+              >
+                {busy ? "…" : "Habilitar reservas"}
+              </button>
+            )}
+            {showRevokeBtn && (
+              <button
+                type="button"
+                disabled={busy}
+                className="inline-flex justify-center rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-900 hover:bg-red-100 transition-colors disabled:opacity-50"
+                onClick={onRevoke}
+              >
+                Revocar
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Resumen + ver detalle */}
+      <div className="px-4 py-3 space-y-3">
+        {ev.errorMessage && (
+          <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-800">
+            <span className="font-medium">Error:</span> {ev.errorMessage}
+          </div>
+        )}
+
+        {ev.rawResponse && Object.keys(ev.rawResponse as object).length > 0 ? (
+          <>
+            <FloidReportSummary
+              rawResponse={ev.rawResponse}
+              fallbackSummary={ev.summary}
+            />
+            <button
+              type="button"
+              onClick={() => setExpanded(!expanded)}
+              className="text-xs font-medium text-blue-700 hover:text-blue-900"
+            >
+              {expanded ? "Ocultar detalle completo" : "Ver detalle completo"}
+            </button>
+            {expanded && (
+              <div className="rounded-lg border border-gray-200 bg-gray-50/40 p-4">
+                <FloidReportDetail
+                  rawResponse={ev.rawResponse}
+                  downloadPdfUrl={ev.downloadPdfUrl}
+                  fallbackSummary={ev.summary}
+                  showRawJson
+                />
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="text-xs text-gray-500 italic">
+            Sin reporte recibido todavía (status {ev.status}).
+          </p>
+        )}
+      </div>
+
+      {/* Notas internas */}
+      <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/40 space-y-2">
+        <label
+          htmlFor={`notes-${ev.id}`}
+          className="block text-xs font-semibold uppercase tracking-wide text-gray-600"
+        >
+          Notas internas (no visibles al inversionista)
+        </label>
+        <textarea
+          id={`notes-${ev.id}`}
+          rows={3}
+          maxLength={5000}
+          value={notesDraft}
+          onChange={(e) => setNotesDraft(e.target.value)}
+          placeholder="Criterio de aprobación, dudas, próximos pasos..."
+          className="w-full text-sm rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
+        />
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <span
+            className={`text-[11px] ${
+              notesMessage
+                ? notesMessage.startsWith("Notas guard")
+                  ? "text-green-700"
+                  : "text-red-700"
+                : "text-gray-400"
+            }`}
+          >
+            {notesMessage || `${notesDraft.length}/5000`}
+          </span>
+          <div className="flex gap-2">
+            {dirty && (
+              <button
+                type="button"
+                onClick={() => {
+                  setNotesDraft(ev.staffNotes ?? "");
+                  setNotesMessage(null);
+                }}
+                disabled={savingNotes}
+                className="text-xs text-gray-600 hover:text-gray-900 disabled:opacity-50"
+              >
+                Descartar
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => void saveNotes()}
+              disabled={savingNotes || !dirty}
+              className="inline-flex items-center gap-1.5 rounded-md bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-gray-800 transition-colors disabled:opacity-40"
+            >
+              {savingNotes ? "Guardando…" : "Guardar notas"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </article>
   );
 }

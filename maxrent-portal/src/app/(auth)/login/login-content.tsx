@@ -25,12 +25,21 @@ export default function LoginContent({
 }: LoginContentProps = {}) {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || defaultCallbackUrl;
+  const errorCode = searchParams.get("error");
   const [email, setEmail] = useState("");
   const [devEmail, setDevEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [devLoading, setDevLoading] = useState(false);
   const [providerIds, setProviderIds] = useState<string[] | null>(null);
+
+  // Mensaje para errores de Auth.js en el query string. AccessDenied =
+  // signIn() retornó false (típicamente por whitelist beta).
+  const authErrorMessage = errorCode
+    ? errorCode === "AccessDenied"
+      ? "Tu correo no está autorizado para acceder al portal en este momento. Si crees que deberías tener acceso, contáctanos."
+      : "No pudimos iniciar sesión. Vuelve a intentar."
+    : null;
 
   useEffect(() => {
     getProviders().then((p) => {
@@ -94,6 +103,14 @@ export default function LoginContent({
               role="alert"
             >
               {serverError}
+            </p>
+          ) : null}
+          {authErrorMessage ? (
+            <p
+              className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2"
+              role="alert"
+            >
+              {authErrorMessage}
             </p>
           ) : null}
           {providerIds === null ? (

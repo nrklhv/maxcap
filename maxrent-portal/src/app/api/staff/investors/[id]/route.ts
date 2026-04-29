@@ -49,10 +49,8 @@ export async function GET(
   const creditEvaluations = user.creditEvaluations.map((e) => ({
     id: e.id,
     status: e.status,
-    score: e.score,
-    riskLevel: e.riskLevel,
-    maxApprovedAmount: e.maxApprovedAmount?.toString() ?? null,
     summary: e.summary,
+    downloadPdfUrl: e.downloadPdfUrl,
     rawResponse: e.rawResponse,
     errorMessage: e.errorMessage,
     requestedAt: e.requestedAt.toISOString(),
@@ -60,6 +58,7 @@ export async function GET(
     consentAt: e.consentAt?.toISOString() ?? null,
     consentVersion: e.consentVersion,
     floidCaseId: e.floidCaseId,
+    staffNotes: e.staffNotes,
     staffReservationApprovedAt: e.staffReservationApprovedAt?.toISOString() ?? null,
     staffReservationApprovedByUserId: e.staffReservationApprovedByUserId,
   }));

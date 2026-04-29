@@ -1,9 +1,16 @@
 // =============================================================================
 // Middleware — Auth, onboarding inversionista, /staff interno, legacy /admin
 // =============================================================================
+//
+// Importa SOLO `auth.config.ts` (Edge-safe) — NUNCA `auth.ts`, que arrastra
+// Prisma y excede el límite de 1 MB del Edge Runtime de Vercel.
+// =============================================================================
 
-import { auth } from "@/lib/auth";
+import NextAuth from "next-auth";
+import { authConfig } from "@/lib/auth.config";
 import { NextResponse } from "next/server";
+
+const { auth } = NextAuth(authConfig);
 
 const PUBLIC_PATHS = new Set(["/", "/login", "/brokers", "/staff/login"]);
 

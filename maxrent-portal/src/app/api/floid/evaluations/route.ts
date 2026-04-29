@@ -21,10 +21,9 @@ export async function GET() {
     select: {
       id: true,
       status: true,
-      score: true,
-      riskLevel: true,
-      maxApprovedAmount: true,
       summary: true,
+      downloadPdfUrl: true,
+      rawResponse: true,
       requestedAt: true,
       completedAt: true,
       errorMessage: true,

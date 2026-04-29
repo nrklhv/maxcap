@@ -1,346 +1,295 @@
 /**
- * Floid credit evaluation integration (server-side).
+ * Floid Widget integration (server-side).
  *
- * Published API docs: https://docs.floid.io/
+ * Flujo productivo:
+ *   1. POST /api/floid/evaluate → `createWidgetEvaluation` crea una `CreditEvaluation`
+ *      en PENDING y devuelve la URL del widget para que el frontend lo abra.
+ *   2. El usuario completa el flujo en `admin.floid.app/<merchant>/widget/<id>`
+ *      (Clave Única, Clave Tributaria SII, 2FA — todo dentro del widget).
+ *   3. Floid POSTea el reporte agregado a `/api/floid/callback`, que invoca
+ *      `completeFloidEvaluationFromWidget` para parsear y persistir.
  *
- * Configure real calls with `FLOID_API_KEY`, `FLOID_SERVICE_PATH`, and `FLOID_API_URL`.
- * Use `FLOID_USE_STUB=true` to keep the deterministic stub (default when no API key is set).
- * Optional `FLOID_CALLBACK_URL` adds `callbackUrl` to the request body for async services; the
- * immediate HTTP response may be an acknowledgement — then `/api/floid/callback` completes the row.
- * Optional `FLOID_FETCH_TIMEOUT_MS` (digits only, max 600000) aborts the outbound `fetch` after N ms.
+ * Modo stub (`FLOID_USE_STUB=true` o falta `FLOID_WIDGET_URL`):
+ *   - `createWidgetEvaluation` simula al toque un payload realista y deja
+ *     la fila en COMPLETED, sin abrir widget. Útil para desarrollo de UI.
+ *
+ * IMPORTANTE: este servicio NO calcula score / riskLevel / maxApprovedAmount.
+ * El staff revisa el reporte estructurado y aprueba reservas manualmente.
  *
  * @domain creditEvaluation
  * @see POST /api/floid/evaluate
+ * @see POST /api/floid/callback
+ * @see https://docs.floid.io/
  */
 
 import { prisma } from "@/lib/prisma";
-import type { EvaluationStatus, Prisma, RiskLevel } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import {
-  looksLikeFloidAsyncAck,
-  parseFloidPayload,
-  type FloidEvaluationResult,
+  parseFloidWidgetPayload,
+  type FloidWidgetReport,
 } from "@/lib/floid/parse-floid-response";
+import { buildFloidWidgetUrl, isFloidWidgetEnabled } from "@/lib/floid/widget";
 
-export type { FloidEvaluationResult };
+export type { FloidWidgetReport };
 
 export interface FloidConsentContext {
   consentAt: Date;
   consentVersion: string;
 }
 
-export type RequestEvaluationRow = {
-  id: string;
-  status: EvaluationStatus;
-  score?: number | null;
-  riskLevel?: RiskLevel | null;
-  maxApprovedAmount?: number | null;
-  summary?: string | null;
-};
-
-type CallOutcome =
-  | { kind: "completed"; result: FloidEvaluationResult }
-  | {
-      kind: "async_pending";
-      raw: Record<string, unknown>;
-      floidCaseId: string | null;
-    };
-
-function shouldUseStub(): boolean {
-  if (process.env.FLOID_USE_STUB === "true") return true;
-  if (process.env.FLOID_USE_STUB === "false") return false;
-  return !process.env.FLOID_API_KEY?.trim();
+/** Resultado de iniciar una evaluación: la fila PENDING + cómo abrir el widget (o `null` si stub). */
+export interface CreateWidgetEvaluationResult {
+  evaluationId: string;
+  widgetUrl: string | null;
+  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
 }
 
-/** RUT format expected by many Chilean APIs: 12345678-9 (no dots) */
+/** RUT format expected by Floid: `12345678-9` (sin puntos, mayúsculas). */
 export function normalizeRutForFloid(rut: string): string {
   return rut.replace(/\./g, "").replace(/\s/g, "").toUpperCase();
 }
 
-function extractCaseId(raw: Record<string, unknown>): string | null {
-  const a = raw.caseid ?? raw.caseId ?? raw.case_id;
-  return typeof a === "string" && a.length > 0 ? a : null;
-}
-
-export class FloidService {
-  private apiKey: string;
-  private baseUrl: string;
-
-  constructor() {
-    this.apiKey = process.env.FLOID_API_KEY || "";
-    this.baseUrl = (process.env.FLOID_API_URL || "https://api.floid.app").replace(/\/$/, "");
-  }
-
-  /**
-   * Creates a `CreditEvaluation`, calls Floid (or stub), and persists outcome.
-   */
-  async requestEvaluation(userId: string, consent: FloidConsentContext): Promise<RequestEvaluationRow> {
-    const profile = await prisma.profile.findUnique({
-      where: { userId },
-      select: { rut: true },
-    });
-
-    if (!profile?.rut) {
-      throw new Error("El usuario no tiene RUT registrado");
-    }
-
-    const evaluation = await prisma.creditEvaluation.create({
-      data: {
-        userId,
-        status: "PENDING",
-        rawResponse: {},
-        consentAt: consent.consentAt,
-        consentVersion: consent.consentVersion,
-      },
-    });
-
-    try {
-      await prisma.creditEvaluation.update({
-        where: { id: evaluation.id },
-        data: { status: "PROCESSING" },
-      });
-
-      const outcome = await this.callFloidApi(profile.rut, evaluation.id);
-
-      if (outcome.kind === "async_pending") {
-        const updated = await prisma.creditEvaluation.update({
-          where: { id: evaluation.id },
-          data: {
-            status: "PROCESSING",
-            rawResponse: outcome.raw as Prisma.InputJsonValue,
-            floidCaseId: outcome.floidCaseId,
-          },
-        });
-        return {
-          id: updated.id,
-          status: updated.status,
-          score: updated.score,
-          riskLevel: updated.riskLevel,
-          maxApprovedAmount: updated.maxApprovedAmount ? Number(updated.maxApprovedAmount) : null,
-          summary: updated.summary,
-        };
-      }
-
-      const { result } = outcome;
-      const updated = await prisma.creditEvaluation.update({
-        where: { id: evaluation.id },
-        data: {
-          status: "COMPLETED",
-          score: result.score,
-          riskLevel: result.riskLevel,
-          maxApprovedAmount: result.maxApprovedAmount,
-          summary: result.summary,
-          rawResponse: result.rawResponse as Prisma.InputJsonValue,
-          completedAt: new Date(),
-        },
-      });
-
-      return {
-        id: updated.id,
-        status: updated.status,
-        score: updated.score,
-        riskLevel: updated.riskLevel,
-        maxApprovedAmount: updated.maxApprovedAmount ? Number(updated.maxApprovedAmount) : null,
-        summary: updated.summary,
-      };
-    } catch (error) {
-      await prisma.creditEvaluation.update({
-        where: { id: evaluation.id },
-        data: {
-          status: "FAILED",
-          errorMessage: error instanceof Error ? error.message : "Error desconocido",
-          completedAt: new Date(),
-        },
-      });
-
-      throw error;
-    }
-  }
-
-  private async callFloidApi(rut: string, evaluationId: string): Promise<CallOutcome> {
-    if (shouldUseStub()) {
-      return { kind: "completed", result: await this.stubEvaluation(rut) };
-    }
-
-    const servicePath = process.env.FLOID_SERVICE_PATH?.trim();
-    if (!servicePath) {
-      throw new Error(
-        "FLOID_SERVICE_PATH no está configurado (ruta del servicio en la API Floid, ej. /mi-producto/consulta)"
-      );
-    }
-
-    const idField = process.env.FLOID_ID_BODY_FIELD?.trim() || "id";
-    const callbackBase = process.env.FLOID_CALLBACK_URL?.trim();
-    const url = `${this.baseUrl}${servicePath.startsWith("/") ? "" : "/"}${servicePath}`;
-
-    const body: Record<string, unknown> = {
-      [idField]: normalizeRutForFloid(rut),
-      caseid: evaluationId,
-    };
-    if (callbackBase) {
-      body.callbackUrl = callbackBase;
-    }
-
-    const rawTimeout = process.env.FLOID_FETCH_TIMEOUT_MS?.trim();
-    const timeoutMs =
-      rawTimeout && /^\d+$/.test(rawTimeout)
-        ? Math.min(600_000, Math.max(1_000, parseInt(rawTimeout, 10)))
-        : undefined;
-    const signal =
-      timeoutMs !== undefined && typeof AbortSignal !== "undefined" && "timeout" in AbortSignal
-        ? AbortSignal.timeout(timeoutMs)
-        : undefined;
-
-    let response: Response;
-    try {
-      response = await fetch(url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(body),
-        ...(signal ? { signal } : {}),
-      });
-    } catch (e) {
-      const timedOut =
-        timeoutMs !== undefined &&
-        e instanceof Error &&
-        (e.name === "TimeoutError" ||
-          e.name === "AbortError" ||
-          /aborted|timeout/i.test(e.message));
-      if (timedOut) {
-        throw new Error(
-          `Floid no respondió en ${timeoutMs} ms (FLOID_FETCH_TIMEOUT_MS). Misma situación que curl con 0 bytes: revisá red, probá IPv4 (curl -4), o consultá a Floid por latencia de ${servicePath}.`
-        );
-      }
-      throw e;
-    }
-
-    const text = await response.text();
-    let json: unknown;
-    try {
-      json = text ? JSON.parse(text) : {};
-    } catch {
-      throw new Error(`Floid API: respuesta no JSON (HTTP ${response.status})`);
-    }
-
-    const raw = (typeof json === "object" && json !== null ? json : { value: json }) as Record<
-      string,
-      unknown
-    >;
-
-    if (!response.ok) {
-      const msg = typeof raw.msg === "string" ? raw.msg : typeof raw.message === "string" ? raw.message : text;
-      throw new Error(`Floid API error ${response.status}: ${msg || "sin detalle"}`);
-    }
-
-    if (callbackBase && looksLikeFloidAsyncAck(raw)) {
-      return {
-        kind: "async_pending",
-        raw,
-        floidCaseId: extractCaseId(raw),
-      };
-    }
-
-    const parsed = parseFloidPayload(raw);
-    if (!parsed) {
-      throw new Error(
-        "Floid devolvió 200 pero el cuerpo no contiene campos reconocibles (score / montos). Ajusta FLOID_SERVICE_PATH o el parser en lib/floid/parse-floid-response.ts."
-      );
-    }
-
-    return { kind: "completed", result: parsed };
-  }
-
-  private async stubEvaluation(rut: string): Promise<FloidEvaluationResult> {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    const rutNumber = parseInt(rut.replace(/\D/g, "").slice(0, 8), 10);
-    const score = 300 + (rutNumber % 550);
-    const maxAmount = Math.round((score / 850) * 120_000_000);
-
-    let riskLevel: RiskLevel;
-    let summary: string;
-
-    if (score >= 700) {
-      riskLevel = "LOW";
-      summary = `Excelente historial crediticio. Score de ${score} puntos. Aprobado para compra de propiedades hasta $${maxAmount.toLocaleString("es-CL")} CLP.`;
-    } else if (score >= 500) {
-      riskLevel = "MEDIUM";
-      summary = `Historial crediticio aceptable. Score de ${score} puntos. Aprobado con condiciones para propiedades hasta $${maxAmount.toLocaleString("es-CL")} CLP.`;
-    } else {
-      riskLevel = "HIGH";
-      summary = `El historial crediticio presenta observaciones. Score de ${score} puntos. Recomendamos mejorar tu perfil crediticio antes de continuar.`;
-    }
-
-    return {
-      score,
-      riskLevel,
-      maxApprovedAmount: maxAmount,
-      summary,
-      rawResponse: {
-        _stub: true,
-        rut: normalizeRutForFloid(rut),
-        score,
-        riskLevel,
-        maxApprovedAmount: maxAmount,
-        evaluatedAt: new Date().toISOString(),
-      },
-    };
-  }
-}
-
-export const floidService = new FloidService();
+// ──────────────────────────────────────────────────────────────────────────────
+// Public API
+// ──────────────────────────────────────────────────────────────────────────────
 
 /**
- * Completes an evaluation row when Floid POSTs the async result to our callback URL.
- * Looks up the row by `id` (when we sent `caseid` = evaluation cuid) or by `floidCaseId`.
+ * Crea una `CreditEvaluation` en PENDING y devuelve la URL del widget Floid.
+ *
+ * Si el widget no está configurado o `FLOID_USE_STUB=true`, completa la fila
+ * inmediatamente con un payload stub y devuelve `widgetUrl=null`.
  */
-export async function completeFloidEvaluationFromCallbackPayload(
-  caseId: string,
+export async function createWidgetEvaluation(
+  userId: string,
+  consent: FloidConsentContext
+): Promise<CreateWidgetEvaluationResult> {
+  const profile = await prisma.profile.findUnique({
+    where: { userId },
+    select: { rut: true },
+  });
+  if (!profile?.rut) {
+    throw new Error("El usuario no tiene RUT registrado");
+  }
+
+  const evaluation = await prisma.creditEvaluation.create({
+    data: {
+      userId,
+      status: "PENDING",
+      rawResponse: {},
+      consentAt: consent.consentAt,
+      consentVersion: consent.consentVersion,
+    },
+  });
+
+  if (!isFloidWidgetEnabled()) {
+    // Modo stub: completar la fila al toque con un payload realista.
+    const stubPayload = buildStubPayload(profile.rut, evaluation.id);
+    await persistWidgetReport(evaluation.id, stubPayload);
+    return { evaluationId: evaluation.id, widgetUrl: null, status: "COMPLETED" };
+  }
+
+  const widgetUrl = buildFloidWidgetUrl(profile.rut, evaluation.id);
+  return { evaluationId: evaluation.id, widgetUrl, status: "PENDING" };
+}
+
+/**
+ * Procesa el payload del callback del widget: localiza la fila por `custom`
+ * (= `evaluationId` que enviamos), la parsea y la persiste como COMPLETED.
+ */
+export async function completeFloidEvaluationFromWidget(
   payload: unknown
 ): Promise<{ evaluationId: string }> {
+  const report = parseFloidWidgetPayload(payload);
+  if (!report) {
+    throw new Error("Payload del widget no contiene secciones SP/SII/CMF reconocibles");
+  }
+
+  // El `custom` es el evaluationId que enviamos como query param al abrir el widget.
+  const evaluationId = report.custom;
+  if (!evaluationId) {
+    throw new Error("Payload del widget no trae 'custom' (evaluationId)");
+  }
+
   const evaluation = await prisma.creditEvaluation.findFirst({
     where: {
-      OR: [{ id: caseId }, { floidCaseId: caseId }],
+      OR: [{ id: evaluationId }, { floidCaseId: report.caseid ?? "__none__" }],
       status: { in: ["PENDING", "PROCESSING"] },
     },
     orderBy: { requestedAt: "desc" },
   });
 
   if (!evaluation) {
-    throw new Error("No se encontró evaluación pendiente para el caseid recibido");
+    throw new Error(
+      `No se encontró evaluación pendiente para custom=${evaluationId} / caseid=${report.caseid ?? "(none)"}`
+    );
   }
 
-  const raw = (typeof payload === "object" && payload !== null ? payload : {}) as Record<string, unknown>;
-  const parsed = parseFloidPayload(raw);
-  if (!parsed) {
+  await persistWidgetReport(evaluation.id, payload, report);
+  return { evaluationId: evaluation.id };
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Internals
+// ──────────────────────────────────────────────────────────────────────────────
+
+async function persistWidgetReport(
+  evaluationId: string,
+  rawPayload: unknown,
+  prereport?: FloidWidgetReport
+): Promise<void> {
+  const report = prereport ?? parseFloidWidgetPayload(rawPayload);
+  if (!report) {
     await prisma.creditEvaluation.update({
-      where: { id: evaluation.id },
+      where: { id: evaluationId },
       data: {
-        rawResponse: raw as Prisma.InputJsonValue,
-        errorMessage: "Callback Floid: payload incompleto (sin score mapeable)",
         status: "FAILED",
+        errorMessage: "Payload del widget incompleto: sin SP/SII/CMF",
+        rawResponse: (rawPayload ?? {}) as Prisma.InputJsonValue,
         completedAt: new Date(),
       },
     });
-    throw new Error("Payload de callback incompleto");
+    throw new Error("Payload del widget incompleto");
   }
 
   await prisma.creditEvaluation.update({
-    where: { id: evaluation.id },
+    where: { id: evaluationId },
     data: {
       status: "COMPLETED",
-      score: parsed.score,
-      riskLevel: parsed.riskLevel,
-      maxApprovedAmount: parsed.maxApprovedAmount,
-      summary: parsed.summary,
-      rawResponse: parsed.rawResponse as Prisma.InputJsonValue,
-      floidCaseId: extractCaseId(raw) ?? evaluation.floidCaseId,
+      summary: report.summary,
+      downloadPdfUrl: report.downloadPdfUrl,
+      floidCaseId: report.caseid,
+      rawResponse: report.rawResponse as Prisma.InputJsonValue,
       completedAt: new Date(),
       errorMessage: null,
     },
   });
+}
 
-  return { evaluationId: evaluation.id };
+/**
+ * Genera un payload de widget simulado con shape real (SP+SII+CMF) para desarrollo
+ * sin tocar Floid. Los montos son determinísticos a partir del RUT.
+ */
+function buildStubPayload(rut: string, evaluationId: string): Record<string, unknown> {
+  const rutClean = normalizeRutForFloid(rut);
+  const rutNumber = parseInt(rutClean.replace(/\D/g, "").slice(0, 8), 10) || 12345678;
+  const renta = 1_500_000 + (rutNumber % 4_000_000);
+  const deudaTotal = 5_000_000 + (rutNumber % 100_000_000);
+  const linea = 8_000_000 + (rutNumber % 12_000_000);
+
+  return {
+    code: 200,
+    message: "OK (stub)",
+    consumerId: rutClean,
+    caseid: `stub-${evaluationId}`,
+    custom: evaluationId,
+    download_pdf: null,
+    SP: {
+      renta_imponible: {
+        code: "200",
+        msg: "OK (stub)",
+        period: "202603",
+        remuneracion: renta,
+        meses_cotizados: 12,
+        moneda: "CLP",
+        fuente: "Superintendencia de Pensiones (stub)",
+        fecha_consulta: new Date().toISOString().slice(0, 10),
+      },
+    },
+    SII: {
+      carpeta_tributaria: {
+        code: "200",
+        msg: "OK (stub)",
+        data: {
+          tipo: "ACREDITAR RENTA",
+          nombre_emisor: "Inversionista Demo",
+          rut_emisor: rutClean,
+          datos_contribuyente: {
+            fecha_inicio_actividades: "01/01/2015",
+            actividad_economia: "ACTIVIDAD DEMO",
+            actividad_economia_detalle: [
+              { codigo: "100100", descripcion: "ACTIVIDAD DEMO PRINCIPAL" },
+            ],
+            categoria_tributaria: "Primera Categoría",
+            domicilio: "DIRECCIÓN DEMO 123, SANTIAGO",
+            sucursal: "",
+            ultimos_documentos_timbrados: [],
+            observaciones_tributarias: "No tiene observaciones",
+          },
+          bienes_raices: [],
+          boletas_honorarios: [],
+          F22: buildStubF22(renta),
+        },
+      },
+    },
+    CMF: {
+      deuda: {
+        code: "200",
+        msg: "OK (stub)",
+        data: {
+          name: "Inversionista Demo",
+          rut: rutClean,
+          updated: new Date().toISOString().slice(0, 10),
+          directDebt: [
+            {
+              institution: "Banco Demo",
+              currentDebt: String(deudaTotal),
+              between30To89Days: "0",
+              over90Days: "0",
+              total: String(deudaTotal),
+            },
+          ],
+          indirectDebt: [],
+          credits: {
+            lines: [{ institution: "Banco Demo", direct: String(linea), indirect: "0" }],
+            others: [],
+          },
+        },
+      },
+    },
+    _stub: true,
+  };
+}
+
+/**
+ * Genera un F22 simulado para 2 años con códigos clave del Formulario 22.
+ * Renta líquida imponible (170) ≈ 12 × renta mensual; otros derivan de ahí.
+ */
+function buildStubF22(rentaMensual: number): Record<string, unknown> {
+  const rli2025 = rentaMensual * 12;
+  const rli2024 = Math.round(rli2025 * 0.95); // año previo, levemente menor
+  const mk = (rli: number) => ({
+    glosa: {
+      "170": String(rli),
+      "1098": String(Math.round(rli * 0.99)),
+      "158": String(Math.round(rli * 0.05)),
+      "304": String(Math.round(rli * 0.001)),
+      "305": String(Math.round(rli * 0.002)),
+    },
+    codigos: {
+      "1": "DEMO",
+      "2": "INVERSIONISTA",
+      "5": "INVERSIONISTA DEMO",
+      "8": "SANTIAGO",
+      "13": "ACTIVIDAD DEMO PRINCIPAL",
+      "14": "100100",
+      "31": String(Math.round(rli * 0.005)),
+      "91": String(Math.round(rli * 0.04)),
+      "110": String(Math.round(rli * 0.02)),
+      "157": "0",
+      "158": String(Math.round(rli * 0.05)),
+      "161": String(rli),
+      "162": String(Math.round(rli * 0.01)),
+      "170": String(rli),
+      "304": String(Math.round(rli * 0.001)),
+      "305": String(Math.round(rli * 0.002)),
+      "461": String(rli),
+      "547": String(rli),
+      "1098": String(Math.round(rli * 0.99)),
+      "8811": "CLP",
+    },
+  });
+  return {
+    "2024": mk(rli2024),
+    "2025": mk(rli2025),
+  };
 }

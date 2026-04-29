@@ -29,6 +29,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# floid widget capture (gitignored por si se reactiva temporalmente desde git history)
+.floid-captures/
+
 # cursor
 .cursor/
 

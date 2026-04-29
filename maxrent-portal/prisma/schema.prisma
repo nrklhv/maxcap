@@ -169,6 +169,10 @@ model CreditEvaluation {
   consentVersion   String?
   /// Identificador de caso devuelto por Floid (útil en flujos asíncronos / auditoría)
   floidCaseId      String?
+  /// URL absoluta al PDF del reporte completo generado por Floid (widget devuelve `download_pdf`).
+  downloadPdfUrl   String?             @db.Text
+  /// Notas internas del equipo staff sobre esta evaluación (no visibles al inversionista).
+  staffNotes       String?             @db.Text
   /// Staff habilitó al inversionista a usar «Reservar» (además de status COMPLETED).
   staffReservationApprovedAt       DateTime?
   /// Id del usuario staff que aprobó (sin FK para no duplicar relación User↔CreditEvaluation).

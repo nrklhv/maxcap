@@ -1,9 +1,15 @@
 // =============================================================================
 // Landing local — accesos internos a portales (no es la vista final para clientes)
 // =============================================================================
+//
+// En producción: la raíz redirige a /login (decisión Opción B). El staff entra
+// vía /staff/login con la URL directa que les comparte el equipo. La landing
+// con las 3 cards solo se ve en dev.
+// =============================================================================
 
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Building2, LayoutDashboard, Shield } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -12,6 +18,12 @@ export const metadata: Metadata = {
 };
 
 export default function HomePage() {
+  // Producción: redirigir a /login. NextAuth+middleware se encarga del resto
+  // según el rol del usuario logueado (staff → /staff, broker → /broker, etc.).
+  if (process.env.NODE_ENV === "production") {
+    redirect("/login");
+  }
+
   return (
     <main
       className="min-h-screen flex flex-col items-center justify-center bg-gray-100 px-4 py-16"

@@ -1,18 +1,25 @@
 /**
- * Triggers a server-side credit evaluation via {@link floidService}.
- * Requires explicit JSON consent (`consentAccepted`, `consentVersion`) per product/legal requirements.
+ * Inicia una evaluación crediticia: crea una `CreditEvaluation` en PENDING
+ * y devuelve la URL del widget Floid para que el frontend la abra.
  *
- * Sync: returns `COMPLETED` with scores. Async (when `FLOID_CALLBACK_URL` is set and Floid acknowledges):
- * may return `PROCESSING` until {@link completeFloidEvaluationFromCallbackPayload} runs.
+ * Flujo:
+ *   1. El frontend hace POST acá con el consentimiento dual (preview + consent).
+ *   2. Devolvemos `{ evaluationId, widgetUrl, status }`.
+ *   3. El frontend abre `widgetUrl` en popup; el usuario completa el flujo en Floid.
+ *   4. Floid POSTea el reporte a `/api/floid/callback` y la fila pasa a COMPLETED.
+ *
+ * Si el widget está deshabilitado (modo stub), `widgetUrl` viene en null y la
+ * fila ya queda en COMPLETED con un payload simulado — el frontend solo refresca.
  *
  * @source POST /api/floid/evaluate
+ * @domain creditEvaluation
  */
 
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { floidEvaluateRequestSchema } from "@/lib/floid/evaluate-body.schema";
-import { floidService } from "@/lib/services/floid.service";
+import { createWidgetEvaluation } from "@/lib/services/floid.service";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -34,13 +41,15 @@ export async function POST(request: Request) {
       first.consentAccepted?.[0] ||
       first.consentVersion?.[0] ||
       "Solicitud inválida";
-    return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json(
+      { error: msg, details: parsed.error.flatten() },
+      { status: 400 }
+    );
   }
 
   const profile = await prisma.profile.findUnique({
     where: { userId: session.user.id },
   });
-
   if (!profile?.onboardingCompleted || !profile.rut) {
     return NextResponse.json(
       { error: "Debes completar tu perfil antes de solicitar una evaluación" },
@@ -48,33 +57,37 @@ export async function POST(request: Request) {
     );
   }
 
-  const pendingEval = await prisma.creditEvaluation.findFirst({
+  // Evita iniciar dos sesiones de widget en paralelo: si hay una pendiente,
+  // devolvemos la misma para que el frontend reutilice la URL del widget.
+  const existing = await prisma.creditEvaluation.findFirst({
     where: {
       userId: session.user.id,
       status: { in: ["PENDING", "PROCESSING"] },
     },
   });
-
-  if (pendingEval) {
+  if (existing) {
     return NextResponse.json(
-      { error: "Ya tienes una evaluación en proceso", evaluation: pendingEval },
+      {
+        error: "Ya tienes una evaluación en curso",
+        evaluation: { id: existing.id, status: existing.status },
+      },
       { status: 409 }
     );
   }
 
-  const consentAt = new Date();
-
   try {
-    const evaluation = await floidService.requestEvaluation(session.user.id, {
-      consentAt,
+    const result = await createWidgetEvaluation(session.user.id, {
+      consentAt: new Date(),
       consentVersion: parsed.data.consentVersion,
     });
-    return NextResponse.json({ evaluation });
+    return NextResponse.json({
+      evaluationId: result.evaluationId,
+      widgetUrl: result.widgetUrl,
+      status: result.status,
+    });
   } catch (error) {
     console.error("[Floid Evaluate]", error);
-    return NextResponse.json(
-      { error: "Error al procesar la evaluación" },
-      { status: 500 }
-    );
+    const msg = error instanceof Error ? error.message : "Error desconocido";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
