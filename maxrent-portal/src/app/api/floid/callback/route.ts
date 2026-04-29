@@ -22,26 +22,36 @@ function getBearerToken(request: Request): string | null {
   return h.slice(7).trim();
 }
 
+/** Crop a token to the first 8 + last 4 chars for safe logging. */
+function cropToken(t: string | null): string {
+  if (!t) return "(none)";
+  if (t.length <= 12) return "(short)";
+  return `${t.slice(0, 8)}...${t.slice(-4)}`;
+}
+
 export async function POST(request: Request) {
   const secret = process.env.FLOID_WEBHOOK_SECRET?.trim();
+  const receivedToken = getBearerToken(request);
+  const authHeaderRaw = request.headers.get("authorization");
+
+  // Loguear lo que llega (cropped) para diagnóstico — útil hasta confirmar con
+  // Floid qué exactamente manda en el header.
+  console.log(
+    `[Floid callback] auth header present=${Boolean(authHeaderRaw)} bearer=${cropToken(receivedToken)} secret_configured=${Boolean(secret)}`
+  );
 
   if (secret) {
-    const token = getBearerToken(request);
-    if (!token || token !== secret) {
+    if (!receivedToken || receivedToken !== secret) {
+      console.warn(
+        `[Floid callback] Bearer mismatch. Received=${cropToken(receivedToken)} Expected=${cropToken(secret)}. Rechazando 401.`
+      );
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
-  } else if (process.env.NODE_ENV === "production") {
-    // En prod NO permitimos el modo abierto: hay que setear el secret.
-    console.error(
-      "[Floid callback] FLOID_WEBHOOK_SECRET no configurado en producción. Rechazando POST."
-    );
-    return NextResponse.json(
-      { error: "Webhook no configurado correctamente" },
-      { status: 503 }
-    );
   } else {
+    // Sin secret configurado: aceptamos el POST (con warning). Recomendado
+    // configurarlo cuando Floid confirme qué token envía.
     console.warn(
-      "[Floid callback] FLOID_WEBHOOK_SECRET no configurado — aceptando POST sin validar (solo dev)."
+      "[Floid callback] FLOID_WEBHOOK_SECRET no configurado — aceptando POST sin validar."
     );
   }
 
