@@ -65,21 +65,34 @@ export function FloidReportSummary({ rawResponse, fallbackSummary }: Props) {
     );
   }
 
+  // Solo renderizamos las secciones que efectivamente vinieron en el reporte.
+  // Si una sección está null (producto no incluido en el widget contratado),
+  // no mostramos placeholder "no incluida" para no saturar la UI.
+  const sections: React.ReactNode[] = [];
+  if (report.sp) sections.push(<SectionRenta key="sp" sp={report.sp} />);
+  if (report.sii) sections.push(<SectionTributario key="sii" sii={report.sii} />);
+  if (report.cmf) sections.push(<SectionDeuda key="cmf" cmf={report.cmf} />);
+
+  // Grid responsivo según cuántas secciones haya. Hasta 3 columnas en md+.
+  const gridCols =
+    sections.length === 1
+      ? "grid-cols-1"
+      : sections.length === 2
+        ? "grid-cols-1 md:grid-cols-2"
+        : "grid-cols-1 md:grid-cols-3";
+
   return (
     <div className="space-y-4">
       <p className="text-sm text-gray-700 leading-relaxed">{report.summary}</p>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <SectionRenta sp={report.sp} />
-        <SectionTributario sii={report.sii} />
-        <SectionDeuda cmf={report.cmf} />
-      </div>
+      {sections.length > 0 && (
+        <div className={`grid ${gridCols} gap-3`}>{sections}</div>
+      )}
     </div>
   );
 }
 
-function SectionRenta({ sp }: { sp: FloidWidgetReport["sp"] }) {
-  if (!sp) return <DisabledSection icon="renta" label="Renta" reason="No incluida en el reporte." />;
+function SectionRenta({ sp }: { sp: NonNullable<FloidWidgetReport["sp"]> }) {
   return (
     <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4 space-y-2">
       <div className="flex items-center gap-2 text-emerald-900">
@@ -102,9 +115,7 @@ function SectionRenta({ sp }: { sp: FloidWidgetReport["sp"] }) {
   );
 }
 
-function SectionTributario({ sii }: { sii: FloidWidgetReport["sii"] }) {
-  if (!sii)
-    return <DisabledSection icon="trib" label="Tributario" reason="No incluido en el reporte." />;
+function SectionTributario({ sii }: { sii: NonNullable<FloidWidgetReport["sii"]> }) {
   // Renta anual: priorizamos renta líquida imponible (170); si no, base imponible (1098).
   const rentaAnual =
     sii.latestF22?.rentaLiquidaImponible ?? sii.latestF22?.baseImponible ?? null;
@@ -158,9 +169,7 @@ function SectionTributario({ sii }: { sii: FloidWidgetReport["sii"] }) {
   );
 }
 
-function SectionDeuda({ cmf }: { cmf: FloidWidgetReport["cmf"] }) {
-  if (!cmf)
-    return <DisabledSection icon="deuda" label="Deuda" reason="No incluida en el reporte." />;
+function SectionDeuda({ cmf }: { cmf: NonNullable<FloidWidgetReport["cmf"]> }) {
   const moroso = cmf.totalDebt30To89 + cmf.totalDebt90Plus;
   const lineasTotal = cmf.totalLinesDirect + cmf.totalLinesIndirect;
   return (
@@ -201,27 +210,6 @@ function SectionDeuda({ cmf }: { cmf: FloidWidgetReport["cmf"] }) {
           </div>
         )}
       </dl>
-    </div>
-  );
-}
-
-function DisabledSection({
-  icon,
-  label,
-  reason,
-}: {
-  icon: "renta" | "trib" | "deuda";
-  label: string;
-  reason: string;
-}) {
-  const Icon = icon === "renta" ? Wallet : icon === "trib" ? Briefcase : CreditCard;
-  return (
-    <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4 space-y-2 opacity-70">
-      <div className="flex items-center gap-2 text-gray-500">
-        <Icon className="h-4 w-4 shrink-0" />
-        <h4 className="text-xs font-semibold uppercase tracking-wide">{label}</h4>
-      </div>
-      <p className="text-xs text-gray-500">{reason}</p>
     </div>
   );
 }

@@ -53,10 +53,15 @@ FLOID_USE_STUB=true                          # opcional: forzar stub aunque haya
 ## Configuración del widget en `admin.floid.app`
 
 1. Crear widget desde la sección Widgets → "Crear Widget".
-2. Habilitar los 3 productos contratados:
+2. Habilitar los productos del widget actual:
    - **AFC Reporte** (Sup. Pensiones — `get_renta_imponible`)
-   - **Reporte Deuda CMF** (`debt`/`debt_v2`)
    - **SII Lectura** (`get_carpeta_tributaria` + `solicitud_creditos`)
+
+   > **Nota**: el producto de **Reporte Deuda CMF** (`debt_v2`) está contratado pero
+   > **temporalmente fuera del widget** debido a problemas de timing con el código
+   > 2FA de Clave Única (correo se demora más que la ventana). El parser sigue
+   > soportando la sección CMF si en el futuro se reactiva — solo hay que volver
+   > a habilitar el producto en el widget de Floid.
 3. **Webhook URL**: `https://<dominio>/api/floid/callback`
    - Para desarrollo local: usar `cloudflared tunnel --url http://localhost:3002` y poner la URL pública.
 4. (Opcional) **Redirect URL**: `https://<dominio>/evaluacion` — adónde mandar al usuario al cerrar.

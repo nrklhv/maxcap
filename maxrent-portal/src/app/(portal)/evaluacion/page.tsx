@@ -221,8 +221,8 @@ export default function EvaluacionPage() {
         />
         <span className="text-sm text-gray-700 leading-relaxed">
           Autorizo a <strong>MaxRent</strong> a iniciar la consulta con <strong>Floid</strong> para
-          obtener mi reporte de renta (Superintendencia de Pensiones), información tributaria (SII) y
-          deuda (CMF). Términos:{" "}
+          obtener mi reporte de renta (Superintendencia de Pensiones) e información tributaria (SII).
+          Términos:{" "}
           <span className="font-mono text-xs text-gray-600">{FLOID_CONSENT_VERSION}</span>.
         </span>
       </label>
@@ -247,8 +247,8 @@ export default function EvaluacionPage() {
             Un <strong>identificador interno</strong> de la solicitud (para correlacionar la respuesta).
           </li>
           <li className="text-gray-600">
-            <strong>Tus claves no pasan por MaxRent</strong>: Clave Única, Clave Tributaria SII y el 2FA
-            los ingresas directo en la ventana de Floid.
+            <strong>Tus claves no pasan por MaxRent</strong>: Clave Única y Clave Tributaria SII las
+            ingresas directo en la ventana de Floid.
           </li>
         </ul>
       </div>
@@ -263,9 +263,6 @@ export default function EvaluacionPage() {
           </li>
           <li>
             <strong>Carpeta tributaria</strong> con datos del contribuyente, bienes raíces y F22 (SII).
-          </li>
-          <li>
-            <strong>Reporte de deuda</strong> directa, indirecta y líneas disponibles (CMF).
           </li>
           <li className="text-gray-600">
             Floid genera un <strong>PDF</strong> con el detalle completo y MaxRent lo guarda para tu
@@ -320,8 +317,8 @@ export default function EvaluacionPage() {
       </h1>
       <p className="text-gray-600 text-pretty max-w-2xl">
         Te ayudamos a conocer tu <strong>capacidad de compra</strong> obteniendo tu información de
-        renta, tributaria y de deuda a través de <strong>Floid</strong>. Floid opera en su propio
-        dominio: tus claves de Clave Única y SII no pasan por MaxRent.
+        renta y tributaria a través de <strong>Floid</strong>. Floid opera en su propio dominio: tus
+        claves de Clave Única y SII no pasan por MaxRent.
       </p>
     </div>
   );

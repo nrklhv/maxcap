@@ -173,9 +173,9 @@ function buildStubPayload(rut: string, evaluationId: string): Record<string, unk
   const rutClean = normalizeRutForFloid(rut);
   const rutNumber = parseInt(rutClean.replace(/\D/g, "").slice(0, 8), 10) || 12345678;
   const renta = 1_500_000 + (rutNumber % 4_000_000);
-  const deudaTotal = 5_000_000 + (rutNumber % 100_000_000);
-  const linea = 8_000_000 + (rutNumber % 12_000_000);
 
+  // El widget productivo actualmente solo trae SP + SII (CMF se removió por
+  // problemas con 2FA de Clave Única). El stub refleja el mismo shape.
   return {
     code: 200,
     message: "OK (stub)",
@@ -218,31 +218,6 @@ function buildStubPayload(rut: string, evaluationId: string): Record<string, unk
           bienes_raices: [],
           boletas_honorarios: [],
           F22: buildStubF22(renta),
-        },
-      },
-    },
-    CMF: {
-      deuda: {
-        code: "200",
-        msg: "OK (stub)",
-        data: {
-          name: "Inversionista Demo",
-          rut: rutClean,
-          updated: new Date().toISOString().slice(0, 10),
-          directDebt: [
-            {
-              institution: "Banco Demo",
-              currentDebt: String(deudaTotal),
-              between30To89Days: "0",
-              over90Days: "0",
-              total: String(deudaTotal),
-            },
-          ],
-          indirectDebt: [],
-          credits: {
-            lines: [{ institution: "Banco Demo", direct: String(linea), indirect: "0" }],
-            others: [],
-          },
         },
       },
     },
