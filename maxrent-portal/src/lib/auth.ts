@@ -19,6 +19,7 @@ import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { Prisma } from "@prisma/client";
 import { isInvestorPerfilCompleteForPortal } from "@/lib/portal/profile-labor";
+import { backfillUserNotifications } from "@/lib/services/notifications";
 import { prisma } from "./prisma";
 import { authConfig, staffSuperAdminAllowlist, type AppJwt } from "./auth.config";
 
@@ -271,6 +272,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         await prisma.user.update({
           where: { id: user.id },
           data: { leadId: existingLead.id },
+        });
+      }
+
+      // Backfill de notificaciones previas (welcome email enviado al lead
+      // antes de tener cuenta) para que aparezcan en el timeline del User.
+      if (user.email) {
+        await backfillUserNotifications({
+          userId: user.id,
+          email: user.email,
+        }).catch(() => {
+          // Best-effort; no romper alta si falla.
         });
       }
     },

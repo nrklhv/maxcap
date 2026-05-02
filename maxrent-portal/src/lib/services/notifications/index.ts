@@ -15,6 +15,11 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getEmailProvider } from "./providers/_registry";
+import {
+  renderTemplate,
+  type TemplateKey,
+  type TemplateMap,
+} from "./templates/_registry";
 import type { NotifyInput, NotifyResult } from "./types";
 
 /** Envía una notificación y la registra en la tabla `Notification`. */
@@ -85,6 +90,39 @@ export async function notify(input: NotifyInput): Promise<NotifyResult> {
     status: "FAILED",
     errorMessage: result.errorMessage,
   };
+}
+
+/**
+ * Renderiza un template registrado y lo envía. Es el camino preferido para
+ * comunicaciones del producto (welcome, magic link, evaluación, etc.).
+ *
+ * El typing garantiza que las `variables` correspondan al template que se
+ * está usando (ej. `welcome-investor` exige `{ firstName?, email, portalUrl }`).
+ *
+ * Igual que `notify()`: registra QUEUED → SENT/FAILED en la tabla `Notification`.
+ */
+export async function notifyTemplate<K extends TemplateKey>(params: {
+  template: K;
+  variables: TemplateMap[K];
+  to: string;
+  userId?: string | null;
+  /** Override opcional del `from` configurado a nivel servicio. */
+  from?: string;
+  replyTo?: string;
+}): Promise<NotifyResult> {
+  const rendered = await renderTemplate(params.template, params.variables);
+  return notify({
+    channel: "EMAIL",
+    to: params.to,
+    subject: rendered.subject,
+    html: rendered.html,
+    text: rendered.text,
+    from: params.from,
+    replyTo: params.replyTo,
+    templateKey: params.template,
+    variables: params.variables as Record<string, unknown>,
+    userId: params.userId ?? null,
+  });
 }
 
 /**
