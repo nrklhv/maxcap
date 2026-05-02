@@ -43,6 +43,9 @@ export default auth((req) => {
   const isApiAuth = pathname.startsWith("/api/auth");
   const isPaymentWebhook = pathname.startsWith("/api/payments/webhook");
   const isFloidWebhook = pathname === "/api/floid/callback";
+  const isNotificationsWebhook = pathname.startsWith(
+    "/api/notifications/webhook/"
+  );
   const isApi = pathname.startsWith("/api");
 
   if (pathname.startsWith("/admin")) {
@@ -52,7 +55,12 @@ export default auth((req) => {
     return NextResponse.redirect(url, 308);
   }
 
-  if (isApiAuth || isPaymentWebhook || isFloidWebhook) {
+  if (
+    isApiAuth ||
+    isPaymentWebhook ||
+    isFloidWebhook ||
+    isNotificationsWebhook
+  ) {
     return NextResponse.next();
   }
 
