@@ -11,6 +11,7 @@ import {
   spanishWhatsAppInvalid,
 } from "@/lib/nativeValidityEs";
 import { readStoredAttribution } from "@/lib/marketingAttribution";
+import { getPortalUrl } from "@/lib/site";
 
 type Props = {
   onReserved: () => void;
@@ -21,6 +22,7 @@ const inputClass =
 
 export function FormInversionista({ onReserved }: Props) {
   const [submitted, setSubmitted] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -43,17 +45,18 @@ export function FormInversionista({ onReserved }: Props) {
     setSubmitting(true);
     setSubmitError(null);
     const fd = new FormData(form);
+    const email = String(fd.get("email") ?? "").toLowerCase();
     const body = {
       type: "inversionista" as const,
       nombre: String(fd.get("nombre") ?? ""),
       apellido: String(fd.get("apellido") ?? ""),
-      email: String(fd.get("email") ?? ""),
+      email,
       whatsapp: String(fd.get("whatsapp") ?? ""),
       marketing_attribution: readStoredAttribution(),
     };
 
     try {
-      const res = await fetch("/api/leads", {
+      const res = await fetch(`${getPortalUrl()}/api/public/leads`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -64,12 +67,21 @@ export function FormInversionista({ onReserved }: Props) {
         return;
       }
       onReserved();
+      setSubmittedEmail(email);
       setSubmitted(true);
     } catch {
       setSubmitError("Error de conexión. Revisa tu red e intenta de nuevo.");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function continueToPortal() {
+    const portalUrl = new URL(`${getPortalUrl()}/login`);
+    portalUrl.searchParams.set("email", submittedEmail);
+    portalUrl.searchParams.set("newLead", "1");
+    portalUrl.searchParams.set("callbackUrl", "/perfil");
+    window.location.href = portalUrl.toString();
   }
 
   if (submitted) {
@@ -80,12 +92,19 @@ export function FormInversionista({ onReserved }: Props) {
         </div>
         <div className="mb-1.5 font-serif text-xl text-dark">¡Recibimos tus datos!</div>
         <p className="mx-auto max-w-sm text-sm leading-relaxed text-gray-3">
-          Un especialista te contactará por WhatsApp en menos de 24 horas. El cupo no queda
-          reservado con este paso: depende de la evaluación y del pago de la reserva.
+          El siguiente paso es entrar al portal del inversionista para completar tu perfil
+          y agendar la asesoría con un especialista. Toma menos de 2 minutos.
         </p>
         <button
           type="button"
-          className="mt-4 flex w-full cursor-pointer items-center justify-center rounded-[9px] border-[1.5px] border-orange bg-white py-3 text-sm font-semibold text-orange transition-colors hover:bg-orange/5"
+          onClick={continueToPortal}
+          className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-[9px] bg-orange py-3 text-sm font-semibold text-white transition-colors hover:bg-[#E55A00] active:scale-[0.98]"
+        >
+          Continuar al portal <span>→</span>
+        </button>
+        <button
+          type="button"
+          className="mt-2 flex w-full cursor-pointer items-center justify-center rounded-[9px] border-[1.5px] border-gray-1 bg-white py-3 text-sm font-semibold text-gray-3 transition-colors hover:bg-cream"
           onClick={() => {
             setSubmitError(null);
             setSubmitted(false);
