@@ -43,7 +43,9 @@ export async function GET() {
     prisma.user.findUnique({
       where: { id: session.user.id },
       select: {
+        id: true,
         email: true,
+        leadId: true,
         lead: {
           select: {
             firstName: true,
@@ -56,10 +58,45 @@ export async function GET() {
     }),
   ]);
 
-  // Si el Profile no tiene datos en ciertos campos pero el User está vinculado
-  // a un Lead, hidratamos esos campos con los del Lead. Es solo lectura: el
-  // PUT del form sigue siendo quien persiste los valores definitivos.
-  const lead = user?.lead ?? null;
+  // Resolver el Lead a usar para hidratar el form:
+  // 1) Si el User ya está vinculado a un Lead, usamos ese.
+  // 2) Si no, buscamos un Lead por el email del User. Esto cubre el caso de
+  //    cuentas creadas antes de que existiera el Lead (el evento createUser
+  //    de NextAuth solo se dispara en alta, no en logins posteriores).
+  //    Si encontramos uno, vinculamos `user.leadId` para que las próximas
+  //    llamadas no tengan que repetir el lookup.
+  let lead = user?.lead ?? null;
+  if (!lead && user?.email) {
+    const candidate = await prisma.lead.findUnique({
+      where: { email: user.email.toLowerCase() },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+      },
+    });
+    if (candidate) {
+      lead = {
+        firstName: candidate.firstName,
+        lastName: candidate.lastName,
+        email: candidate.email,
+        phone: candidate.phone,
+      };
+      // Best-effort link; si falla por race condition lo intentamos en la próxima.
+      void prisma.user
+        .update({
+          where: { id: user.id },
+          data: { leadId: candidate.id },
+        })
+        .catch(() => {});
+    }
+  }
+
+  // Si el Profile no tiene datos en ciertos campos pero hay un Lead disponible,
+  // hidratamos esos campos. Es solo lectura: el PUT del form sigue siendo
+  // quien persiste los valores definitivos.
   const hydratedProfile = profile
     ? {
         ...profile,
