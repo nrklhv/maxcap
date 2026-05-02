@@ -23,6 +23,13 @@ function prismaErrorCode(e: unknown): string | undefined {
   return undefined;
 }
 
+/** Devuelve `value` si trae texto, sino `fallback`. Útil para hidratar el form
+ *  con datos del Lead cuando el Profile aún no los tiene cargados. */
+function fallback<T extends string | null | undefined>(value: T, fallback: T): T {
+  if (typeof value === "string" && value.trim().length > 0) return value;
+  return fallback;
+}
+
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) {
@@ -35,12 +42,51 @@ export async function GET() {
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { email: true },
+      select: {
+        email: true,
+        lead: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
     }),
   ]);
 
+  // Si el Profile no tiene datos en ciertos campos pero el User está vinculado
+  // a un Lead, hidratamos esos campos con los del Lead. Es solo lectura: el
+  // PUT del form sigue siendo quien persiste los valores definitivos.
+  const lead = user?.lead ?? null;
+  const hydratedProfile = profile
+    ? {
+        ...profile,
+        firstName: fallback(profile.firstName, lead?.firstName ?? null),
+        lastName: fallback(profile.lastName, lead?.lastName ?? null),
+        contactEmail: fallback(profile.contactEmail, lead?.email ?? null),
+        phone: fallback(profile.phone, lead?.phone ?? null),
+      }
+    : lead
+    ? {
+        // Profile aún no creado (caso raro: createUser hook falló o pendiente).
+        // Devolvemos shape parcial para que el form se pinte con datos del Lead.
+        firstName: lead.firstName,
+        lastName: lead.lastName,
+        contactEmail: lead.email,
+        phone: lead.phone,
+        rut: null,
+        address: null,
+        commune: null,
+        city: null,
+        onboardingCompleted: false,
+        additionalData: null,
+      }
+    : null;
+
   return NextResponse.json({
-    profile,
+    profile: hydratedProfile,
     account: user?.email ? { loginEmail: user.email } : null,
   });
 }
