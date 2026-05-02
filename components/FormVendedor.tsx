@@ -11,6 +11,7 @@ import {
   spanishWhatsAppInvalid,
 } from "@/lib/nativeValidityEs";
 import { readStoredAttribution } from "@/lib/marketingAttribution";
+import { getPortalUrl } from "@/lib/site";
 
 /** Slightly shorter fields so the vendedor sidebar fits above the fold on typical laptop heights. */
 const inputClass =
@@ -53,7 +54,7 @@ export function FormVendedor() {
     };
 
     try {
-      const res = await fetch("/api/leads", {
+      const res = await fetch(`${getPortalUrl()}/api/public/leads`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

@@ -26,7 +26,9 @@ export default function LoginContent({
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || defaultCallbackUrl;
   const errorCode = searchParams.get("error");
-  const [email, setEmail] = useState("");
+  const prefillEmail = searchParams.get("email")?.trim().toLowerCase() ?? "";
+  const isNewLead = searchParams.get("newLead") === "1";
+  const [email, setEmail] = useState(prefillEmail);
   const [devEmail, setDevEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -52,7 +54,11 @@ export default function LoginContent({
   const hasDevCredentials = providerIds?.includes("dev-credentials");
 
   const handleGoogleLogin = () => {
-    signIn("google", { callbackUrl });
+    // Si llega del landing con email pre-cargado, pasamos `login_hint` como
+    // authorization param para que Google preseleccione esa cuenta y el
+    // flujo se reduzca a 1 click.
+    const authorizationParams = prefillEmail ? { login_hint: prefillEmail } : undefined;
+    signIn("google", { callbackUrl }, authorizationParams);
   };
 
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -95,6 +101,19 @@ export default function LoginContent({
           <h1 className="text-3xl font-bold text-gray-900">{heading}</h1>
           <p className="mt-2 text-gray-600">{subtitle}</p>
         </div>
+
+        {isNewLead ? (
+          <div
+            className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900"
+            role="status"
+          >
+            <p className="font-semibold">¡Recibimos tus datos!</p>
+            <p className="mt-1 text-green-800">
+              Para continuar, ingresa al portal con tu email{" "}
+              {prefillEmail ? <strong>{prefillEmail}</strong> : null} y completa tu perfil.
+            </p>
+          </div>
+        ) : null}
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-5">
           {serverError ? (
