@@ -41,6 +41,7 @@ model User {
   profile           Profile?
   creditEvaluations CreditEvaluation[]
   reservations      Reservation[]
+  notifications     Notification[]
 
   // Relación con leads existentes (opcional, para vincular)
   leadId String? @unique
@@ -280,6 +281,54 @@ model Lead {
 }
 
 // =============================================================================
+// NOTIFICATIONS — Audit trail de TODA comunicación saliente (email/SMS/etc.)
+// =============================================================================
+// Toda comunicación enviada desde el portal pasa por la capa
+// `lib/services/notifications` y deja registro acá. Permite:
+//   - Cruzar timeline completo de comunicaciones por User o por email/phone
+//   - Cambiar de proveedor sin perder histórico
+//   - Tracking de delivery via webhooks (status SENT → DELIVERED → OPENED)
+//   - Auditoría regulatoria
+// Ver: memory/project_notifications_infra.md y src/lib/services/notifications/README.md
+
+model Notification {
+  id                String              @id @default(cuid())
+  channel           NotificationChannel
+  /// Identificador del template usado (ej. "welcome-investor", "magic-link", "reservation-confirmed").
+  templateKey       String
+  /// Email o E.164 phone destinatario (se preserva incluso si el User cambia de email).
+  recipient         String
+  /// Vínculo opcional con User. Null cuando aún no existe la cuenta (lead solo).
+  userId            String?
+  user              User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /// Variables que se pasaron al template (snapshot para auditoría).
+  variables         Json?
+  status            NotificationStatus  @default(QUEUED)
+  /// Slug del adapter que se usó: "resend", "postmark", "twilio", etc.
+  provider          String
+  /// Id que devuelve el proveedor para esta entrega (útil para cruce con webhooks).
+  providerMessageId String?
+  /// Payload completo de la respuesta del proveedor (auditoría).
+  providerResponse  Json?
+  /// Si falló al enviar, mensaje de error.
+  errorMessage      String?             @db.Text
+  /// Para envío diferido (a futuro). Si es null, se envía inmediato.
+  scheduledAt       DateTime?
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  openedAt          DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([userId])
+  @@index([recipient])
+  @@index([status])
+  @@index([templateKey])
+  @@index([providerMessageId])
+  @@map("notifications")
+}
+
+// =============================================================================
 // INVENTARIO — Catálogo (staff + portal broker)
 // =============================================================================
 
@@ -405,4 +454,28 @@ enum LeadStatus {
   CONVERTED
   /// Descartado manualmente por staff (spam, dato inválido, etc.).
   DISCARDED
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+  PUSH
+}
+
+enum NotificationStatus {
+  /// Creada en DB, todavía no enviada al proveedor.
+  QUEUED
+  /// Entregada al proveedor con éxito (mensajeId recibido).
+  SENT
+  /// Webhook del proveedor confirmó delivery al destinatario.
+  DELIVERED
+  /// Webhook reportó que el destinatario abrió el email.
+  OPENED
+  /// Bounced (email inválido, mailbox lleno, etc.).
+  BOUNCED
+  /// Marcado como spam por el destinatario.
+  COMPLAINED
+  /// Falló en el lado del proveedor o nuestro al intentar enviar.
+  FAILED
 }
