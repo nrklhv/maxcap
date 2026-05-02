@@ -19,7 +19,10 @@ import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { Prisma } from "@prisma/client";
 import { isInvestorPerfilCompleteForPortal } from "@/lib/portal/profile-labor";
-import { backfillUserNotifications } from "@/lib/services/notifications";
+import {
+  backfillUserNotifications,
+  notifyTemplate,
+} from "@/lib/services/notifications";
 import { prisma } from "./prisma";
 import { authConfig, staffSuperAdminAllowlist, type AppJwt } from "./auth.config";
 
@@ -69,8 +72,40 @@ function buildAuthProviders() {
   if (resendKey) {
     providers.push(
       Resend({
+        // El SDK del provider sigue requiriendo apiKey por tipos, pero al
+        // sobreescribir `sendVerificationRequest` no se usa: el envío real
+        // pasa por nuestra capa de notifications (templates + audit trail).
         apiKey: resendKey,
         from: process.env.EMAIL_FROM || "MaxRent <noreply@maxrent.cl>",
+        async sendVerificationRequest(params) {
+          const email = params.identifier.trim().toLowerCase();
+          // Si ya existe User con este email, vinculamos la notificación.
+          // Para magic links de signup (User aún no creado), userId queda null
+          // y el `backfillUserNotifications` del evento createUser lo asocia.
+          const user = await prisma.user.findUnique({
+            where: { email },
+            select: { id: true },
+          });
+
+          // NextAuth pasa `expires` como Date; calculamos minutos para mostrar.
+          const expiresMinutes = Math.max(
+            1,
+            Math.round(
+              (params.expires.getTime() - Date.now()) / (60 * 1000)
+            )
+          );
+
+          await notifyTemplate({
+            template: "magic-link",
+            to: email,
+            userId: user?.id ?? null,
+            variables: {
+              url: params.url,
+              email,
+              expiresMinutes,
+            },
+          });
+        },
       })
     );
   }
