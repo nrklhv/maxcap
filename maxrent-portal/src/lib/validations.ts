@@ -183,3 +183,57 @@ export const propertyUpdateSchema = z.object({
 
 export type PropertyCreateInput = z.infer<typeof propertyCreateSchema>;
 export type PropertyUpdateInput = z.infer<typeof propertyUpdateSchema>;
+
+// =============================================================================
+// LEADS PÚBLICOS — body que llega desde el landing (inversionista / vendedor)
+// =============================================================================
+
+const trimmedLead = (max: number) => z.string().trim().min(1).max(max);
+
+export const marketingAttributionSchema = z
+  .object({
+    utm_source: z.string().trim().max(256).nullish(),
+    utm_medium: z.string().trim().max(256).nullish(),
+    utm_campaign: z.string().trim().max(256).nullish(),
+    utm_term: z.string().trim().max(256).nullish(),
+    utm_content: z.string().trim().max(256).nullish(),
+    gclid: z.string().trim().max(512).nullish(),
+    fbclid: z.string().trim().max(512).nullish(),
+    referrer: z.string().trim().max(2048).nullish(),
+    landing_path: z.string().trim().max(512).nullish(),
+    captured_at: z.string().trim().max(64).nullish(),
+  })
+  .strict()
+  .nullish();
+
+const baseLeadFields = {
+  nombre: trimmedLead(120),
+  apellido: trimmedLead(120),
+  email: trimmedLead(254).email(),
+  whatsapp: trimmedLead(40),
+  marketing_attribution: marketingAttributionSchema,
+};
+
+export const leadInversionistaSchema = z
+  .object({
+    type: z.literal("inversionista"),
+    ...baseLeadFields,
+  })
+  .strict();
+
+export const leadVendedorSchema = z
+  .object({
+    type: z.literal("vendedor"),
+    ...baseLeadFields,
+    cantidad_propiedades: trimmedLead(32),
+    arrendadas: trimmedLead(120),
+    admin_houm: trimmedLead(120),
+  })
+  .strict();
+
+export const leadPublicBodySchema = z.discriminatedUnion("type", [
+  leadInversionistaSchema,
+  leadVendedorSchema,
+]);
+
+export type LeadPublicBodyInput = z.infer<typeof leadPublicBodySchema>;
