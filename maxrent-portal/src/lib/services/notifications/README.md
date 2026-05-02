@@ -63,6 +63,24 @@ PR siguiente (C) agrega:
 | `EMAIL_PROVIDER` | `resend` | Slug del adapter a usar |
 | `RESEND_API_KEY` | — | Solo si `EMAIL_PROVIDER=resend` |
 | `EMAIL_FROM` | — | `"MaxRent <noreply@maxrent.cl>"` (verificado en Resend) |
+| `RESEND_WEBHOOK_SECRET` | — | Signing secret de Resend → para validar delivery webhooks |
+
+## Webhook de delivery tracking
+
+Resend manda eventos de delivery (delivered/bounced/opened/etc.) al endpoint
+`/api/notifications/webhook/resend`. Ese endpoint:
+
+1. Valida la firma con Svix usando `RESEND_WEBHOOK_SECRET`.
+2. Mapea el evento al shape común `DeliveryEvent`.
+3. Llama a `applyDeliveryEvent()` que actualiza el row de `Notification`
+   matching por `providerMessageId`.
+
+Setup en Resend dashboard:
+- Webhooks → Add Endpoint.
+- URL: `https://portal.maxrent.cl/api/notifications/webhook/resend`.
+- Eventos a suscribir: `email.sent`, `email.delivered`, `email.bounced`,
+  `email.complained`, `email.opened`, `email.clicked`, `email.delivery_delayed`.
+- Resend devuelve un Signing Secret → guardar en `RESEND_WEBHOOK_SECRET`.
 
 ## Cambiar de proveedor
 
