@@ -14,6 +14,11 @@
 
 import { render } from "@react-email/render";
 import { createElement } from "react";
+import MagicLink, {
+  magicLinkSubject,
+  magicLinkText,
+  type MagicLinkVariables,
+} from "./magic-link";
 import WelcomeInvestor, {
   welcomeInvestorSubject,
   welcomeInvestorText,
@@ -30,6 +35,7 @@ export type RenderedTemplate = {
 /** Map templateKey → variables type. Crece a medida que sumamos templates. */
 export type TemplateMap = {
   "welcome-investor": WelcomeInvestorVariables;
+  "magic-link": MagicLinkVariables;
 };
 
 export type TemplateKey = keyof TemplateMap;
@@ -44,6 +50,14 @@ const TEMPLATE_REGISTRY: {
       subject: welcomeInvestorSubject,
       html,
       text: welcomeInvestorText(vars),
+    };
+  },
+  "magic-link": async (vars) => {
+    const html = await render(createElement(MagicLink, vars));
+    return {
+      subject: magicLinkSubject,
+      html,
+      text: magicLinkText(vars),
     };
   },
 };
