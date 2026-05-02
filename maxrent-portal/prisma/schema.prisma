@@ -239,20 +239,43 @@ model BrokerInvestorInvite {
   @@map("broker_investor_invites")
 }
 
+/// Lead capturado en el landing (inversionista o vendedor) o creado por flujos internos.
+/// Se vincula con `User` cuando el lead se registra en el portal (1:1 opcional).
 model Lead {
-  id        String   @id @default(cuid())
-  email     String   @unique
+  id     String     @id @default(cuid())
+  email  String     @unique
+  /// Tipo de lead — define qué flujo del producto le aplica.
+  kind   LeadKind   @default(INVESTOR)
+  /// Estado en el funnel (NEW al crearse desde landing, REGISTERED cuando se vincula con User, etc.).
+  status LeadStatus @default(NEW)
+
+  // Datos personales (snapshot del form)
+  firstName String?
+  lastName  String?
+  /// Compatibilidad: nombre completo armado al guardar (firstName + lastName).
   name      String?
   phone     String?
-  source    String?  // De dónde vino el lead
-  status    String?  // Estado del lead en tu CRM
-  data      Json?    // Datos adicionales del lead
+
+  // Campos específicos del landing vendedor (null para inversionista)
+  cantidadPropiedades String?
+  arrendadas          String?
+  adminHoum           String?
+
+  // Origen y atribución
+  /// Canal de origen: "landing-investor", "landing-seller", "broker-invite", etc.
+  source               String?
+  marketingAttribution Json?
+
+  /// Datos adicionales arbitrarios (futuros flujos sin tener que migrar).
+  data Json?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relación con usuario del portal (cuando el lead se registra)
   user User?
 
+  @@index([kind, status])
   @@map("leads")
 }
 
@@ -364,4 +387,22 @@ enum ReservationStatus {
   CANCELLED
   EXPIRED
   REFUNDED
+}
+
+enum LeadKind {
+  INVESTOR
+  SELLER
+}
+
+enum LeadStatus {
+  /// Recién capturado en el landing.
+  NEW
+  /// Se le envió un magic link / invitación.
+  INVITED
+  /// Se vinculó con un User del portal (NextAuth createUser event).
+  REGISTERED
+  /// Completó onboarding y avanza en el flujo del portal.
+  CONVERTED
+  /// Descartado manualmente por staff (spam, dato inválido, etc.).
+  DISCARDED
 }

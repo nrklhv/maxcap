@@ -1,7 +1,3 @@
--- Baseline: full MaxRent portal schema (NextAuth + inventory + portal tables).
--- Generated with: prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma
--- Replaces older fragmented migrations that assumed pre-existing tables.
-
 -- CreateSchema
 CREATE SCHEMA IF NOT EXISTS "public";
 
@@ -12,7 +8,16 @@ CREATE TYPE "StaffRole" AS ENUM ('NONE', 'SUPER_ADMIN');
 CREATE TYPE "BrokerAccessStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
 
 -- CreateEnum
+CREATE TYPE "BrokerInvestorInviteStatus" AS ENUM ('PENDING', 'COMPLETED', 'EXPIRED');
+
+-- CreateEnum
 CREATE TYPE "PropertyStatus" AS ENUM ('AVAILABLE', 'RESERVED', 'SOLD', 'ARCHIVED');
+
+-- CreateEnum
+CREATE TYPE "CatalogDraftSource" AS ENUM ('HOUM', 'CSV');
+
+-- CreateEnum
+CREATE TYPE "PropertyCatalogDraftStatus" AS ENUM ('PENDING', 'REJECTED', 'APPROVED');
 
 -- CreateEnum
 CREATE TYPE "EvaluationStatus" AS ENUM ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'EXPIRED');
@@ -22,6 +27,12 @@ CREATE TYPE "RiskLevel" AS ENUM ('LOW', 'MEDIUM', 'HIGH');
 
 -- CreateEnum
 CREATE TYPE "ReservationStatus" AS ENUM ('PENDING_PAYMENT', 'PAYMENT_PROCESSING', 'PAID', 'CONFIRMED', 'CANCELLED', 'EXPIRED', 'REFUNDED');
+
+-- CreateEnum
+CREATE TYPE "LeadKind" AS ENUM ('INVESTOR', 'SELLER');
+
+-- CreateEnum
+CREATE TYPE "LeadStatus" AS ENUM ('NEW', 'INVITED', 'REGISTERED', 'CONVERTED', 'DISCARDED');
 
 -- CreateTable
 CREATE TABLE "users" (
@@ -37,6 +48,9 @@ CREATE TABLE "users" (
     "leadId" TEXT,
     "brokerAccessStatus" "BrokerAccessStatus",
     "brokerReviewedAt" TIMESTAMP(3),
+    "sponsorBrokerUserId" TEXT,
+    "sponsorBrokerAssignedAt" TIMESTAMP(3),
+    "sponsorBrokerAssignedByStaffUserId" TEXT,
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
@@ -97,6 +111,21 @@ CREATE TABLE "profiles" (
 );
 
 -- CreateTable
+CREATE TABLE "broker_profiles" (
+    "userId" TEXT NOT NULL,
+    "companyName" TEXT NOT NULL,
+    "jobTitle" TEXT NOT NULL,
+    "isIndependent" BOOLEAN NOT NULL DEFAULT false,
+    "websiteUrl" TEXT,
+    "linkedinUrl" TEXT,
+    "pitch" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "broker_profiles_pkey" PRIMARY KEY ("userId")
+);
+
+-- CreateTable
 CREATE TABLE "credit_evaluations" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -109,6 +138,13 @@ CREATE TABLE "credit_evaluations" (
     "errorMessage" TEXT,
     "requestedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "completedAt" TIMESTAMP(3),
+    "consentAt" TIMESTAMP(3),
+    "consentVersion" TEXT,
+    "floidCaseId" TEXT,
+    "downloadPdfUrl" TEXT,
+    "staffNotes" TEXT,
+    "staffReservationApprovedAt" TIMESTAMP(3),
+    "staffReservationApprovedByUserId" TEXT,
 
     CONSTRAINT "credit_evaluations_pkey" PRIMARY KEY ("id")
 );
@@ -137,13 +173,35 @@ CREATE TABLE "reservations" (
 );
 
 -- CreateTable
+CREATE TABLE "broker_investor_invites" (
+    "id" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "brokerUserId" TEXT NOT NULL,
+    "inviteeEmail" TEXT,
+    "status" "BrokerInvestorInviteStatus" NOT NULL DEFAULT 'PENDING',
+    "registeredUserId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "completedAt" TIMESTAMP(3),
+
+    CONSTRAINT "broker_investor_invites_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "leads" (
     "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
+    "kind" "LeadKind" NOT NULL DEFAULT 'INVESTOR',
+    "status" "LeadStatus" NOT NULL DEFAULT 'NEW',
+    "firstName" TEXT,
+    "lastName" TEXT,
     "name" TEXT,
     "phone" TEXT,
+    "cantidadPropiedades" TEXT,
+    "arrendadas" TEXT,
+    "adminHoum" TEXT,
     "source" TEXT,
-    "status" TEXT,
+    "marketingAttribution" JSONB,
     "data" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -158,6 +216,7 @@ CREATE TABLE "properties" (
     "status" "PropertyStatus" NOT NULL DEFAULT 'AVAILABLE',
     "visibleToBrokers" BOOLEAN NOT NULL DEFAULT false,
     "metadata" JSONB,
+    "inventoryCode" TEXT,
     "houmPropertyId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -165,11 +224,35 @@ CREATE TABLE "properties" (
     CONSTRAINT "properties_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "property_catalog_drafts" (
+    "id" TEXT NOT NULL,
+    "source" "CatalogDraftSource" NOT NULL,
+    "houmPropertyId" TEXT,
+    "inventoryCode" TEXT,
+    "title" TEXT NOT NULL,
+    "metadata" JSONB,
+    "status" "PropertyCatalogDraftStatus" NOT NULL DEFAULT 'PENDING',
+    "pendingPropertyStatus" "PropertyStatus",
+    "pendingVisibleToBrokers" BOOLEAN,
+    "propertyId" TEXT,
+    "reviewedAt" TIMESTAMP(3),
+    "reviewedByUserId" TEXT,
+    "rejectionReason" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "property_catalog_drafts_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_leadId_key" ON "users"("leadId");
+
+-- CreateIndex
+CREATE INDEX "users_sponsorBrokerUserId_idx" ON "users"("sponsorBrokerUserId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "accounts_provider_providerAccountId_key" ON "accounts"("provider", "providerAccountId");
@@ -196,13 +279,28 @@ CREATE UNIQUE INDEX "profiles_rut_key" ON "profiles"("rut");
 CREATE INDEX "credit_evaluations_userId_status_idx" ON "credit_evaluations"("userId", "status");
 
 -- CreateIndex
+CREATE INDEX "credit_evaluations_floidCaseId_idx" ON "credit_evaluations"("floidCaseId");
+
+-- CreateIndex
 CREATE INDEX "reservations_userId_status_idx" ON "reservations"("userId", "status");
 
 -- CreateIndex
 CREATE INDEX "reservations_paymentExternalId_idx" ON "reservations"("paymentExternalId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "broker_investor_invites_token_key" ON "broker_investor_invites"("token");
+
+-- CreateIndex
+CREATE INDEX "broker_investor_invites_brokerUserId_idx" ON "broker_investor_invites"("brokerUserId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "leads_email_key" ON "leads"("email");
+
+-- CreateIndex
+CREATE INDEX "leads_kind_status_idx" ON "leads"("kind", "status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "properties_inventoryCode_key" ON "properties"("inventoryCode");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "properties_houmPropertyId_key" ON "properties"("houmPropertyId");
@@ -210,8 +308,20 @@ CREATE UNIQUE INDEX "properties_houmPropertyId_key" ON "properties"("houmPropert
 -- CreateIndex
 CREATE INDEX "properties_status_idx" ON "properties"("status");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "property_catalog_drafts_houmPropertyId_key" ON "property_catalog_drafts"("houmPropertyId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "property_catalog_drafts_inventoryCode_key" ON "property_catalog_drafts"("inventoryCode");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "property_catalog_drafts_propertyId_key" ON "property_catalog_drafts"("propertyId");
+
 -- AddForeignKey
 ALTER TABLE "users" ADD CONSTRAINT "users_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "leads"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "users" ADD CONSTRAINT "users_sponsorBrokerUserId_fkey" FOREIGN KEY ("sponsorBrokerUserId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -223,6 +333,9 @@ ALTER TABLE "sessions" ADD CONSTRAINT "sessions_userId_fkey" FOREIGN KEY ("userI
 ALTER TABLE "profiles" ADD CONSTRAINT "profiles_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "broker_profiles" ADD CONSTRAINT "broker_profiles_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "credit_evaluations" ADD CONSTRAINT "credit_evaluations_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -230,4 +343,13 @@ ALTER TABLE "reservations" ADD CONSTRAINT "reservations_userId_fkey" FOREIGN KEY
 
 -- AddForeignKey
 ALTER TABLE "reservations" ADD CONSTRAINT "reservations_evaluationId_fkey" FOREIGN KEY ("evaluationId") REFERENCES "credit_evaluations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "broker_investor_invites" ADD CONSTRAINT "broker_investor_invites_brokerUserId_fkey" FOREIGN KEY ("brokerUserId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "broker_investor_invites" ADD CONSTRAINT "broker_investor_invites_registeredUserId_fkey" FOREIGN KEY ("registeredUserId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "property_catalog_drafts" ADD CONSTRAINT "property_catalog_drafts_propertyId_fkey" FOREIGN KEY ("propertyId") REFERENCES "properties"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
