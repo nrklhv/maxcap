@@ -48,10 +48,12 @@ export async function GET() {
         leadId: true,
         lead: {
           select: {
+            id: true,
             firstName: true,
             lastName: true,
             email: true,
             phone: true,
+            marketingAttribution: true,
           },
         },
       },
@@ -63,8 +65,9 @@ export async function GET() {
   // 2) Si no, buscamos un Lead por el email del User. Esto cubre el caso de
   //    cuentas creadas antes de que existiera el Lead (el evento createUser
   //    de NextAuth solo se dispara en alta, no en logins posteriores).
-  //    Si encontramos uno, vinculamos `user.leadId` para que las próximas
-  //    llamadas no tengan que repetir el lookup.
+  //    Si encontramos uno, vinculamos `user.leadId` y propagamos la
+  //    atribución de marketing (UTMs/gclid/etc.) al Profile.additionalData
+  //    para que esté disponible en BI/conversion tracking.
   let lead = user?.lead ?? null;
   if (!lead && user?.email) {
     const candidate = await prisma.lead.findUnique({
@@ -75,15 +78,11 @@ export async function GET() {
         lastName: true,
         email: true,
         phone: true,
+        marketingAttribution: true,
       },
     });
     if (candidate) {
-      lead = {
-        firstName: candidate.firstName,
-        lastName: candidate.lastName,
-        email: candidate.email,
-        phone: candidate.phone,
-      };
+      lead = candidate;
       // Best-effort link; si falla por race condition lo intentamos en la próxima.
       void prisma.user
         .update({
@@ -92,6 +91,28 @@ export async function GET() {
         })
         .catch(() => {});
     }
+  }
+
+  // Propagar la atribución del Lead al Profile.additionalData si todavía
+  // no estaba sembrada. Best-effort: no bloquea la respuesta del GET.
+  if (
+    lead?.marketingAttribution &&
+    profile &&
+    !(isJsonObject(profile.additionalData) && "marketingAttribution" in profile.additionalData)
+  ) {
+    const prevAdditional = isJsonObject(profile.additionalData)
+      ? { ...(profile.additionalData as Record<string, unknown>) }
+      : {};
+    const nextAdditional = {
+      ...prevAdditional,
+      marketingAttribution: lead.marketingAttribution,
+    } as Prisma.InputJsonValue;
+    void prisma.profile
+      .update({
+        where: { userId: session.user.id },
+        data: { additionalData: nextAdditional },
+      })
+      .catch(() => {});
   }
 
   // Si el Profile no tiene datos en ciertos campos pero hay un Lead disponible,

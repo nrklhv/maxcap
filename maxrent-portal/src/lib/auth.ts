@@ -17,6 +17,7 @@ import Google from "next-auth/providers/google";
 import Resend from "next-auth/providers/resend";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
+import { Prisma } from "@prisma/client";
 import { isInvestorPerfilCompleteForPortal } from "@/lib/portal/profile-labor";
 import { prisma } from "./prisma";
 import { authConfig, staffSuperAdminAllowlist, type AppJwt } from "./auth.config";
@@ -239,22 +240,38 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   events: {
     async createUser({ user }) {
       if (!user.id) return;
+
+      // Buscar el Lead correspondiente al email para vincular en el alta
+      // y propagar la atribución de marketing al Profile.additionalData.
+      const existingLead = user.email
+        ? await prisma.lead.findUnique({
+            where: { email: user.email.toLowerCase() },
+            select: { id: true, marketingAttribution: true },
+          })
+        : null;
+
+      // Si el Lead trae atribución de marketing (UTMs, gclid, etc.), la
+      // sembramos en additionalData.marketingAttribution para uso en BI.
+      const initialAdditionalData = existingLead?.marketingAttribution
+        ? { marketingAttribution: existingLead.marketingAttribution }
+        : undefined;
+
       await prisma.profile.upsert({
         where: { userId: user.id },
-        create: { userId: user.id },
+        create: {
+          userId: user.id,
+          ...(initialAdditionalData
+            ? { additionalData: initialAdditionalData as Prisma.InputJsonValue }
+            : {}),
+        },
         update: {},
       });
 
-      if (user.email) {
-        const existingLead = await prisma.lead.findUnique({
-          where: { email: user.email },
+      if (existingLead) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { leadId: existingLead.id },
         });
-        if (existingLead) {
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { leadId: existingLead.id },
-          });
-        }
       }
     },
   },
