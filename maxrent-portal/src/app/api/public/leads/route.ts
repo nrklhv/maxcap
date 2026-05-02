@@ -17,6 +17,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { notifyTemplate } from "@/lib/services/notifications";
 import { leadPublicBodySchema } from "@/lib/validations";
 
 // Edge no soporta Prisma; forzamos node runtime.
@@ -163,6 +164,28 @@ export async function POST(req: NextRequest) {
     });
 
     const isNew = lead.createdAt.getTime() === lead.updatedAt.getTime();
+
+    // Disparar email de bienvenida solo para inversionistas nuevos.
+    // Vendedor por ahora no recibe email transaccional desde este flujo.
+    // Fire-and-forget: no bloqueamos la respuesta del endpoint si el
+    // proveedor falla; el error queda registrado en la tabla Notification.
+    if (isNew && data.type === "inversionista") {
+      const portalUrl =
+        process.env.NEXTAUTH_URL?.trim().replace(/\/$/, "") ||
+        "https://portal.maxrent.cl";
+      void notifyTemplate({
+        template: "welcome-investor",
+        to: email,
+        variables: {
+          firstName,
+          email,
+          portalUrl,
+        },
+      }).catch((e) => {
+        // notifyTemplate ya graba FAILED en Notification, esto es solo log.
+        console.error("/api/public/leads — welcome notify error", e);
+      });
+    }
 
     return jsonWithCors(
       {
