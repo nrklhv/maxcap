@@ -196,7 +196,9 @@ function calcular(arrendoMensual) {
 
 ## Notas importantes
 
-- Los formularios en esta fase **no conectan a ningún backend** — solo muestran estado success al enviar
-- No hay autenticación ni rutas protegidas
-- No hay CMS — todo el contenido está hardcodeado
-- El proyecto debe correr con `npm run dev` sin configuración adicional
+- **Los formularios persisten en la DB del portal** vía `POST {NEXT_PUBLIC_PORTAL_URL}/api/public/leads`. Una sola DB (Neon) entre landing y portal — el endpoint hace upsert idempotente del `Lead` por email. La env `NEXT_PUBLIC_PORTAL_URL` default a `https://portal.maxrent.cl`.
+- **Inversionista** tras submit OK ofrece CTA "Continuar al portal →" que redirige a `/login?email=...&newLead=1&callbackUrl=/perfil` con magic link / Google preseleccionado, y dispara welcome email automático.
+- **Vendedor** mantiene la pantalla "Recibimos tus datos" sin redirigir (no hay flujo de vendedor en el portal).
+- El portal vive en `portal.maxrent.cl` — proyecto separado en Vercel, schema y flujos en `maxrent-portal/CONTEXTO-PROYECTO.md`.
+- No hay CMS — todo el contenido del landing está hardcodeado en componentes React.
+- El proyecto del landing corre con `npm run dev` sin configuración adicional (no necesita DB propia).
