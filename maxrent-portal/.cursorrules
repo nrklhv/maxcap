@@ -144,6 +144,21 @@ Toda comunicación saliente (email/SMS/WhatsApp futuro) DEBE pasar por `notify()
 
 Cambiar de proveedor = 1 env var (`EMAIL_PROVIDER`). Ver [README de la capa](./src/lib/services/notifications/README.md) y `memory/project_notifications_infra.md`.
 
+## Documentación obligatoria (regla del proyecto)
+
+**Cero PRs sin actualizar la documentación correspondiente.** Esta es una regla vinculante del proyecto.
+
+Lista exacta de qué documentar y dónde: ver [`docs/CONTRIBUTING.md`](./docs/CONTRIBUTING.md). Cubre cambios en schema, endpoints, env vars, flujos, integraciones, capas de servicio, templates, etc.
+
+Mini-checklist mental antes de mergear:
+- ¿Toqué `schema.prisma`? → `DATABASE.md` y sección 3 de `CONTEXTO-PROYECTO.md` actualizados.
+- ¿Agregué endpoint? → Sección 5 de `CONTEXTO-PROYECTO.md` lo lista.
+- ¿Agregué env var? → `.env.example` y `SETUP.md` la tienen.
+- ¿Cambié flujo end-to-end? → Sección 6 lo refleja.
+- ¿Es decisión arquitectónica de largo plazo? → Documentada en memory de Claude o doc dedicado.
+
+Si una de estas queda en "no" sin justificación clara, el PR NO se mergea.
+
 ## Convenciones de código
 
 - **Schema Prisma:** si tocas `prisma/schema.prisma` o el modelo de datos, actualiza `docs/DATABASE.md` (diagrama Mermaid, notas, enums). Ver `.cursor/rules/database-documentation.mdc`.
