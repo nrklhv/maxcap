@@ -110,10 +110,19 @@ User (NextAuth)
  ├── 1:N Account (OAuth providers)
  ├── 1:N Session
  ├── 1:1 Profile (datos personales + onboarding)
+ ├── 1:1 BrokerProfile (datos comerciales si postula a broker)
  ├── 1:N CreditEvaluation (historial de evaluaciones Floid)
  ├── 1:N Reservation (reservas de propiedades)
- └── 1:1 Lead (vinculación con lead existente, opcional)
+ ├── 1:N Notification (audit trail de toda comunicación enviada)
+ ├── 1:1 Lead (vinculación con lead existente, opcional)
+ ├── self → User (sponsorBrokerUserId — broker aprobado que apadrina)
+ └── 1:N BrokerInvestorInvite (sent / consumed según rol)
+
+Property
+ └── 1:1 PropertyCatalogDraft (staging Houm/CSV antes de publicar)
 ```
+
+> Diagrama ER completo en formato Mermaid: [`docs/DATABASE.md`](./docs/DATABASE.md). Mantener actualizado al modificar `prisma/schema.prisma`.
 
 ### 3.2 Modelos principales
 
@@ -146,17 +155,50 @@ User (NextAuth)
 - `metadata`: Json — datos extra del pago o propiedad
 - Índices en [userId, status] y [paymentExternalId]
 
-**Lead** (modelo simplificado de leads existentes)
-- `id`, `email` (unique), `name`, `phone`, `source`, `status`, `data` (Json)
-- Relación 1:1 con User (cuando el lead se registra en el portal)
+**Lead** (capturado desde el landing inversionista o vendedor — fuente única de leads)
+- `id`, `email` (unique), `kind` (`LeadKind`: INVESTOR / SELLER), `status` (`LeadStatus`: NEW → INVITED → REGISTERED → CONVERTED, o DISCARDED).
+- Datos personales (snapshot del form): `firstName`, `lastName`, `name` (compatibilidad), `phone`.
+- Campos solo de vendedor: `cantidadPropiedades`, `arrendadas`, `adminHoum`.
+- Origen y atribución: `source` (`landing-investor`, `landing-seller`, `broker-invite`…), `marketingAttribution` (UTMs, gclid, referrer, captured_at).
+- `data` Json para flujos futuros sin migrar.
+- Relación 1:1 con `User` (cuando el lead se registra en el portal). `User.leadId` es la FK; el evento `createUser` de NextAuth la setea por match de email, y el GET de `/api/users/profile` también vincula por email para cuentas pre-existentes al lead.
+
+**Notification** (audit trail de toda comunicación saliente del portal)
+- `id`, `channel` (`NotificationChannel`: EMAIL / SMS / WHATSAPP / PUSH), `templateKey` (ej. `welcome-investor`, `magic-link`, `reservation-confirmed`).
+- `recipient` (email o E.164 phone), `userId` (FK opcional — null para envíos a Lead sin cuenta).
+- `variables` Json (snapshot de las variables que renderizaron el template).
+- `status` (`NotificationStatus`: QUEUED → SENT → DELIVERED / OPENED / BOUNCED / COMPLAINED / FAILED).
+- `provider` (slug del adapter: `resend`, etc.), `providerMessageId`, `providerResponse` (auditoría).
+- `errorMessage`, `scheduledAt`, `sentAt`, `deliveredAt`, `openedAt`.
+- Toda comunicación pasa por `lib/services/notifications` (vendor-agnostic). Cambiar de proveedor = 1 env var. Decisión arquitectónica: `memory/project_notifications_infra.md` y [README de la capa](./src/lib/services/notifications/README.md).
+
+**BrokerProfile** (datos comerciales para postular al canal broker)
+- `userId` (PK + FK 1:1), `companyName`, `jobTitle`, `isIndependent`, `websiteUrl`, `linkedinUrl`, `pitch` (Text).
+- Separado del `Profile` inversionista — un mismo `User` puede ser inversionista, broker aprobado y staff simultáneamente.
+
+**BrokerInvestorInvite** (invitación single-use de broker → inversionista)
+- `id`, `token` (unique, en URL `/i/[token]`), `brokerUserId` (FK), `inviteeEmail` (opcional), `status` (PENDING / COMPLETED / EXPIRED), `registeredUserId` (FK al User que claimea).
+- Al claimear, setea `User.sponsorBrokerUserId` del invitado.
+
+**Property + PropertyCatalogDraft** (inventario + staging)
+- `Property`: `inventoryCode` y `houmPropertyId` como business keys únicas; `status` (AVAILABLE / RESERVED / SOLD / ARCHIVED), `visibleToBrokers`, `metadata` Json.
+- `PropertyCatalogDraft`: filas de staging (CSV o sync Houm) hasta que staff aprueba la publicación. Ver `docs/HOUM_CATALOG_METADATA.md` y `docs/PROPERTY_INVENTORY_IMPORT.md`.
 
 ### 3.3 Enums
 ```typescript
-enum StaffRole         { NONE, SUPER_ADMIN }
-enum BrokerAccessStatus { PENDING, APPROVED, REJECTED }
-enum EvaluationStatus { PENDING, PROCESSING, COMPLETED, FAILED, EXPIRED }
-enum RiskLevel        { LOW, MEDIUM, HIGH }
-enum ReservationStatus { PENDING_PAYMENT, PAYMENT_PROCESSING, PAID, CONFIRMED, CANCELLED, EXPIRED, REFUNDED }
+enum StaffRole                  { NONE, SUPER_ADMIN }
+enum BrokerAccessStatus         { PENDING, APPROVED, REJECTED }
+enum BrokerInvestorInviteStatus { PENDING, COMPLETED, EXPIRED }
+enum LeadKind                   { INVESTOR, SELLER }
+enum LeadStatus                 { NEW, INVITED, REGISTERED, CONVERTED, DISCARDED }
+enum PropertyStatus             { AVAILABLE, RESERVED, SOLD, ARCHIVED }
+enum CatalogDraftSource         { HOUM, CSV }
+enum PropertyCatalogDraftStatus { PENDING, REJECTED, APPROVED }
+enum EvaluationStatus           { PENDING, PROCESSING, COMPLETED, FAILED, EXPIRED }
+enum RiskLevel                  { LOW, MEDIUM, HIGH }
+enum ReservationStatus          { PENDING_PAYMENT, PAYMENT_PROCESSING, PAID, CONFIRMED, CANCELLED, EXPIRED, REFUNDED }
+enum NotificationChannel        { EMAIL, SMS, WHATSAPP, PUSH }
+enum NotificationStatus         { QUEUED, SENT, DELIVERED, OPENED, BOUNCED, COMPLAINED, FAILED }
 ```
 
 ---
@@ -226,10 +268,24 @@ maxrent-portal/
 | GET | `/api/auth/session` | Sesión actual |
 | POST | `/api/auth/callback/*` | Callbacks OAuth/magic link |
 
+### Captura de leads (público — landing → portal)
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| POST | `/api/public/leads` | No | Recibe el body del form del landing (inversionista o vendedor). Upsert idempotente de `Lead` por email. Para `kind=INVESTOR` nuevo, dispara welcome email vía la capa de notifications. |
+
+CORS: orígenes permitidos vía `LEADS_ALLOWED_ORIGINS` (CSV). Por defecto: `https://www.maxrent.cl` y `https://maxrent.cl`. En non-prod, también `*.vercel.app`.
+
+### Notifications (público — webhook firmado)
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| POST | `/api/notifications/webhook/resend` | No* | Recibe eventos de delivery de Resend (delivered/bounced/opened/etc.) y actualiza la fila de `Notification` por `providerMessageId`. |
+
+*Validado con firma Svix usando `RESEND_WEBHOOK_SECRET`. Sin la env var, rechaza con 401.
+
 ### Perfil de usuario
 | Método | Ruta | Auth | Descripción |
 |---|---|---|---|
-| GET | `/api/users/profile` | Sí | Obtener perfil del usuario logueado |
+| GET | `/api/users/profile` | Sí | Obtener perfil. Si el `Profile` está vacío y hay `Lead` vinculado (por `leadId` o por match de email), devuelve datos del Lead como fallback (firstName/lastName/contactEmail/phone) y también propaga `marketingAttribution` al `additionalData` (best-effort). |
 | PUT | `/api/users/profile` | Sí | Actualizar perfil + completar onboarding |
 
 ### Evaluación crediticia (Floid)
@@ -237,6 +293,9 @@ maxrent-portal/
 |---|---|---|---|
 | POST | `/api/floid/evaluate` | Sí | Solicitar nueva evaluación |
 | GET | `/api/floid/evaluations` | Sí | Listar evaluaciones del usuario |
+| POST | `/api/floid/callback` | No* | Callback async de Floid |
+
+*Webhook firmado por Floid; ver `docs/FLOID_API_REFERENCE.md`.
 
 ### Reservas
 | Método | Ruta | Auth | Descripción |
@@ -252,23 +311,58 @@ maxrent-portal/
 
 *El webhook no usa auth de usuario pero debe validar firma de la pasarela.
 
+### Broker (autenticado, flujo `/broker/*`)
+APIs bajo `/api/broker/*` para postulación, perfil, oportunidades visibles, invites a inversionistas, etc.
+
+### Staff (`SUPER_ADMIN` only)
+APIs bajo `/api/staff/*` para inventario, aprobación de brokers, gestión de inversionistas, notas de evaluaciones, etc.
+
 ---
 
 ## 6. FLUJOS TÉCNICOS DETALLADOS
 
-### 6.1 Registro + Onboarding
+### 6.0 Captura de Lead desde el landing
 ```
-1. Usuario llega a /login
-2. Elige Google OAuth o ingresa email para magic link
+1. Inversionista llena el form en https://www.maxrent.cl
+2. POST {PORTAL_URL}/api/public/leads (CORS permitido para www.maxrent.cl)
+   → upsert Lead por email (idempotente; refresca datos pero no degrada status)
+   → si es Lead nuevo de tipo INVESTOR, dispara welcome email vía notifyTemplate()
+     (fire-and-forget; cualquier fallo queda en Notification con status=FAILED)
+3. Landing muestra pantalla "Recibimos tus datos" con CTA "Continuar al portal →"
+4. Click → redirige a {PORTAL_URL}/login?email=...&newLead=1&callbackUrl=/perfil
+5. /login del portal lee los query params:
+   - Banner verde de bienvenida con el email del lead
+   - Input de magic link pre-llenado
+   - signIn de Google con login_hint para preseleccionar la cuenta (1 click)
+```
+
+Vendedor sigue el mismo POST pero NO entra al portal — staff lo contacta.
+
+### 6.1 Registro + Onboarding (signup vía Google o magic link)
+```
+1. Usuario llega a /login (típicamente desde el landing, ver 6.0)
+2. Elige Google OAuth o ingresa email para magic link (Resend, vía la
+   capa de notifications: el envío queda registrado en Notification con
+   templateKey="magic-link")
 3. NextAuth maneja el flujo completo
 4. Al crear usuario (evento createUser):
-   a. Se crea Profile vacío con onboardingCompleted=false
-   b. Se busca Lead existente con mismo email → si existe, se vincula
+   a. Busca Lead por email del User
+   b. Crea Profile (con additionalData.marketingAttribution sembrada
+      desde el Lead si existe)
+   c. Si encontró Lead, setea User.leadId
+   d. backfillUserNotifications: las notificaciones enviadas pre-cuenta
+      (welcome email al Lead) se asocian al User.id para timeline completo
 5. Middleware detecta onboardingCompleted=false → redirige a /perfil
-6. Usuario completa formulario (RUT, teléfono) → PUT /api/users/profile
-7. API valida con Zod, verifica RUT único, actualiza profile
-8. Se marca onboardingCompleted=true → se actualiza sesión JWT
-9. Redirige a /dashboard
+6. /perfil llama GET /api/users/profile que devuelve hidratado con Lead:
+   firstName, lastName, contactEmail, phone vienen pre-llenados.
+   Si user.leadId estaba null pero hay Lead con email match, vincula
+   en background (best-effort) y propaga marketingAttribution al
+   Profile.additionalData.
+7. Usuario completa lo que falta (RUT, dirección, ciudad, comuna, datos
+   laborales) → PUT /api/users/profile
+8. API valida con Zod, verifica RUT único, actualiza Profile
+9. Se marca onboardingCompleted=true → se actualiza sesión JWT
+10. Redirige a /dashboard
 ```
 
 ### 6.2 Evaluación crediticia
@@ -340,14 +434,25 @@ Si logueado + !onboarding       → Redirect a /perfil (excepto /perfil y /api)
 - **Variables**: `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_PUBLIC_KEY`
 - **Código de referencia**: hay implementación completa comentada en el service
 
-### 8.3 Resend (emails) — PARCIAL
-- **Estado**: Configurado como provider de NextAuth (magic links funcionan)
-- **Qué falta**: Templates de email transaccional (confirmación de registro, evaluación, pago)
-- **Variables**: `RESEND_API_KEY`, `EMAIL_FROM`
+### 8.3 Resend (vía capa propia de notifications) — OPERATIVO
+- **Estado**: dominio `maxrent.cl` verificado (DKIM/SPF/DMARC), API key + sender `MaxRent <hola@maxrent.cl>` configurados, webhook de delivery tracking conectado.
+- **Templates activos**: `welcome-investor` (lead → portal), `magic-link` (NextAuth pasa por la capa propia, también queda tracked).
+- **Variables**:
+  - `EMAIL_PROVIDER` (default `resend`; cambiar adapter = 1 env var)
+  - `RESEND_API_KEY` (Sending access scope)
+  - `EMAIL_FROM` (`MaxRent <hola@maxrent.cl>`)
+  - `RESEND_WEBHOOK_SECRET` (firma Svix; sin esto, webhook devuelve 401)
+- **Audit trail**: tabla `Notification` registra cada envío con QUEUED → SENT → DELIVERED/OPENED/BOUNCED.
+- **Capa de servicio**: `src/lib/services/notifications/` (vendor-agnostic). API: `notify()`, `notifyTemplate()`, `backfillUserNotifications()`. Templates en react-email (`templates/*.tsx`).
+- **Decisión arquitectónica**: `memory/project_notifications_infra.md`.
+- **Cómo agregar un template**: ver [README de la capa](./src/lib/services/notifications/README.md).
+- **Cómo agregar otro provider**: implementar `EmailProvider` en `providers/email-<slug>.ts`, registrarlo, cambiar env `EMAIL_PROVIDER=<slug>`. Sin cambios en negocio.
 
-### 8.4 Sistema de leads existente — PARCIAL
-- **Estado**: Modelo Lead simplificado en schema, vinculación automática por email
-- **Qué falta**: Ajustar modelo Lead al schema real del otro proyecto, decidir si comparten BD
+### 8.4 Captura de leads (landing → portal) — OPERATIVO
+- **Estado**: el form del landing inversionista/vendedor en `https://www.maxrent.cl` apunta a `POST {PORTAL_URL}/api/public/leads` (no más DB del landing).
+- **Una sola DB**: leads viven en la misma Neon del portal. El modelo `Lead` se extendió para recibir todos los datos del form (firstName, lastName, phone, kind, marketingAttribution, campos vendedor).
+- **Vinculación con User**: por `User.leadId` cuando el evento `createUser` matchea por email; o por email match en el GET de `/api/users/profile` para cuentas pre-existentes al lead.
+- **Welcome email**: tras crear Lead nuevo INVESTOR, se dispara automáticamente vía la capa de notifications.
 
 ---
 
@@ -383,33 +488,39 @@ Si logueado + !onboarding       → Redirect a /perfil (excepto /perfil y /api)
 
 ## 11. SECUENCIA DE IMPLEMENTACIÓN RECOMENDADA
 
-### Fase 1 — Fundamento (AHORA)
+### Fase 1 — Fundamento ✅
 - [x] Estructura del proyecto
-- [x] Prisma schema completo
-- [x] Auth (Google + magic link)
-- [x] Middleware de protección
+- [x] Prisma schema completo (con migraciones automáticas en build de Vercel)
+- [x] Auth (Google + magic link via capa propia de notifications)
+- [x] Middleware de protección + onboarding redirect
 - [x] Pages: login, dashboard, perfil, evaluación, reserva
 - [x] API routes funcionales
-- [x] Services con stubs
-- [ ] `npm install` + levantar en local
-- [ ] Probar flujo completo con datos simulados
-- [ ] Crear componentes UI reutilizables (Button, Input, Card, Badge)
-- [ ] Deploy inicial a Vercel
+- [x] Deploy a Vercel — dominio `portal.maxrent.cl` con SSL.
 
-### Fase 2 — Integraciones
-- [ ] Integrar Floid API real (cuando tengan la doc)
-- [ ] Integrar Mercado Pago Checkout Pro
-- [ ] Configurar webhook de MP
-- [ ] Emails transaccionales con Resend
+### Fase 2 — Integraciones ✅ / 🟡
+- [x] Floid Widget (sandbox + prod) — `docs/FLOID_API_REFERENCE.md`, `docs/FLOID_SETUP.md`.
+- [x] Resend (dominio verificado, sender `hola@maxrent.cl`, webhook delivery tracking).
+- [x] Capa propia de comunicaciones vendor-agnostic — `lib/services/notifications` (welcome + magic link, audit trail completo).
+- [ ] Mercado Pago Checkout Pro (pendiente — stub en `lib/services/payment.service.ts`).
+- [ ] Webhook de Mercado Pago.
 
-### Fase 3 — Gestión
-- [ ] Panel staff (`/staff`, `/staff/login`) — inventario, aprobación brokers (super admin)
-- [ ] Conectar con catálogo de propiedades (modelo Property o API existente)
-- [ ] Conectar con sistema de leads existente (sincronizar o compartir BD)
+### Fase 3 — Captura y derivación ✅
+- [x] Endpoint público `POST /api/public/leads` para form del landing.
+- [x] Una sola DB (Neon) entre landing y portal — modelo `Lead` extendido.
+- [x] Handoff landing → portal con magic link / Google preseleccionado.
+- [x] Onboarding pre-rellenado con datos del Lead.
+- [x] Atribución de marketing propagada al `Profile.additionalData`.
+- [x] Limpieza: endpoint legacy `/api/leads` del landing eliminado.
 
-### Fase 4 — Producción
-- [ ] Tests (vitest + testing-library)
-- [ ] Rate limiting en API routes
-- [ ] Logging y error tracking (Sentry)
-- [ ] Monitoring (Vercel Analytics)
-- [ ] Dominio propio (portal.maxrent.cl)
+### Fase 4 — Gestión 🟡
+- [x] Panel staff (`/staff`, `/staff/login`) — inventario, aprobación brokers, gestión de inversionistas.
+- [x] Catálogo de propiedades vía `Property` + `PropertyCatalogDraft` (Houm sync + CSV import).
+- [x] Flujo broker (postulación, oportunidades, invites a inversionistas).
+
+### Fase 5 — Madurez 🟡 / ❌
+- [ ] Más templates de email (reservación confirmada, evaluación lista, recordatorios, recibos).
+- [ ] Multi-canal (WhatsApp/SMS) cuando aplique — la infra ya está preparada (`channel` enum, providers folder).
+- [ ] Tests (vitest + testing-library) — base mínima existe (`vitest.config.ts`).
+- [ ] Rate limiting en endpoints públicos (`/api/public/leads`).
+- [ ] Logging y error tracking (Sentry o equivalente).
+- [ ] Monitoring (Vercel Analytics ya activo).
