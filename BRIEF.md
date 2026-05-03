@@ -71,20 +71,26 @@ La marca refleja que **MaxRent es una iniciativa de Houm** — el "by Houm" func
 **Layout en mobile:** columna única, formulario arriba o abajo (decidir en iteración)
 
 #### Secciones (en orden):
-1. **Header sticky** — logo + nav links + CTA "Reservar cupo"
-2. **Hero** — fondo `--dark`, headline principal, badge de cupos
-3. **Banda de urgencia** — contador de cupos disponibles (77/100), barra de progreso
-4. **Pilares 2×2** — 4 cards con los diferenciadores del modelo
-5. **Usada vs Nueva** — tabla comparativa + insights
-6. **Alianza** — cards de Houm, Renta Capital y Banco Aliado
-7. **Cómo funciona** — 6 pasos con línea conectora vertical
-8. **FAQ** — accordion
-9. **Footer**
+1. **Header sticky** — logo `MaxRent by Houm` + nav links + CTA `Reservar cupo` + link `Iniciar sesión`
+2. **Hero** — fondo `--dark`, headline `Juntos compramos mejor.` + bajada del Club, badge `Club de Inversionistas Calificados · 100 cupos`
+3. **Banda de urgencia** — `Tu cupo en el Club`, contador de cupos disponibles, barra de progreso, label dinámico de fase (apertura / cierre / cupos cerrados)
+4. **Pilares 2×2** — 4 cards: poder de compra colectiva, 0 pie + 0 comisión, ventajas usado, pool de propiedades
+5. **Usada vs Nueva** — tabla comparativa + insights con foco en cap rate +5% y comisiones cero
+6. **Alianza** — Houm + Renta Capital (sin Banco Aliado, sin "renta garantizada 24m"); énfasis en la marca `MaxRent by Houm`
+7. **Pool de Propiedades** (sección nueva) — pitch del modelo pool: diversifica vacancia, no pago, costos
+8. **Cómo funciona** — 6 pasos: registro, evaluación 5 min, reserva 1 UF post-calificación, crédito, firma, pool
+9. **FAQ** — accordion (incluye plazos, devolución, referidos, pool)
+10. **Footer**
 
 **Formulario sticky (desktop):**
 - Campos: Nombre, Apellido, Email, WhatsApp
-- CTA: "Reservar mi cupo →"
-- Estado success al enviar
+- CTA: contextual al fase del Club (`Reservar mi cupo` durante apertura)
+- Tras submit: post a `{PORTAL_URL}/api/public/leads` + redirige al portal con email pre-cargado
+
+**Plazos del Club (variables en `lib/site.ts`):**
+- `CLUB_OPEN_DATE = 1 de junio`
+- `CLUB_CLOSE_DATE = 28 de septiembre`
+- 4 fases derivadas en `lib/clubPhase.ts`: `pre-launch`, `open`, `closing-soon` (< 30 días), `closed`
 
 ---
 

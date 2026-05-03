@@ -11,11 +11,20 @@ import { FaqList } from "./FaqItem";
 import { MobileLeadBar } from "./MobileLeadBar";
 import { UvnComparison } from "./UvnComparison";
 import { investorFaqItems } from "@/lib/faqInvestor";
+import { CLUB_TOTAL_SLOTS } from "@/lib/site";
+import { getClubPhaseLabel } from "@/lib/clubPhase";
 
 export function InvestorLanding() {
   const cupos = 75;
-  const reservados = 100 - cupos;
+  const reservados = CLUB_TOTAL_SLOTS - cupos;
   const barPct = Math.min(100, Math.max(0, reservados));
+  const phaseLabel = getClubPhaseLabel();
+  const phaseColorClass =
+    phaseLabel.emphasisColor === "red"
+      ? "text-[#E35050]"
+      : phaseLabel.emphasisColor === "gray"
+        ? "text-gray-3"
+        : "text-orange-2";
 
   return (
     <>
@@ -35,26 +44,32 @@ export function InvestorLanding() {
             </div>
             <div className="mb-7 inline-flex w-fit items-center gap-2 rounded-full border border-orange/35 bg-orange/10 py-1 pl-1 pr-3.5">
               <div className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-orange text-xs font-semibold text-white">
-                100
+                {CLUB_TOTAL_SLOTS}
               </div>
-              <span className="text-xs font-medium tracking-wide text-orange-2">100 cupos · Lanzamiento exclusivo</span>
+              <span className="text-xs font-medium tracking-wide text-orange-2">
+                Club de Inversionistas Calificados · {CLUB_TOTAL_SLOTS} cupos
+              </span>
             </div>
             <h1 className="mb-3 max-w-5xl font-serif text-4xl leading-[1.06] tracking-tight text-white md:text-5xl xl:text-6xl 2xl:text-6xl">
-              Invierte en propiedades usadas
+              Juntos compramos
               <br />
-              <em className="block font-serif text-[1.12em] not-italic text-orange md:text-[1.08em]">sin poner pie.</em>
+              <em className="block font-serif text-[1.12em] not-italic text-orange md:text-[1.08em]">mejor.</em>
             </h1>
             <p className="max-w-5xl text-balance font-serif text-base font-normal leading-snug tracking-tight text-gray-2 md:text-lg md:leading-snug xl:text-xl">
-              Rentabilidades <strong className="font-medium text-orange-2">30% más altas</strong> que en una propiedad
-              nueva.
+              <span className="italic text-gray-3">Solos, somos un cliente más.</span> Juntos somos{" "}
+              <strong className="font-medium text-orange-2">{CLUB_TOTAL_SLOTS} inversionistas calificados</strong>{" "}
+              con poder de negociación para acceder a propiedades usadas con cap rate sobre{" "}
+              <strong className="font-medium text-orange-2">5%</strong> y comisiones cero.
             </p>
           </div>
         </section>
 
         <div className="flex flex-wrap items-center gap-6 border-t border-white/10 bg-dark px-4 py-5 md:flex-nowrap md:px-10 md:py-5">
           <div className="min-w-0 shrink-0">
-            <div className="font-serif text-lg tracking-tight text-white">Reserva tu cupo</div>
-            <div className="mt-0.5 whitespace-nowrap text-xs text-gray-3">Solo 100 inversionistas entran al piloto</div>
+            <div className="font-serif text-lg tracking-tight text-white">Tu cupo en el Club</div>
+            <div className="mt-0.5 whitespace-nowrap text-xs text-gray-3">
+              Solo {CLUB_TOTAL_SLOTS} inversionistas entran al lanzamiento
+            </div>
           </div>
           <div className="shrink-0">
             <div className="font-serif text-3xl leading-none text-orange">{cupos}</div>
@@ -68,12 +83,14 @@ export function InvestorLanding() {
               />
             </div>
             <div className="mt-1 text-right text-xs text-gray-3">
-              {reservados} de 100 reservados
+              {reservados} de {CLUB_TOTAL_SLOTS} reservados
             </div>
           </div>
-          <div className="shrink-0 text-right text-xs text-gray-3">
-            <b className="block text-xs font-semibold text-[#E35050]">¡Activo!</b>
-            cerrando rápido
+          <div
+            className="shrink-0 text-right text-xs text-gray-3"
+            aria-label={phaseLabel.long}
+          >
+            <b className={`block text-xs font-semibold ${phaseColorClass}`}>{phaseLabel.short}</b>
           </div>
         </div>
 
