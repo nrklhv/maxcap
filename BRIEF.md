@@ -43,32 +43,23 @@ En Tailwind, definir estas variables en `tailwind.config.ts` bajo `theme.extend.
 
 ---
 
-## Logo
+## Logo — MaxRent by Houm
 
-SVG inline. Dos chevrones `<<` + texto `MAXRENT`:
-- Chevron izquierdo (atrás): `#4A6B8A` (azul slate)
-- Chevron derecho (adelante): `#CC4A28` (naranja quemado)
-- Texto MAXRENT: `#EDE0CC` (crema), font-weight 300, letter-spacing amplio
-- Tipografía del texto: `DM Sans` o `system-ui`
+SVG inline (componente `components/Logo.tsx`). Dos chevrones `<<` + wordmark `MAXRENT` + endoso `by Houm` en italic serif alineado a la derecha:
 
-Tamaños:
-- Header: 140×30px
-- Hero: 200×44px
-- Footer: 160×34px
+- Chevrón izquierdo (atrás): `#FF6701` (naranja brillante)
+- Chevrón derecho (adelante): `#CC4A28` (naranja quemado)
+- Wordmark `MAXRENT`: `#EDE0CC` (crema), `DM Sans` weight 300, letter-spacing amplio
+- Endoso `by Houm`: `DM Serif Display` italic, `#EDE0CC` con opacity 0.85, alineado a la derecha del bloque
 
-```svg
-<!-- Ejemplo header 140x30 -->
-<svg width="140" height="30" viewBox="0 0 140 30" fill="none">
-  <polyline points="16.3,3.6 2.8,15.0 16.3,26.4"
-    stroke="#4A6B8A" stroke-width="3.0" stroke-linecap="square" fill="none"/>
-  <polyline points="27.5,3.6 14.0,15.0 27.5,26.4"
-    stroke="#CC4A28" stroke-width="3.0" stroke-linecap="square" fill="none"/>
-  <text x="46.2" y="21.6"
-    font-family="'DM Sans',system-ui,sans-serif"
-    font-size="15.6" font-weight="300" letter-spacing="2.4"
-    fill="#EDE0CC">MAXRENT</text>
-</svg>
-```
+ViewBox canónico `140×42`. Los `sizes` solo escalan:
+- `sm` (Header): 140×42 px
+- `md` (Footer): 160×48 px
+- `lg` (Hero): 200×60 px
+
+Uso: `<Logo size="sm" />` (default), `<Logo size="md" />`, `<Logo size="lg" />`.
+
+La marca refleja que **MaxRent es una iniciativa de Houm** — el "by Houm" funciona como sello editorial sin competir con el wordmark principal.
 
 ---
 
