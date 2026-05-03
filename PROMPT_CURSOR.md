@@ -1,7 +1,16 @@
 # Prompt para Cursor — MaxRent Landing
 
-> Pega este prompt completo en Cursor al abrir el proyecto.
-> Adjunta también los archivos `inversionista.html`, `vendedor.html` y `BRIEF.md`.
+> **DOCUMENTO HISTÓRICO** — sirvió para inicializar el landing desde cero. Tiene
+> referencias obsoletas: el contador de cupos hoy es fijo en 75 (no decreciente
+> desde 77), y los formularios SÍ conectan a un backend (al endpoint público
+> del portal en `portal.maxrent.cl/api/public/leads` — ver
+> [BRIEF.md](./BRIEF.md) sección "Notas importantes").
+>
+> Para entender el estado real del proyecto, leé:
+> - [BRIEF.md](./BRIEF.md) — descripción del producto y secciones del landing.
+> - [maxrent-portal/CONTEXTO-PROYECTO.md](./maxrent-portal/CONTEXTO-PROYECTO.md) — portal completo.
+>
+> Lo que sigue es el prompt original que se pegó en Cursor para arrancar.
 
 ---
 
