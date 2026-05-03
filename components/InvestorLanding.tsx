@@ -99,23 +99,47 @@ export function InvestorLanding() {
           <h2 className="mb-2 font-serif text-3xl tracking-tight text-dark md:text-[clamp(24px,2.2vw+14px,52px)]">
             4 condiciones que ninguna
             <br />
-            propiedad nueva te ofrece.
+            inversión inmobiliaria te ofrece.
           </h2>
-          <p className="mb-10 max-w-lg text-sm leading-relaxed text-gray-3">
-            Disponibles solo en este piloto de 100 cupos, en alianza con Houm, Renta Capital y Banco Aliado.
+          <p className="mb-10 max-w-xl text-sm leading-relaxed text-gray-3">
+            Cuatro ventajas que solo se logran cuando {CLUB_TOTAL_SLOTS} inversionistas calificados compran juntos.
+            MaxRent es una iniciativa de Houm con Renta Capital.
           </p>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <PilarCard
               variant="orange"
               bgNum="01"
               numLabel="Pilar 01"
-              title="Invierte sin poner pie"
-              statValue="0 UF"
+              title="Compramos en bloque, conseguimos mejor precio"
+              statValue="+5%"
               statLabel={
                 <>
-                  desembolso
+                  cap rate
                   <br />
-                  inicial
+                  objetivo
+                </>
+              }
+              icon={
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
+                  <path d="M4 14L8 9l3 3 5-6" stroke="#7A6E68" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              }
+            >
+              Como Club de {CLUB_TOTAL_SLOTS} inversionistas calificados, negociamos directo con operadores
+              institucionales para acceder a precios y cap rates que un comprador individual no consigue.
+              Meta: cap rate real sobre 5%, no proyectado a tres años.
+            </PilarCard>
+            <PilarCard
+              variant="orange"
+              bgNum="02"
+              numLabel="Pilar 02"
+              title="Sin comisión de compra y pie en cuotas"
+              statValue="0%"
+              statLabel={
+                <>
+                  comisión + pie
+                  <br />
+                  diferido
                 </>
               }
               icon={
@@ -125,42 +149,21 @@ export function InvestorLanding() {
                 </svg>
               }
             >
-              El pie se paga en 24 cuotas mensuales post compraventa — no el día de la escritura. Y el arriendo que
-              recibes desde el día 1 cubre ese pago mes a mes. Sin estrés de liquidez.
-            </PilarCard>
-            <PilarCard
-              variant="orange"
-              bgNum="02"
-              numLabel="Pilar 02"
-              title="Financiamiento a la medida con el Banco Aliado"
-              statValue="90%"
-              statLabel={
-                <>
-                  financiamiento
-                  <br />+ 24m gracia
-                </>
-              }
-              icon={
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
-                  <rect x="3" y="7" width="14" height="10" rx="2" stroke="#7A6E68" strokeWidth="1.5" />
-                  <path d="M7 7V5a3 3 0 016 0v2" stroke="#7A6E68" strokeWidth="1.5" />
-                </svg>
-              }
-            >
-              El Banco Aliado entrega financiamiento hasta el 90% del valor. Los primeros 24 meses pagas solo el 50% del dividendo
-              — el arriendo cubre esa cuota y tu flujo mensual neto es casi cero.
+              La comisión de compra es 0% — algo único en propiedades usadas. El pie se paga en cuotas
+              mensuales post escritura, y el arriendo que recibes desde el día uno cubre ese pago. Tu efectivo
+              no se queda sentado.
             </PilarCard>
             <PilarCard
               variant="orange"
               bgNum="03"
               numLabel="Pilar 03"
-              title="Renta garantizada los primeros 24 meses"
-              statValue="24 m"
+              title="Rentabilidad real desde el día uno"
+              statValue="+30%"
               statLabel={
                 <>
-                  renta asegurada
+                  rentabilidad
                   <br />
-                  por Houm
+                  vs nueva
                 </>
               }
               icon={
@@ -170,30 +173,41 @@ export function InvestorLanding() {
                 </svg>
               }
             >
-              Houm garantiza el arriendo los primeros 24 meses. Estos flujos, más el descuento en el dividendo, te
-              permiten pagar el pie sin estrés financiero. Si el arrendatario sale, Houm paga igual.
+              Las propiedades del pool ya están arrendadas y operando. Conocemos el contrato vigente,
+              al arrendatario y los costos. No hay proyección a tres años: la renta es conocida y entra
+              desde la escritura, con cap rate sobre el 5%.
             </PilarCard>
             <PilarCard
               variant="orange"
               bgNum="04"
               numLabel="Pilar 04"
-              title="Activo superior — renta conocida desde hoy"
-              statValue="+4,5%"
+              title="Tu propiedad dentro de un pool diversificado"
+              statValue="Pool"
               statLabel={
                 <>
-                  cap rate real vs
+                  vacancia y morosidad
                   <br />
-                  ~3% en nuevas
+                  diversificadas
                 </>
               }
               icon={
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
-                  <path d="M4 14L8 9l3 3 5-6" stroke="#7A6E68" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle cx="5" cy="5" r="2" stroke="#7A6E68" strokeWidth="1.5" />
+                  <circle cx="15" cy="5" r="2" stroke="#7A6E68" strokeWidth="1.5" />
+                  <circle cx="5" cy="15" r="2" stroke="#7A6E68" strokeWidth="1.5" />
+                  <circle cx="15" cy="15" r="2" stroke="#7A6E68" strokeWidth="1.5" />
+                  <path
+                    d="M5 7v6 M15 7v6 M7 5h6 M7 15h6"
+                    stroke="#7A6E68"
+                    strokeWidth="1.2"
+                    strokeLinecap="round"
+                  />
                 </svg>
               }
             >
-              Cap rates por sobre 4,5% verificados hoy en contrato. Versus propiedades nuevas que pueden entregar ~3%
-              — y solo en 3 años. La renta es conocida, no una proyección.
+              Tu inversión queda en un pool administrado por Houm. Si tu arrendatario se atrasa, sale o
+              hay gastos extras, el pool absorbe el impacto y tu flujo se mantiene estable. Inversión
+              inmobiliaria con la previsibilidad de una financiera.
             </PilarCard>
           </div>
         </section>
