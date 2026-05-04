@@ -39,7 +39,7 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="font-serif text-2xl tracking-tight text-dark">
           Hola, {session.user.name?.split(" ")[0] || "ahí"} 👋
         </h1>
         <p className="mt-1 text-gray-600">

@@ -7,6 +7,8 @@
 import { signIn, getProviders } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Logo } from "@/components/Logo";
 
 type LoginContentProps = {
   /** Si no hay `callbackUrl` en la query, se usa este valor */
@@ -127,11 +129,18 @@ export default function LoginContent({
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 bg-gray-50">
+    <main className="min-h-screen flex items-center justify-center px-4 py-10 bg-cream">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">{heading}</h1>
-          <p className="mt-2 text-gray-600">{subtitle}</p>
+          <Link
+            href="/"
+            className="mx-auto mb-6 inline-block transition-opacity hover:opacity-80"
+            title="MaxRent — Inicio"
+          >
+            <Logo size="lg" tone="dark" />
+          </Link>
+          <h1 className="font-serif text-3xl tracking-tight text-dark">{heading}</h1>
+          <p className="mt-2 text-sm text-gray-600">{subtitle}</p>
         </div>
 
         {isNewLead ? (
@@ -224,13 +233,13 @@ export default function LoginContent({
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="tu@email.com"
                         required
-                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange/40 focus:border-orange transition-colors"
                       />
                     </div>
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="w-full px-4 py-2.5 text-sm font-semibold text-white bg-orange rounded-lg hover:bg-[#E55A00] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       {loading ? "Enviando..." : "Enviar link de acceso"}
                     </button>
@@ -244,7 +253,7 @@ export default function LoginContent({
                     <button
                       type="button"
                       onClick={() => setEmailSent(false)}
-                      className="mt-3 text-sm text-blue-600 hover:underline"
+                      className="mt-3 text-sm text-orange hover:underline"
                     >
                       Usar otro email
                     </button>

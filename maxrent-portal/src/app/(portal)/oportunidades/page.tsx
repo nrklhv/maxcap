@@ -12,7 +12,7 @@ export default function OportunidadesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Oportunidades de inversión</h1>
+        <h1 className="font-serif text-2xl tracking-tight text-dark">Oportunidades de inversión</h1>
         <p className="mt-1 max-w-2xl text-gray-600">
           Las propiedades que el equipo publicó al catálogo aparecen abajo en{" "}
           <strong className="font-medium text-gray-800">Disponibles</strong>. Cuando iniciás una

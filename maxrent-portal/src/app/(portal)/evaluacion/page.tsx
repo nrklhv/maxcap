@@ -284,7 +284,7 @@ export default function EvaluacionPage() {
   if (!session?.user?.onboardingCompleted) {
     return (
       <div className="max-w-lg space-y-4">
-        <h1 className="text-2xl font-bold text-gray-900">Evaluación financiera</h1>
+        <h1 className="font-serif text-2xl tracking-tight text-dark">Evaluación financiera</h1>
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
@@ -312,7 +312,7 @@ export default function EvaluacionPage() {
         <Gift className="h-3.5 w-3.5" aria-hidden />
         Sin costo para ti en MaxRent
       </div>
-      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+      <h1 className="font-serif text-2xl sm:text-3xl tracking-tight text-dark">
         Evaluación financiera
       </h1>
       <p className="text-gray-600 text-pretty max-w-2xl">
@@ -377,7 +377,7 @@ export default function EvaluacionPage() {
   if (evaluation.status === "PENDING" || evaluation.status === "PROCESSING") {
     return (
       <div className="max-w-lg space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Evaluación financiera</h1>
+        <h1 className="font-serif text-2xl tracking-tight text-dark">Evaluación financiera</h1>
         <div className="bg-white rounded-xl border border-gray-200 p-6 text-center space-y-4">
           <div className="w-16 h-16 mx-auto bg-blue-50 rounded-full flex items-center justify-center">
             <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
@@ -450,7 +450,7 @@ export default function EvaluacionPage() {
   return (
     <div className="max-w-3xl space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-2xl font-bold text-gray-900">Tu reporte financiero</h1>
+        <h1 className="font-serif text-2xl tracking-tight text-dark">Tu reporte financiero</h1>
         <div className="flex items-center gap-1.5 text-sm text-green-700">
           <CheckCircle className="w-4 h-4" />
           Recibido

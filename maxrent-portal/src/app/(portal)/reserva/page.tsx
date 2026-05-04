@@ -58,7 +58,7 @@ export default function ReservaPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Mis Reservas</h1>
+        <h1 className="font-serif text-2xl tracking-tight text-dark">Mis Reservas</h1>
         <p className="mt-1 text-gray-600">
           Incluye reservas pendientes de pago y las ya pagadas o confirmadas (desde «Reservar» en
           Oportunidades de inversión).

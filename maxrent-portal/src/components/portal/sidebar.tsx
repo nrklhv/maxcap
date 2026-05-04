@@ -15,6 +15,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useState } from "react";
+import { Logo } from "@/components/Logo";
 
 const clientNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -72,13 +73,13 @@ export function Sidebar() {
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-5 border-b border-gray-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <Link
             href="/dashboard"
-            className="text-lg font-bold text-gray-900 leading-tight"
-            title="MaxRent - Inversionista"
+            className="block transition-opacity hover:opacity-80"
+            title="MaxRent — Portal Inversionista"
           >
-            MaxRent - Inversionista
+            <Logo size="sm" tone="dark" />
           </Link>
           <button
             onClick={() => setMobileOpen(false)}
