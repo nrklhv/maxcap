@@ -9,6 +9,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        /** Identidad MaxRent — alineada con el landing (BRIEF.md). */
+        dark: "#001F30",
+        cream: "#FBF7F3",
+        orange: {
+          DEFAULT: "#FF6701",
+          2: "#FF8C3A",
+          light: "#FFF0E6",
+        },
+        "brand-cream": "#EDE0CC",
+
         /** Portal broker / evaluación crédito — paleta corporativa (navy, azul #2563eb, grises). */
         broker: {
           navy: "#0e1428",

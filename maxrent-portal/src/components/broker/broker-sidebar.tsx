@@ -23,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { Logo } from "@/components/Logo";
 
 export interface BrokerSidebarProps {
   brokerAccessStatus: "PENDING" | "APPROVED" | "REJECTED" | null;
@@ -132,14 +133,14 @@ export function BrokerSidebar({ brokerAccessStatus, canInvest }: BrokerSidebarPr
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between px-5 py-5 border-b border-gray-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <Link
             href="/broker"
-            className="text-lg font-bold text-broker-navy leading-tight font-serif tracking-tight"
-            title="MaxRent — Broker"
+            className="block transition-opacity hover:opacity-80"
+            title="MaxRent — Portal Broker"
             onClick={() => setMobileOpen(false)}
           >
-            MaxRent — Broker
+            <Logo size="sm" tone="dark" />
           </Link>
           <button
             type="button"

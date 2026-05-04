@@ -272,7 +272,7 @@ export default function PerfilPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Mi perfil</h1>
+        <h1 className="font-serif text-2xl tracking-tight text-dark">Mi perfil</h1>
         <p className="mt-1 text-gray-600">
           {onboardingCompleted
             ? "Revisá o editá tus datos personales y laborales."
