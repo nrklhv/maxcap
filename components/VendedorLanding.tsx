@@ -46,10 +46,15 @@ export function VendedorLanding() {
               Tú recibes el precio completo.
             </p>
             <div className="mt-8 max-w-lg rounded-xl border border-white/10 bg-white/5 p-5">
-              <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-teal-2">Sobre el piloto</div>
+              <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-teal-2">
+                Sobre el Club
+              </div>
               <p className="text-sm leading-relaxed text-gray-2">
-                El primer lanzamiento ya está en marcha con una cartera de propiedades seleccionadas. Si tu propiedad
-                califica, <strong className="font-medium text-white">inscríbete ahora para ser considerado en el segundo lanzamiento.</strong>
+                El Club de Inversionistas Calificados es la apuesta de Houm para masificar la inversión en
+                propiedades usadas. Si tu propiedad califica,{" "}
+                <strong className="font-medium text-white">
+                  inscríbete ahora para entrar al pool de propiedades del Club.
+                </strong>
               </p>
             </div>
           </div>
@@ -127,8 +132,8 @@ export function VendedorLanding() {
                 </svg>
               }
             >
-              El 90% lo recibes al contado el día de la escritura vía el Banco Aliado. El 10% restante llega en 24 cuotas garantizadas
-              por Houm — tú recibes el 100% sin riesgo de cobranza.
+              El 90% lo recibes al contado el día de la escritura. El 10% restante llega en cuotas mensuales
+              garantizadas por MaxRent — tú recibes el 100% sin riesgo de cobranza.
             </PilarCard>
           </div>
         </section>
@@ -171,12 +176,12 @@ export function VendedorLanding() {
                 }
               />
               <StatCard
-                stat="90%"
-                label="financiamiento del Banco Aliado al día de la escritura"
+                stat="100"
+                label="cupos de inversionistas calificados, cartera coordinada"
                 body={
                   <>
-                    <strong className="text-white">El Banco Aliado</strong> financia al comprador en el acto — tú recibes el 90% el
-                    día de la escritura.
+                    El <strong className="text-white">Club MaxRent</strong> agrupa 100 inversionistas calificados
+                    para comprar tu propiedad junto a otras 99 — demanda asegurada, cierre coordinado.
                   </>
                 }
               />

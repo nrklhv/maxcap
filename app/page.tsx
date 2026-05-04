@@ -5,9 +5,9 @@ import { investorFaqItems } from "@/lib/faqInvestor";
 import { faqPageJsonLd } from "@/lib/faqJsonLd";
 import { getSiteUrl } from "@/lib/site";
 
-const title = "Invierte en propiedades usadas sin poner pie";
+const title = "Club de Inversionistas Calificados";
 const description =
-  "Piloto exclusivo: propiedades usadas con renta desde el día 1. Alianza Houm, Renta Capital y Banco Aliado.";
+  "Juntos compramos mejor: 100 inversionistas calificados se unen para acceder a propiedades usadas con cap rate sobre 5%, comisión de compra 0% y administración en pool por Houm. Una iniciativa de Houm con Renta Capital.";
 
 export const metadata: Metadata = {
   title,

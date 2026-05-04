@@ -14,7 +14,7 @@ const RATES: {
   recommended: boolean;
 }[] = [
   { id: "45", pct: 0.045, label: "4,5% cap rate", tag: "Precio referencial máximo", recommended: false },
-  { id: "50", pct: 0.05, label: "5,0% cap rate", tag: "✦ Precio recomendado para el piloto", recommended: true },
+  { id: "50", pct: 0.05, label: "5,0% cap rate", tag: "✦ Precio recomendado para el Club", recommended: true },
   { id: "55", pct: 0.055, label: "5,5% cap rate", tag: "Precio muy atractivo para el inversionista", recommended: false },
   { id: "60", pct: 0.06, label: "6,0% cap rate", tag: "Cierre más rápido — alta demanda", recommended: false },
 ];
@@ -105,7 +105,7 @@ export function Calculadora() {
           </div>
           {mensual > 0 && (
             <div className="mt-4 rounded-[10px] border border-orange/30 bg-orange-light p-4 text-xs leading-relaxed text-[#CC4E00]">
-              <strong className="text-orange">El 5,0% es el punto ideal del piloto.</strong> Genera el mejor equilibrio
+              <strong className="text-orange">El 5,0% es el punto ideal del Club.</strong> Genera el mejor equilibrio
               entre precio para el vendedor y atractivo para el inversionista.
             </div>
           )}

@@ -107,10 +107,13 @@ La marca refleja que **MaxRent es una iniciativa de Houm** — el "by Houm" func
 
 **FAQ (`lib/faqInvestor.ts`):** 14 entradas alineadas al modelo Club. Cubre plazos, política de devolución, programa de referidos, evaluación 5 min, pie en cuotas, comisión 0%, primer arriendo, pool, vacancia/morosidad, crédito hipotecario, propiedades disponibles (modo ciego), comisión Houm, venta anticipada, portal del inversionista.
 
-**Header (sticky, ambas variantes):**
+**Header (sticky):**
 - Logo `MaxRent by Houm` (izquierda)
-- Nav links + **link `Iniciar sesión`** (apunta a `{PORTAL_URL}/login` — toggle inversionista/broker)
-- CTA: `Inscribirme` (inversionista) o `Enviar datos` (vendedor)
+- Inversionista (6 items): `El Club` · `Cómo funciona` · `FAQ` · `Soy broker` · `Iniciar sesión` · CTA `Inscribirme`
+- Vendedor: `Requisitos` · `Calcula el precio de venta` · `Preguntas` · `Quiero invertir` · `Iniciar sesión` · CTA `Inscribirme`
+- Broker: `Programa` · `Cómo funciona` · `FAQ` · `Soy inversionista` · `Iniciar sesión` · CTA `Postular`
+- `Iniciar sesión` apunta a `{PORTAL_URL}/login` (toggle inversionista/broker)
+- CTAs `#form` con feedback visual (scrollIntoView + focus al primer input + pulso outline naranja) para casos donde el form sticky ya está visible
 
 **Plazos del Club (variables en `lib/site.ts`):**
 - `CLUB_OPEN_DATE = 1 de junio`

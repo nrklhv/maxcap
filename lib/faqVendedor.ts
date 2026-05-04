@@ -5,7 +5,7 @@ export const vendedorFaqItems: FaqEntry[] = [
     id: "v1",
     question: "¿Cuánto voy a recibir por mi propiedad?",
     answer:
-      "El precio lo definimos juntos en base al cap rate. El 90% lo recibes al contado el día de la escritura. El 10% restante llega en 24 cuotas mensuales garantizadas por Houm.",
+      "El precio lo definimos juntos en base al cap rate. El 90% lo recibes al contado el día de la escritura. El 10% restante llega en cuotas mensuales garantizadas por MaxRent.",
   },
   {
     id: "v2",
@@ -29,7 +29,7 @@ export const vendedorFaqItems: FaqEntry[] = [
     id: "v5",
     question: "¿El 10% del pie está garantizado o hay riesgo de no recibirlo?",
     answer:
-      "Houm garantiza el pago de las 24 cuotas del 10% ante ti como vendedor. No dependes del comprador para recibirlo — tú recibes el precio completo sin riesgo de cobranza.",
+      "MaxRent garantiza el pago de las cuotas del 10% ante ti como vendedor. No dependes del comprador individual para recibirlo — tú recibes el precio completo sin riesgo de cobranza.",
   },
   {
     id: "v6",
@@ -41,6 +41,6 @@ export const vendedorFaqItems: FaqEntry[] = [
     id: "v7",
     question: "¿Cuándo se abre el segundo lanzamiento?",
     answer:
-      "El primer piloto está en marcha. El segundo lanzamiento está en proceso de estructuración — al inscribirte quedas en lista de evaluación prioritaria.",
+      "El primer lanzamiento del Club está en marcha. El segundo lanzamiento está en proceso de estructuración — al inscribirte quedas en lista de evaluación prioritaria.",
   },
 ];

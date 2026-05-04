@@ -47,21 +47,7 @@ export function Header({ variant }: { variant: HeaderVariant }) {
           className="border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center text-gray-2 hover:text-white hover:border-orange"
           onClick={() => setOpen(false)}
         >
-          La oportunidad
-        </Link>
-        <Link
-          href="/#uvn"
-          className="border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-orange"
-          onClick={() => setOpen(false)}
-        >
-          Los números
-        </Link>
-        <Link
-          href="/#alianza"
-          className="border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-orange"
-          onClick={() => setOpen(false)}
-        >
-          Quiénes somos
+          El Club
         </Link>
         <Link
           href="/#como"
@@ -78,18 +64,11 @@ export function Header({ variant }: { variant: HeaderVariant }) {
           FAQ
         </Link>
         <Link
-          href="/vendedor"
-          className="border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-orange"
-          onClick={() => setOpen(false)}
-        >
-          Vender propiedad
-        </Link>
-        <Link
           href="/brokers"
           className="border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-orange"
           onClick={() => setOpen(false)}
         >
-          Brokers
+          Soy broker
         </Link>
         <Link
           href={loginHref}
