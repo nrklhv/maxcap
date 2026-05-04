@@ -90,10 +90,10 @@ export function FormInversionista({ onReserved }: Props) {
         <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-green text-xl text-white">
           ✓
         </div>
-        <div className="mb-1.5 font-serif text-xl text-dark">¡Recibimos tus datos!</div>
+        <div className="mb-1.5 font-serif text-xl text-dark">¡Bienvenido al Club!</div>
         <p className="mx-auto max-w-sm text-sm leading-relaxed text-gray-3">
-          El siguiente paso es entrar al portal del inversionista para completar tu perfil
-          y agendar la asesoría con un especialista. Toma menos de 2 minutos.
+          Te enviamos un email para que entres al portal del inversionista y completes tu evaluación.
+          Toma menos de 5 minutos.
         </p>
         <button
           type="button"
@@ -119,14 +119,13 @@ export function FormInversionista({ onReserved }: Props) {
   return (
     <>
       <div className="mb-2 font-serif text-2xl leading-[1.12] tracking-tight text-dark md:text-3xl">
-        Inscríbete ahora
+        Reserva tu cupo
         <br />
-        y no pierdas
-        <br />
-        <em className="text-orange not-italic">la oportunidad.</em>
+        en el <em className="text-orange not-italic">Club.</em>
       </div>
       <p className="mb-5 max-w-md border-b border-gray-1 pb-4 text-sm leading-snug text-gray-3">
-        Un especialista te contacta en menos de 24 horas con las propiedades disponibles para tu perfil.
+        Un especialista de Renta Capital te contacta en 24 horas para evaluarte y guiarte en cada paso.
+        Sin compromiso, sin costo.
       </p>
       <form onSubmit={handleSubmit}>
         <div className="mb-2 grid grid-cols-2 gap-2.5">
@@ -191,13 +190,10 @@ export function FormInversionista({ onReserved }: Props) {
         >
           {submitting ? "Enviando…" : (
             <>
-              Reservar mi cupo <span className="transition-transform group-hover:translate-x-1">→</span>
+              Inscríbete al Club <span className="transition-transform group-hover:translate-x-1">→</span>
             </>
           )}
         </button>
-        <p className="mt-2.5 text-center text-xs leading-relaxed text-gray-3">
-          Sin costo · Sin compromiso · Respuesta en 24 horas
-        </p>
       </form>
     </>
   );

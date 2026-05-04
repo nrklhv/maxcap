@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Logo } from "./Logo";
+import { getPortalUrl } from "@/lib/site";
 
 export type HeaderVariant = "inversionista" | "vendedor";
 
@@ -12,6 +13,11 @@ export function Header({ variant }: { variant: HeaderVariant }) {
     variant === "inversionista"
       ? "bg-orange text-white hover:bg-[#E55A00]"
       : "bg-teal text-white hover:bg-[#085041]";
+  const loginHref = `${getPortalUrl()}/login`;
+  const loginLinkClass =
+    variant === "inversionista"
+      ? "border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-orange"
+      : "border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-teal-2";
 
   const links =
     variant === "inversionista" ? (
@@ -59,11 +65,18 @@ export function Header({ variant }: { variant: HeaderVariant }) {
           Vender propiedad
         </Link>
         <Link
+          href={loginHref}
+          className={loginLinkClass}
+          onClick={() => setOpen(false)}
+        >
+          Iniciar sesión
+        </Link>
+        <Link
           href="/#form"
           className={`ml-1 rounded-lg px-[18px] py-2 text-xs font-semibold border-b-0 h-auto ${ctaClass}`}
           onClick={() => setOpen(false)}
         >
-          Reservar cupo
+          Inscribirme
         </Link>
       </>
     ) : (
@@ -95,6 +108,13 @@ export function Header({ variant }: { variant: HeaderVariant }) {
           onClick={() => setOpen(false)}
         >
           Quiero invertir
+        </Link>
+        <Link
+          href={loginHref}
+          className={loginLinkClass}
+          onClick={() => setOpen(false)}
+        >
+          Iniciar sesión
         </Link>
         <Link
           href="/vendedor#form"
