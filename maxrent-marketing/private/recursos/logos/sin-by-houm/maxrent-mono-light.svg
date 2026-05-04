@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 42" role="img" aria-label="MaxRent">
+  <title>MaxRent — monocromo claro</title>
+  <desc>Logo MaxRent en una sola tinta blanca. Para fondos oscuros uniformes.</desc>
+  <polyline points="18.5,3 3,14.5 18.5,26" stroke="#FFFFFF" stroke-width="3" stroke-linecap="square" fill="none"/>
+  <polyline points="31.5,3 16,14.5 31.5,26" stroke="#FFFFFF" stroke-width="3" stroke-linecap="square" fill="none"/>
+  <text x="40" y="25"
+        font-family="'DM Sans', 'Helvetica Neue', Arial, sans-serif"
+        font-size="15.4" font-weight="300" letter-spacing="2"
+        fill="#FFFFFF">MAXRENT</text>
+</svg>
