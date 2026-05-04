@@ -459,57 +459,82 @@ export function InvestorLanding() {
             <br />a tu primera renta.
           </h2>
           <p className="mb-14 max-w-xl text-sm leading-relaxed text-gray-3">
-            5 pasos simples — un especialista te acompaña en cada uno.
+            6 pasos simples — un especialista de Renta Capital te acompaña en cada uno, todo dentro del portal del
+            inversionista.
           </p>
           <StepsWrap>
             <StepRow
               step={1}
               tag="Paso 01"
-              title="Deja tus datos de contacto"
-              description="Completa el formulario en esta página. Solo necesitamos tu nombre, email y WhatsApp — sin compromiso, sin costo."
+              title="Te inscribes en el portal MaxRent"
+              description="Dejas tus datos en este formulario y entras directo al portal del inversionista — la plataforma donde se gestiona todo el proceso. Sin compromiso, sin costo."
             />
             <StepRow
               step={2}
               tag="Paso 02"
-              title="Asesoría financiera personalizada"
-              description="Un especialista se contacta contigo en menos de 24 horas."
+              title="Te evaluamos en menos de 5 minutos"
+              description="Completas un cuestionario corto y validamos tu RUT con un proceso 100% digital. En menos de 5 minutos sabes si calificas para entrar al Club."
             />
             <StepRow
               step={3}
               tag="Paso 03"
-              title="Acompañamiento en el crédito hipotecario"
+              title={`Reservas tu cupo del Club por 1 UF`}
               description={
                 <>
-                  Te acompañamos en la <strong>aprobación del crédito hipotecario con el Banco Aliado</strong> — hasta el 90% de
-                  financiamiento, con 24 meses de gracia.
+                  Una vez que calificas, pagas <strong>1 UF</strong> para reservar tu cupo entre los{" "}
+                  {CLUB_TOTAL_SLOTS} inversionistas del Club. La reserva se devuelve si finalmente no obtienes el
+                  crédito o no se materializa la inversión.
                 </>
               }
             />
-            <StepRow step={4} tag="Paso 04" title="Pago de reserva de propiedad" description="Una vez aprobado el crédito, reservas la propiedad que elegiste." />
+            <StepRow
+              step={4}
+              tag="Paso 04"
+              title="Te acompañamos en el crédito hipotecario"
+              description={
+                <>
+                  Un especialista de <strong>Renta Capital</strong> te asesora con el banco que mejor calce para tu
+                  perfil. La estructura del Club ayuda a negociar condiciones diferenciales que un comprador
+                  individual no consigue.
+                </>
+              }
+            />
             <StepRow
               step={5}
               tag="Paso 05"
-              title="Firma de la compraventa"
+              title="Firmas la compraventa con asesoría completa"
               description={
                 <>
-                  Firmas la escritura de compraventa. <strong>Desde ese día recibes el arriendo</strong> — la propiedad
-                  ya está ocupada y Houm administra todo.
+                  Cuando el Club completa los {CLUB_TOTAL_SLOTS} cupos y se cierra la compra de la cartera, firmas la
+                  escritura de tu propiedad. Renta Capital te asesora en cada documento, plazo y trámite.
                 </>
               }
             />
             <StepRow
               step={6}
               tag="Paso 06 · Tu inversión trabaja"
-              title="Propiedad bajo administración Houm — renta asegurada 24 meses"
+              title="Tu propiedad entra al pool de Houm"
               description={
                 <>
-                  Houm administra tu propiedad y <strong>garantiza el pago del arriendo los primeros 24 meses</strong>.
-                  Tu inversión genera ingresos desde el primer día.
+                  Houm administra tu propiedad dentro del <strong>pool del Club</strong>: arriendo, cobranza y
+                  mantenciones. Recibes tu flujo mensual estable, diversificado entre las {CLUB_TOTAL_SLOTS}{" "}
+                  propiedades. La inversión empieza a trabajar.
                 </>
               }
               isLast
             />
           </StepsWrap>
+
+          <div className="mt-10 flex flex-col items-start gap-3 rounded-xl border border-orange/30 bg-orange-light p-6 md:flex-row md:items-center md:gap-6">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-orange text-lg text-white">
+              ✦
+            </div>
+            <p className="text-sm leading-relaxed text-dark">
+              Todo el proceso ocurre dentro del{" "}
+              <strong className="text-orange">portal del inversionista</strong> — visible y trazable en cualquier
+              momento. Tu especialista de Renta Capital queda a un click.
+            </p>
+          </div>
         </section>
 
         <section className="bg-cream px-4 py-16 md:px-10 md:py-20" id="faq">
