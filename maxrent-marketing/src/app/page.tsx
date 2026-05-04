@@ -30,36 +30,55 @@ export default async function HomePage() {
           </p>
         </section>
 
-        <section className="mb-12">
+        <section className="mb-12 grid grid-cols-1 md:grid-cols-2 gap-6">
           <Link
             href="/identidad"
-            className="group block bg-dark text-cream rounded-2xl p-8 sm:p-10 hover:opacity-95 transition shadow-sm overflow-hidden relative"
+            className="group block bg-dark text-cream rounded-2xl p-8 hover:opacity-95 transition shadow-sm overflow-hidden relative"
           >
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-              <div className="flex-1">
-                <p className="text-xs uppercase tracking-widest text-orange font-semibold mb-3">
-                  Sistema visual
-                </p>
-                <h2 className="text-3xl sm:text-4xl mb-3">
-                  Identidad de marca
-                </h2>
-                <p className="text-sm text-cream/80 max-w-md">
-                  Logos (con y sin endoso), paleta de colores con click-to-copy
-                  y tipografías. Todo lo que necesitas para mantener la marca
-                  consistente.
-                </p>
+            <p className="text-xs uppercase tracking-widest text-orange font-semibold mb-3">
+              Sistema visual
+            </p>
+            <h2 className="text-2xl sm:text-3xl mb-3">Identidad de marca</h2>
+            <p className="text-sm text-cream/80 mb-6">
+              Logos (con y sin endoso), paleta de colores con click-to-copy y
+              tipografías.
+            </p>
+            <div className="flex items-center justify-between">
+              <div className="flex -space-x-2">
+                <span className="w-7 h-7 rounded-full bg-orange ring-2 ring-dark" />
+                <span className="w-7 h-7 rounded-full bg-[#CC4A28] ring-2 ring-dark" />
+                <span className="w-7 h-7 rounded-full bg-[#EDE0CC] ring-2 ring-dark" />
+                <span className="w-7 h-7 rounded-full bg-cream ring-2 ring-dark" />
               </div>
-              <div className="shrink-0 flex items-center gap-3">
-                <div className="flex -space-x-2">
-                  <span className="w-8 h-8 rounded-full bg-orange ring-2 ring-dark" />
-                  <span className="w-8 h-8 rounded-full bg-[#CC4A28] ring-2 ring-dark" />
-                  <span className="w-8 h-8 rounded-full bg-[#EDE0CC] ring-2 ring-dark" />
-                  <span className="w-8 h-8 rounded-full bg-cream ring-2 ring-dark" />
-                </div>
-                <span className="text-sm font-medium text-orange group-hover:underline whitespace-nowrap">
-                  Ver identidad →
-                </span>
+              <span className="text-sm font-medium text-orange group-hover:underline">
+                Ver identidad →
+              </span>
+            </div>
+          </Link>
+
+          <Link
+            href="/piezas"
+            className="group block bg-cream border border-gray-1 rounded-2xl p-8 hover:border-orange transition shadow-sm relative overflow-hidden"
+          >
+            <p className="text-xs uppercase tracking-widest text-orange font-semibold mb-3">
+              Social media
+            </p>
+            <h2 className="text-2xl sm:text-3xl text-dark mb-3">
+              Piezas para feed
+            </h2>
+            <p className="text-sm text-gray-3 mb-6">
+              Singles y carruseles para Instagram y Facebook, organizados por
+              batch. Listas para descargar y subir.
+            </p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-3 font-mono">1:1 · 4:5</span>
+                <span className="text-xs text-gray-3">·</span>
+                <span className="text-xs text-gray-3">PNG</span>
               </div>
+              <span className="text-sm font-medium text-orange group-hover:underline">
+                Ver piezas →
+              </span>
             </div>
           </Link>
         </section>
