@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 30" role="img" aria-label="MaxRent">
+  <title>MaxRent — icono</title>
+  <desc>Icono MaxRent: dos chevrones (naranja brillante + naranja quemado). Para favicon, avatares y aplicaciones cuadradas.</desc>
+  <polyline points="20,3 4,15 20,27" stroke="#FF6701" stroke-width="3.4" stroke-linecap="square" fill="none"/>
+  <polyline points="33,3 17,15 33,27" stroke="#CC4A28" stroke-width="3.4" stroke-linecap="square" fill="none"/>
+</svg>
