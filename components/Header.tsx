@@ -1,14 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { Logo } from "./Logo";
 import { getPortalUrl } from "@/lib/site";
+import { scrollToForm } from "@/lib/scrollToForm";
 
 export type HeaderVariant = "inversionista" | "vendedor" | "broker";
 
 export function Header({ variant }: { variant: HeaderVariant }) {
   const [open, setOpen] = useState(false);
+
+  // Si el CTA apunta a `#form` de la página actual y el form sticky ya está
+  // visible, el navegador no produce feedback al click. Interceptamos para
+  // hacer scroll, focus al primer input y mostrar un pulso visual.
+  function handleFormCtaClick(e: MouseEvent<HTMLAnchorElement>) {
+    const href = e.currentTarget.getAttribute("href") ?? "";
+    if (href.includes("#form")) {
+      try {
+        const url = new URL(href, window.location.href);
+        if (url.pathname === window.location.pathname) {
+          e.preventDefault();
+          scrollToForm();
+        }
+      } catch {
+        // Href inválido — dejamos comportamiento por defecto.
+      }
+    }
+    setOpen(false);
+  }
   const ctaClass =
     variant === "vendedor"
       ? "bg-teal text-white hover:bg-[#085041]"
@@ -81,7 +101,7 @@ export function Header({ variant }: { variant: HeaderVariant }) {
         <Link
           href="/#form"
           className={`ml-1 rounded-lg px-[18px] py-2 text-xs font-semibold border-b-0 h-auto ${ctaClass}`}
-          onClick={() => setOpen(false)}
+          onClick={handleFormCtaClick}
         >
           Inscribirme
         </Link>
@@ -126,7 +146,7 @@ export function Header({ variant }: { variant: HeaderVariant }) {
         <Link
           href="/vendedor#form"
           className={`ml-1 rounded-lg px-[18px] py-2 text-xs font-semibold border-b-0 h-auto ${ctaClass}`}
-          onClick={() => setOpen(false)}
+          onClick={handleFormCtaClick}
         >
           Inscribirme
         </Link>
@@ -173,7 +193,7 @@ export function Header({ variant }: { variant: HeaderVariant }) {
       <Link
         href="/brokers#form"
         className={`ml-1 rounded-lg px-[18px] py-2 text-xs font-semibold border-b-0 h-auto ${ctaClass}`}
-        onClick={() => setOpen(false)}
+        onClick={handleFormCtaClick}
       >
         Postular
       </Link>
