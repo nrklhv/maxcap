@@ -24,16 +24,28 @@ const clientNavItems = [
   { href: "/reserva", label: "Reservas", icon: Home },
 ];
 
+/** Cuando la cuenta es multi-rol (también broker), el sidebar muestra un
+ *  switch al final que apunta al área que corresponda al estado del broker. */
+function brokerSwitchHrefFor(
+  status: "APPROVED" | "PENDING" | "REJECTED" | null | undefined
+): { href: string; label: string } | null {
+  switch (status) {
+    case "APPROVED":
+      return { href: "/broker/oportunidades", label: "Portal broker" };
+    case "PENDING":
+      return { href: "/broker/pending", label: "Estado de solicitud broker" };
+    case "REJECTED":
+      return { href: "/broker/rechazado", label: "Resultado solicitud broker" };
+    default:
+      return null;
+  }
+}
+
 export function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const brokerAccessStatus = session?.user?.brokerAccessStatus;
-  const extra: { href: string; label: string; icon: typeof LayoutDashboard }[] = [];
-  if (brokerAccessStatus != null) {
-    extra.push({ href: "/broker", label: "Portal broker", icon: Building2 });
-  }
-  const navItems = [...clientNavItems, ...extra];
+  const brokerSwitch = brokerSwitchHrefFor(session?.user?.brokerAccessStatus);
 
   return (
     <>
@@ -78,7 +90,7 @@ export function Sidebar() {
 
         {/* Navigation */}
         <nav className="px-3 py-4 space-y-1">
-          {navItems.map((item) => {
+          {clientNavItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
             return (
@@ -97,6 +109,20 @@ export function Sidebar() {
               </Link>
             );
           })}
+
+          {/* Switch al portal broker (cuando la cuenta es multi-rol).
+              Visualmente separado del nav principal, alineado al patrón
+              del BrokerSidebar que tiene el switch inverso al inversionista. */}
+          {brokerSwitch ? (
+            <Link
+              href={brokerSwitch.href}
+              onClick={() => setMobileOpen(false)}
+              className="mt-4 flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+            >
+              <Building2 className="w-5 h-5 shrink-0" />
+              {brokerSwitch.label}
+            </Link>
+          ) : null}
         </nav>
 
         {/* User section */}
