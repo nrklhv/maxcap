@@ -74,7 +74,11 @@ La marca refleja que **MaxRent es una iniciativa de Houm** — el "by Houm" func
 1. **Header sticky** — logo `MaxRent by Houm` + nav links + CTA `Reservar cupo` + link `Iniciar sesión`
 2. **Hero** — fondo `--dark`, headline `Juntos compramos mejor.` + bajada del Club, badge `Club de Inversionistas Calificados · 100 cupos`
 3. **Banda de urgencia** — `Tu cupo en el Club`, contador de cupos disponibles, barra de progreso, label dinámico de fase (apertura / cierre / cupos cerrados)
-4. **Pilares 2×2** — 4 cards: poder de compra colectiva, 0 pie + 0 comisión, ventajas usado, pool de propiedades
+4. **Pilares 2×2** — 4 cards en este orden:
+   1. **Pilar 01 · Compramos en bloque, conseguimos mejor precio** (`+5%` cap rate objetivo) — poder de negociación colectiva
+   2. **Pilar 02 · Sin comisión de compra y pie en cuotas** (`0%` comisión + pie diferido)
+   3. **Pilar 03 · Rentabilidad real desde el día uno** (`+30%` vs nueva) — ventajas de propiedades usadas con renta conocida
+   4. **Pilar 04 · Tu propiedad dentro de un pool diversificado** (`Pool`) — teaser de la sección Pool de Propiedades
 5. **Usada vs Nueva** — tabla comparativa + insights con foco en cap rate +5% y comisiones cero
 6. **Alianza** — Houm + Renta Capital (sin Banco Aliado, sin "renta garantizada 24m"); énfasis en la marca `MaxRent by Houm`
 7. **Pool de Propiedades** (sección nueva) — pitch del modelo pool: diversifica vacancia, no pago, costos
