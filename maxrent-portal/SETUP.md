@@ -1,5 +1,9 @@
 # MaxRent Portal — Guía de Setup
 
+> Esta guía cubre **solo el portal** (`portal.maxrent.cl`). El repo tiene tres apps Next.js — para las otras dos:
+> - **Landing** (`www.maxrent.cl`): código en la raíz del repo, ver [`README.md`](../README.md).
+> - **Recursos de marca** (`marketing.maxrent.cl`): código en [`maxrent-marketing/`](../maxrent-marketing/), ver [`maxrent-marketing/README.md`](../maxrent-marketing/README.md) para setup, OAuth, deploy y rotación de secrets.
+
 ## Requisitos previos
 
 - Node.js 18+
