@@ -26,6 +26,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# render output local de piezas (dev only)
+/dev-output
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
