@@ -194,9 +194,6 @@ export function FormInversionista({ onReserved }: Props) {
             </>
           )}
         </button>
-        <p className="mt-2.5 text-center text-xs leading-relaxed text-gray-3">
-          Sin compromiso · Sin costo · Tu reserva se devuelve si no obtienes el crédito
-        </p>
       </form>
     </>
   );
