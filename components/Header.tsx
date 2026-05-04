@@ -5,19 +5,19 @@ import { useState } from "react";
 import { Logo } from "./Logo";
 import { getPortalUrl } from "@/lib/site";
 
-export type HeaderVariant = "inversionista" | "vendedor";
+export type HeaderVariant = "inversionista" | "vendedor" | "broker";
 
 export function Header({ variant }: { variant: HeaderVariant }) {
   const [open, setOpen] = useState(false);
   const ctaClass =
-    variant === "inversionista"
-      ? "bg-orange text-white hover:bg-[#E55A00]"
-      : "bg-teal text-white hover:bg-[#085041]";
+    variant === "vendedor"
+      ? "bg-teal text-white hover:bg-[#085041]"
+      : "bg-orange text-white hover:bg-[#E55A00]";
   const loginHref = `${getPortalUrl()}/login`;
   const loginLinkClass =
-    variant === "inversionista"
-      ? "border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-orange"
-      : "border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-teal-2";
+    variant === "vendedor"
+      ? "border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-teal-2"
+      : "border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-orange";
 
   const links =
     variant === "inversionista" ? (
@@ -63,6 +63,13 @@ export function Header({ variant }: { variant: HeaderVariant }) {
           onClick={() => setOpen(false)}
         >
           Vender propiedad
+        </Link>
+        <Link
+          href="/brokers"
+          className="border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-orange"
+          onClick={() => setOpen(false)}
+        >
+          Brokers
         </Link>
         <Link
           href={loginHref}
@@ -126,7 +133,58 @@ export function Header({ variant }: { variant: HeaderVariant }) {
       </>
     );
 
-  const logoHref = variant === "inversionista" ? "/#top" : "/vendedor";
+  const linksBroker = (
+    <>
+      <Link
+        href="/brokers#programa"
+        className="border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-orange"
+        onClick={() => setOpen(false)}
+      >
+        Programa
+      </Link>
+      <Link
+        href="/brokers#como"
+        className="border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-orange"
+        onClick={() => setOpen(false)}
+      >
+        Cómo funciona
+      </Link>
+      <Link
+        href="/brokers#faq"
+        className="border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-orange"
+        onClick={() => setOpen(false)}
+      >
+        FAQ
+      </Link>
+      <Link
+        href="/"
+        className="border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-orange"
+        onClick={() => setOpen(false)}
+      >
+        Soy inversionista
+      </Link>
+      <Link
+        href={loginHref}
+        className={loginLinkClass}
+        onClick={() => setOpen(false)}
+      >
+        Iniciar sesión
+      </Link>
+      <Link
+        href="/brokers#form"
+        className={`ml-1 rounded-lg px-[18px] py-2 text-xs font-semibold border-b-0 h-auto ${ctaClass}`}
+        onClick={() => setOpen(false)}
+      >
+        Postular
+      </Link>
+    </>
+  );
+
+  const navLinks =
+    variant === "broker" ? linksBroker : links;
+
+  const logoHref =
+    variant === "inversionista" ? "/#top" : variant === "broker" ? "/brokers" : "/vendedor";
 
   return (
     <>
@@ -134,7 +192,7 @@ export function Header({ variant }: { variant: HeaderVariant }) {
         <Link href={logoHref} className="opacity-85 transition-opacity hover:opacity-100">
           <Logo size="sm" />
         </Link>
-        <nav className="hidden items-center gap-0 md:flex">{links}</nav>
+        <nav className="hidden items-center gap-0 md:flex">{navLinks}</nav>
         <button
           type="button"
           className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 rounded-md border border-white/15 text-white md:hidden"
@@ -157,7 +215,7 @@ export function Header({ variant }: { variant: HeaderVariant }) {
           role="dialog"
           aria-modal="true"
         >
-          <nav className="flex flex-col gap-1 px-6 py-6">{links}</nav>
+          <nav className="flex flex-col gap-1 px-6 py-6">{navLinks}</nav>
         </div>
       )}
     </>
