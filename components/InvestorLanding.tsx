@@ -337,6 +337,121 @@ export function InvestorLanding() {
           </div>
         </section>
 
+        <section className="bg-white px-4 py-16 md:px-10 md:py-20" id="pool">
+          <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-orange">Pool de Propiedades</div>
+          <h2 className="mb-2 font-serif text-3xl tracking-tight text-dark md:text-[clamp(24px,2.2vw+14px,52px)]">
+            Tu propiedad.
+            <br />
+            <em className="block font-serif text-[1.08em] not-italic text-orange md:text-[1.04em]">
+              Estabilidad de un fondo.
+            </em>
+          </h2>
+          <p className="mb-10 max-w-2xl text-sm leading-relaxed text-gray-3">
+            La propiedad sigue a tu nombre. Pero dentro del Club entra a un pool administrado por Houm que comparte
+            vacancia, morosidad y costos entre todas las propiedades. Así, los momentos malos de una unidad los
+            absorben las otras 99 — y tu flujo se mantiene estable mes a mes.
+          </p>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <PilarCard
+              variant="orange"
+              bgNum="01"
+              numLabel="Pool 01"
+              title="Vacancia diversificada"
+              statValue="1/100"
+              statLabel={
+                <>
+                  vacante ≠
+                  <br />
+                  vacante en tu flujo
+                </>
+              }
+              icon={
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
+                  <path
+                    d="M3 17V8L10 3l7 5v9"
+                    stroke="#7A6E68"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path d="M8 17v-5h4v5" stroke="#7A6E68" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              }
+            >
+              Si tu propiedad queda vacía, el pool reparte el flujo de las otras 99 mientras Houm encuentra un nuevo
+              arrendatario. No esperás meses sin renta.
+            </PilarCard>
+            <PilarCard
+              variant="orange"
+              bgNum="02"
+              numLabel="Pool 02"
+              title="Morosidad absorbida"
+              statValue="100%"
+              statLabel={
+                <>
+                  del flujo del pool
+                  <br />
+                  sin esperar la cobranza
+                </>
+              }
+              icon={
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
+                  <path
+                    d="M10 2L3 5.5V10.5c0 3.5 3 6.5 7 7 4-.5 7-3.5 7-7V5.5L10 2z"
+                    stroke="#7A6E68"
+                    strokeWidth="1.5"
+                  />
+                </svg>
+              }
+            >
+              Si un arrendatario se atrasa, Houm gestiona la cobranza pero tu mes no depende de ese pago puntual. El
+              flujo del pool entra parejo, mes a mes.
+            </PilarCard>
+            <PilarCard
+              variant="orange"
+              bgNum="03"
+              numLabel="Pool 03"
+              title="Gastos prorrateados"
+              statValue="÷100"
+              statLabel={
+                <>
+                  costos de rotación
+                  <br />
+                  distribuidos
+                </>
+              }
+              icon={
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
+                  <circle cx="10" cy="10" r="7" stroke="#7A6E68" strokeWidth="1.5" />
+                  <path
+                    d="M10 4v6l4 2"
+                    stroke="#7A6E68"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              }
+            >
+              Cuando un arrendatario sale, hay pintura, arreglos, comisión de re-arriendo. En el pool, esos costos se
+              prorratean entre las 100 propiedades, no caen 100% sobre vos.
+            </PilarCard>
+          </div>
+
+          <div className="mt-10 flex flex-col items-start gap-3 rounded-xl border border-orange/30 bg-orange-light p-6 md:flex-row md:items-center md:gap-6">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-orange text-lg text-white">
+              ✦
+            </div>
+            <p className="text-sm leading-relaxed text-dark">
+              Tu inversión sigue siendo inmobiliaria.{" "}
+              <strong className="text-orange">La experiencia se vuelve financiera.</strong> La propiedad es tuya,
+              escriturada a tu nombre. Pero el flujo mensual deja de depender de un solo inquilino y pasa a comportarse
+              como una renta diversificada — predecible, estable, sin sorpresas.
+            </p>
+          </div>
+        </section>
+
         <section className="bg-cream px-4 py-16 md:px-10 md:py-20" id="como">
           <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-orange">Cómo funciona</div>
           <h2 className="mb-2 font-serif text-3xl tracking-tight text-dark md:text-[clamp(24px,2.2vw+14px,52px)]">
