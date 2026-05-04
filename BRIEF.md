@@ -79,7 +79,7 @@ La marca refleja que **MaxRent es una iniciativa de Houm** — el "by Houm" func
    2. **Pilar 02 · Sin comisión de compra y pie en cuotas** (`0%` comisión + pie diferido)
    3. **Pilar 03 · Rentabilidad real desde el día uno** (`+30%` vs nueva) — ventajas de propiedades usadas con renta conocida
    4. **Pilar 04 · Tu propiedad dentro de un pool diversificado** (`Pool`) — teaser de la sección Pool de Propiedades
-5. **Usada vs Nueva** — tabla comparativa + insights con foco en cap rate +5% y comisiones cero
+5. **Usada vs Nueva** — tabla comparativa de 7 filas: cap rate (3,0–3,6% vs +5% objetivo), arriendo bruto, primer arriendo (mes 37–40 vs día 1), pie, riesgo arrendatario, renta garantizada (no existe vs pool diversificado administrado por Houm), comisión de compra (0%/0% con énfasis "único en propiedades usadas"). TIR a 10 años: 7,9% nueva / 11,0% Club MaxRent. Diferencial `+3,1 pp`. 4 insights con foco en cap rate +5%, plusvalía base real, costo de 36 meses sin arriendo y filtro del Club. Sin "riesgo crédito" (no hay Banco Aliado)
 6. **Alianza** — Houm + Renta Capital (sin Banco Aliado, sin "renta garantizada 24m"); énfasis en la marca `MaxRent by Houm`
 7. **Pool de Propiedades** (sección nueva) — pitch del modelo pool: diversifica vacancia, no pago, costos
 8. **Cómo funciona** — 6 pasos: registro, evaluación 5 min, reserva 1 UF post-calificación, crédito, firma, pool
