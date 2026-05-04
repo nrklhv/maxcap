@@ -2,14 +2,18 @@
 
 ## Descripción del producto
 
-MaxRent es una plataforma de inversión inmobiliaria en propiedades usadas en Chile.
-Conecta tres actores: **vendedores** de propiedades (ya arrendadas), **inversionistas**
-que compran sin poner pie, y el ecosistema **Houm + Banco Aliado + Renta Capital** que hace
-posible el modelo financiero.
+MaxRent es el **Club de Inversionistas Calificados** que organiza compras colectivas de
+propiedades usadas para conseguir mejores precios y condiciones que un inversionista
+individual. Conecta cuatro actores: **inversionistas calificados** que se suman al Club,
+**vendedores institucionales** de propiedades (ya arrendadas), **brokers externos** que
+canalizan inversionistas a cambio de una comisión del 3%, y el ecosistema **Houm + Renta
+Capital** que opera todo: Houm administra el pool del Club, Renta Capital es el canal de
+inversionistas. MaxRent es **una iniciativa de Houm**.
 
-El sitio tiene **dos páginas**:
-- `/` → Vista inversionista (página principal)
-- `/vendedor` → Vista vendedor de propiedad
+El sitio tiene **tres páginas**:
+- `/` → Landing inversionista (Club de Inversionistas Calificados)
+- `/vendedor` → Landing vendedor de propiedad
+- `/brokers` → Programa Brokers MaxRent (postulación al programa de partners)
 
 ---
 

@@ -114,19 +114,33 @@ export async function POST(req: NextRequest) {
   const lastName = data.apellido.trim();
   const fullName = `${firstName} ${lastName}`.trim();
   const phone = data.whatsapp.trim();
-  const kind = data.type === "inversionista" ? "INVESTOR" : "SELLER";
+  const kind =
+    data.type === "inversionista"
+      ? "INVESTOR"
+      : data.type === "vendedor"
+        ? "SELLER"
+        : "BROKER";
   const source =
-    data.type === "inversionista" ? "landing-investor" : "landing-seller";
+    data.type === "inversionista"
+      ? "landing-investor"
+      : data.type === "vendedor"
+        ? "landing-seller"
+        : "landing-broker";
   const marketingAttribution: Prisma.InputJsonValue | undefined =
     data.marketing_attribution == null
       ? undefined
       : (data.marketing_attribution as Prisma.InputJsonValue);
 
-  // Campos vendedor (null si es inversionista)
+  // Campos vendedor (null si es inversionista o broker)
   const cantidadPropiedades =
     data.type === "vendedor" ? data.cantidad_propiedades : null;
   const arrendadas = data.type === "vendedor" ? data.arrendadas : null;
   const adminHoum = data.type === "vendedor" ? data.admin_houm : null;
+
+  // Empresa solo aplica al broker; va al campo flexible `data` para no
+  // sumar columna nueva al schema.
+  const dataJson: Prisma.InputJsonValue | undefined =
+    data.type === "broker" ? { companyName: data.empresa.trim() } : undefined;
 
   try {
     const lead = await prisma.lead.upsert({
@@ -144,6 +158,7 @@ export async function POST(req: NextRequest) {
         adminHoum,
         source,
         marketingAttribution,
+        data: dataJson,
       },
       update: {
         // Idempotente: refrescamos los datos del form en cada submit por si el
@@ -159,6 +174,7 @@ export async function POST(req: NextRequest) {
         adminHoum,
         source,
         marketingAttribution,
+        data: dataJson,
       },
       select: { id: true, status: true, createdAt: true, updatedAt: true },
     });

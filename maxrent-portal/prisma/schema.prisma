@@ -441,6 +441,7 @@ enum ReservationStatus {
 enum LeadKind {
   INVESTOR
   SELLER
+  BROKER
 }
 
 enum LeadStatus {

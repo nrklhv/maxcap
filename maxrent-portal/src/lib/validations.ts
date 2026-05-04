@@ -231,9 +231,19 @@ export const leadVendedorSchema = z
   })
   .strict();
 
+export const leadBrokerSchema = z
+  .object({
+    type: z.literal("broker"),
+    ...baseLeadFields,
+    /** Empresa o "Independiente" si es broker freelance. */
+    empresa: trimmedLead(160),
+  })
+  .strict();
+
 export const leadPublicBodySchema = z.discriminatedUnion("type", [
   leadInversionistaSchema,
   leadVendedorSchema,
+  leadBrokerSchema,
 ]);
 
 export type LeadPublicBodyInput = z.infer<typeof leadPublicBodySchema>;
