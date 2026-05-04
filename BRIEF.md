@@ -109,11 +109,14 @@ La marca refleja que **MaxRent es una iniciativa de Houm** — el "by Houm" func
 
 **Header (sticky):**
 - Logo `MaxRent by Houm` (izquierda)
-- Inversionista (6 items): `El Club` · `Cómo funciona` · `FAQ` · `Soy broker` · `Iniciar sesión` · CTA `Inscribirme`
-- Vendedor: `Requisitos` · `Calcula el precio de venta` · `Preguntas` · `Quiero invertir` · `Iniciar sesión` · CTA `Inscribirme`
-- Broker: `Programa` · `Cómo funciona` · `FAQ` · `Soy inversionista` · `Iniciar sesión` · CTA `Postular`
-- `Iniciar sesión` apunta a `{PORTAL_URL}/login` (toggle inversionista/broker)
-- CTAs `#form` con feedback visual (scrollIntoView + focus al primer input + pulso outline naranja) para casos donde el form sticky ya está visible
+- Inversionista (6 items): `El Club` · `Cómo funciona` · `FAQ` · **`Portal inversionista`** · **`Portal broker`** · CTA `Inscribirme`
+- Vendedor: `Requisitos` · `Calcula el precio de venta` · `Preguntas` · **`Portal inversionista`** · **`Portal broker`** · CTA `Inscribirme`
+- Broker: `Programa` · `Cómo funciona` · `FAQ` · **`Portal inversionista`** · **`Portal broker`** · CTA `Postular`
+- **Dos puertas explícitas** al portal en lugar de un único `Iniciar sesión`:
+  - `Portal inversionista` → `{PORTAL_URL}/login?callbackUrl=/dashboard`
+  - `Portal broker` → `{PORTAL_URL}/login?callbackUrl=/broker/oportunidades`
+  - El `/login` del portal adapta su heading según el `callbackUrl` (Portal Inversionista vs Portal Broker).
+- CTAs `#form` con feedback visual (scrollIntoView + focus al primer input + pulso outline naranja) para casos donde el form sticky ya está visible.
 
 **Plazos del Club (variables en `lib/site.ts`):**
 - `CLUB_OPEN_DATE = 1 de junio`

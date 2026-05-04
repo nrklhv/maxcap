@@ -232,7 +232,7 @@ erDiagram
 | `StaffRole` | NONE, SUPER_ADMIN |
 | `BrokerAccessStatus` | PENDING, APPROVED, REJECTED |
 | `BrokerInvestorInviteStatus` | PENDING, COMPLETED, EXPIRED |
-| `LeadKind` | INVESTOR, SELLER |
+| `LeadKind` | INVESTOR, SELLER, BROKER |
 | `LeadStatus` | NEW, INVITED, REGISTERED, CONVERTED, DISCARDED |
 | `PropertyStatus` | AVAILABLE, RESERVED, SOLD, ARCHIVED |
 | `CatalogDraftSource` | HOUM, CSV |
