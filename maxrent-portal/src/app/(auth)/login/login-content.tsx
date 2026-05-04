@@ -17,10 +17,36 @@ type LoginContentProps = {
   serverError?: string | null;
 };
 
+/** Deriva el copy de la pantalla de login según el callbackUrl al que va a
+ *  redirigir post-auth. El header del landing tiene dos puertas explícitas
+ *  (Portal inversionista / Portal broker) y la pantalla de login debe
+ *  reflejar visualmente cuál es la que el usuario eligió. */
+function deriveLoginContext(callbackUrl: string): {
+  heading: string;
+  subtitle: string;
+} {
+  if (callbackUrl.startsWith("/broker")) {
+    return {
+      heading: "Portal Broker",
+      subtitle: "Ingresa al portal broker MaxRent",
+    };
+  }
+  if (callbackUrl.startsWith("/staff")) {
+    return {
+      heading: "Acceso Staff",
+      subtitle: "Acceso interno MaxRent",
+    };
+  }
+  return {
+    heading: "Portal Inversionista",
+    subtitle: "Ingresa al portal MaxRent",
+  };
+}
+
 export default function LoginContent({
   defaultCallbackUrl = "/dashboard",
-  heading = "MaxRent - Inversionista",
-  subtitle = "Ingresa al portal inversionista",
+  heading: headingProp,
+  subtitle: subtitleProp,
   serverError = null,
 }: LoginContentProps = {}) {
   const searchParams = useSearchParams();
@@ -28,6 +54,12 @@ export default function LoginContent({
   const errorCode = searchParams.get("error");
   const prefillEmail = searchParams.get("email")?.trim().toLowerCase() ?? "";
   const isNewLead = searchParams.get("newLead") === "1";
+
+  // Si el caller explícito no pasó heading/subtitle, derivamos del callbackUrl
+  // para que la pantalla refleje cuál puerta del header eligió el usuario.
+  const ctx = deriveLoginContext(callbackUrl);
+  const heading = headingProp ?? ctx.heading;
+  const subtitle = subtitleProp ?? ctx.subtitle;
   const [email, setEmail] = useState(prefillEmail);
   const [devEmail, setDevEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
