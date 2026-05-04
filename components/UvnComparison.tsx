@@ -13,16 +13,16 @@ const UVN_ROWS: UvnRow[] = [
     label: "Cap rate",
     nueva: (
       <>
-        <span className="font-medium text-[#A32D2D]">3,6%</span>
+        <span className="font-medium text-[#A32D2D]">3,0% – 3,6%</span>
         <br />
         <small className="text-xs text-gray-3">proyectado a 3 años</small>
       </>
     ),
     usada: (
       <>
-        <span className="font-semibold text-green">Entre 4,5% y 5%</span>
+        <span className="font-semibold text-green">+5% objetivo</span>
         <br />
-        <small className="text-xs text-green">rango referencial del piloto</small>
+        <small className="text-xs text-green">verificable en contrato vigente</small>
       </>
     ),
   },
@@ -54,7 +54,7 @@ const UVN_ROWS: UvnRow[] = [
     id: "pie",
     label: "Pie",
     nueva: <span className="font-medium text-[#A32D2D]">36 cuotas durante la obra</span>,
-    usada: <span className="font-semibold text-green">24 cuotas post escritura</span>,
+    usada: <span className="font-semibold text-green">Cuotas post escritura</span>,
   },
   {
     id: "riesgo-arr",
@@ -66,23 +66,11 @@ const UVN_ROWS: UvnRow[] = [
     id: "renta-gar",
     label: "Renta garantizada",
     nueva: <span className="font-medium text-[#A32D2D]">No existe</span>,
-    usada: <span className="font-semibold text-green">24 meses — Houm garantiza</span>,
-  },
-  {
-    id: "riesgo-cred",
-    label: "Riesgo crédito",
-    nueva: (
-      <>
-        <span className="font-medium text-[#A32D2D]">Hipotecario en 3 años</span>
-        <br />
-        <small className="text-xs text-gray-3">condiciones desconocidas</small>
-      </>
-    ),
     usada: (
       <>
-        <span className="font-semibold text-green">Aprobado hoy con el Banco Aliado</span>
+        <span className="font-semibold text-green">Pool diversificado</span>
         <br />
-        <small className="text-xs text-green">condiciones conocidas</small>
+        <small className="text-xs text-green">administrado por Houm</small>
       </>
     ),
   },
@@ -90,7 +78,13 @@ const UVN_ROWS: UvnRow[] = [
     id: "comision",
     label: "Comisión de compra",
     nueva: <span className="text-gray-3">0% — inmobiliaria paga</span>,
-    usada: <span className="text-gray-3">0% — institucional paga</span>,
+    usada: (
+      <>
+        <span className="font-semibold text-green">0%</span>
+        <br />
+        <small className="text-xs text-green">único en propiedades usadas</small>
+      </>
+    ),
   },
 ];
 
@@ -183,7 +177,7 @@ export function UvnComparison() {
                 Propiedad nueva
               </th>
               <th className="min-w-0 rounded-t-[10px] bg-orange-light p-4 text-center text-xs font-semibold uppercase tracking-wide text-[#CC4E00]">
-                Usada
+                Club MaxRent · Usada
               </th>
             </tr>
           </thead>
@@ -202,9 +196,9 @@ export function UvnComparison() {
                 </span>
               </td>
               <td className="min-w-0 rounded-b-[10px] bg-orange-light px-4 pb-5 pt-5 text-center font-serif text-3xl text-orange">
-                10,0%
+                11,0%
                 <span className="mt-0.5 block font-sans text-xs font-semibold tracking-wide text-orange">
-                  usada
+                  Club MaxRent
                 </span>
               </td>
             </tr>
@@ -227,7 +221,7 @@ export function UvnComparison() {
             href="#uvn-usada"
             className="rounded-md bg-orange-light px-3 py-1.5 text-center text-xs font-semibold text-[#CC4E00] transition-colors hover:bg-orange-light/80"
           >
-            Ver escenario · usada
+            Ver escenario · Club MaxRent
           </a>
         </nav>
 
@@ -241,11 +235,11 @@ export function UvnComparison() {
         />
         <MobileScenarioBlock
           id="uvn-usada"
-          title="Usada"
+          title="Club MaxRent · Usada"
           variant="usada"
           rows={usadaRows}
-          tirDisplay="10,0%"
-          tirFootnote="usada"
+          tirDisplay="11,0%"
+          tirFootnote="Club MaxRent"
         />
       </div>
     </div>

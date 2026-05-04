@@ -233,7 +233,7 @@ export function InvestorLanding() {
 
           <div className="mb-12 flex flex-wrap items-center gap-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-orange/30 bg-orange-light py-2.5 pl-5 pr-5">
-              <span className="font-serif text-3xl tracking-tight text-orange">+2,1 pp</span>
+              <span className="font-serif text-3xl tracking-tight text-orange">+3,1 pp</span>
               <span className="max-w-[200px] text-sm leading-snug text-[#CC4E00]">
                 más rentabilidad anual
                 <br />
@@ -253,15 +253,16 @@ export function InvestorLanding() {
             </Insight>
             <Insight title="36 meses sin arriendo es un costo real">
               En una propiedad nueva pagas el pie durante 3 años sin recibir nada. En la usada ese mismo dinero llega
-              como arriendo desde el día 1 — y Houm lo garantiza los primeros 24 meses.
+              como arriendo desde el día 1, y el pool absorbe vacancia o atrasos para que tu flujo se mantenga estable.
             </Insight>
-            <Insight title="El riesgo de crédito en 3 años es real">
-              Firmas la promesa hoy pero el hipotecario se aprueba en 3 años — con tasas, condiciones e ingresos
-              desconocidos. En la usada el crédito del Banco Aliado se aprueba hoy, con las condiciones de hoy.
+            <Insight title="Solo entran propiedades con cap rate sobre 5%">
+              Como Club, filtramos lo que entra al pool. Solo aceptamos propiedades con cap rate verificable sobre 5% en
+              contrato vigente. Una propiedad nueva con +5% es prácticamente imposible — el cap rate típico es entre
+              3,0% y 3,6% proyectado a tres años.
             </Insight>
             <Insight title="Cap rate conocido vs proyectado">
-              En la usada trabajamos con un cap rate entre 4,5% y 5% según el contrato de arriendo vigente — no es una
-              proyección a futuro. El 3,6% de la nueva es una estimación a 3 años en un mercado que puede cambiar.
+              En la usada trabajamos con cap rate verificable en el contrato de arriendo vigente — no proyección. El
+              3,0%–3,6% de la nueva es una estimación a 3 años en un mercado que puede cambiar.
             </Insight>
           </div>
         </section>
