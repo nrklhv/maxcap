@@ -88,15 +88,22 @@ export default auth((req) => {
   if (isLoggedIn && pathname === "/login") {
     const u = req.auth?.user;
     const callback = req.nextUrl.searchParams.get("callbackUrl");
-    // Staff antes que canInvest: muchas cuentas staff también son inversionistas;
-    // si no, nunca llegan a /staff y parece un “parpadeo” al volver al login/dashboard.
-    if (u?.staffRole === "SUPER_ADMIN") {
-      // Respetar /broker/*, /dashboard, etc.: staff suele ser también broker/inversionista.
-      if (isSafeInternalCallback(callback)) {
-        return NextResponse.redirect(new URL(callback, req.nextUrl.origin));
-      }
-      return NextResponse.redirect(new URL("/staff", req.nextUrl.origin));
+
+    // /login es la puerta pública del marketing — NUNCA redirige a /staff,
+    // aunque la cuenta sea SUPER_ADMIN. El acceso staff vive solo en
+    // /staff/login (URL interna, no enlazada desde el landing).
+    // Si una cuenta es staff + inversionista (lo común), entra al portal
+    // inversionista por esta puerta. Para ir a staff, va a /staff/login a mano.
+
+    // 1) Respetar callback explícito si es seguro y no apunta a /staff.
+    if (
+      isSafeInternalCallback(callback) &&
+      !callback.startsWith("/staff")
+    ) {
+      return NextResponse.redirect(new URL(callback, req.nextUrl.origin));
     }
+
+    // 2) Default por rol — inversionista primero (el más común).
     if (u?.canInvest) {
       return NextResponse.redirect(new URL("/dashboard", req.nextUrl.origin));
     }
@@ -108,6 +115,10 @@ export default auth((req) => {
     if (u?.brokerAccessStatus === "PENDING") {
       return NextResponse.redirect(new URL("/broker/pending", req.nextUrl.origin));
     }
+
+    // 3) Fallback: cuenta sin canInvest ni broker. Probablemente staff puro
+    // o cuenta nueva que aún no tiene permisos. La mandamos a /dashboard
+    // (el middleware de onboarding la mantendrá ahí o la mandará a /perfil).
     return NextResponse.redirect(new URL("/dashboard", req.nextUrl.origin));
   }
 
