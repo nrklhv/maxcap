@@ -20,6 +20,11 @@ cp .env.example .env.local
 npm run dev   # → http://localhost:3003
 ```
 
+Para generar `NEXTAUTH_SECRET` localmente:
+```bash
+openssl rand -base64 32
+```
+
 ## Stack
 - Next.js 14.2 · App Router · `src/`
 - NextAuth v5 beta (Google provider, JWT session)
@@ -52,8 +57,30 @@ maxrent-marketing/
    └─ prensa/
 ```
 
+## Setup de Google OAuth (primera vez)
+
+Estas credenciales se crean **una sola vez** y se reusan para local + producción.
+
+1. Entrar a [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials).
+2. Seleccionar el mismo proyecto que ya usa el portal de MaxRent.
+3. **+ CREATE CREDENTIALS** → **OAuth client ID** → Application type: **Web application**.
+4. **Name**: `MaxRent Marketing`.
+5. **Authorized JavaScript origins**:
+   - `http://localhost:3003`
+   - `https://marketing.maxrent.cl`
+6. **Authorized redirect URIs**:
+   - `http://localhost:3003/api/auth/callback/google`
+   - `https://marketing.maxrent.cl/api/auth/callback/google`
+7. **CREATE** → copiar el Client ID y Client Secret.
+8. Pegar los valores en:
+   - `.env.local` (para dev local)
+   - Variables de entorno del proyecto Vercel (Settings → Environment Variables, scope **Production**, **Preview** y **Development**)
+
+### Si necesitas agregar un dominio nuevo (preview, staging, etc.)
+Editar el mismo OAuth client en Google Cloud Console y sumar el origin + redirect URI a las listas. Sin esto, Google rechaza el callback con `redirect_uri_mismatch`.
+
 ## Agregar acceso a un email
-Editar la env var `MARKETING_ALLOWED_EMAILS` en Vercel (o `.env.local` en dev). Es CSV o separado por espacios. Ejemplo:
+Editar la env var `MARKETING_ALLOWED_EMAILS` en Vercel (o `.env.local` en dev). Acepta CSV, espacios o `;`. Ejemplo:
 ```
 MARKETING_ALLOWED_EMAILS=nk@houm.com,rodrigo@maxrent.cl,chama@houm.com
 ```
@@ -70,14 +97,46 @@ Drop el archivo en `private/recursos/<slug>/`, commit + push. Ver [`private/recu
 3. Commit + push.
 
 ## Deploy (Vercel)
-Proyecto Vercel separado (no comparte con landing ni portal). Ver `SETUP.md` en la raíz del repo (sección Marketing).
+Proyecto Vercel separado (no comparte con landing ni portal).
 
-Variables de entorno que necesita el proyecto en Vercel:
-- `NEXTAUTH_URL=https://marketing.maxrent.cl`
-- `NEXTAUTH_SECRET` (32 bytes random)
-- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
-- `MARKETING_ALLOWED_EMAILS`
+### Setup inicial (una sola vez)
+1. **vercel.com/new** → importar el repo `nrklhv/maxcap`.
+2. **Project Name**: `maxrent-marketing`.
+3. **Root Directory**: `maxrent-marketing` (clave — sin esto buildea el landing).
+4. **Framework Preset**: Next.js (autodetectado).
+5. Agregar las 5 env vars (sección §Variables de entorno) para Production, Preview y Development.
+6. **Deploy**.
 
-DNS: CNAME `marketing.maxrent.cl` → `cname.vercel-dns.com`.
+### Dominio
+1. Vercel project → Settings → Domains → Add `marketing.maxrent.cl`.
+2. En GoDaddy (DNS de `maxrent.cl`): agregar CNAME `marketing` → `cname.vercel-dns.com`.
+3. Esperar verificación + emisión de SSL (~1–2 min).
 
-Google OAuth: agregar `https://marketing.maxrent.cl/api/auth/callback/google` a Authorized redirect URIs.
+### Variables de entorno
+| Var | Valor | Notas |
+|---|---|---|
+| `NEXTAUTH_URL` | `https://marketing.maxrent.cl` | URL pública canónica |
+| `NEXTAUTH_SECRET` | 32 bytes random | Generar con `openssl rand -base64 32`, distinto al de dev |
+| `GOOGLE_CLIENT_ID` | (de Google Cloud) | Mismo valor que en local |
+| `GOOGLE_CLIENT_SECRET` | (de Google Cloud) | Mismo valor que en local |
+| `MARKETING_ALLOWED_EMAILS` | CSV de emails | Sin la var, app cerrada |
+
+## Rotar secrets
+
+### `NEXTAUTH_SECRET`
+1. Generar nuevo valor: `openssl rand -base64 32`.
+2. Vercel → Settings → Environment Variables → editar `NEXTAUTH_SECRET` (Production) → guardar.
+3. Vercel redeploya automáticamente. **Todas las sesiones activas se invalidan** (los JWT firmados con el secret viejo dejan de validar). Los usuarios tendrán que volver a loguear con Google.
+4. Para local: editar `.env.local` y reiniciar `npm run dev`.
+
+### `GOOGLE_CLIENT_SECRET`
+1. Google Cloud Console → Credentials → editar el OAuth client `MaxRent Marketing` → **Reset secret**.
+2. Copiar el secret nuevo.
+3. Vercel → Settings → Environment Variables → editar `GOOGLE_CLIENT_SECRET` → guardar.
+4. Vercel redeploya. Login se restablece sin invalidar sesiones existentes (las sesiones viven en el JWT, no dependen del secret de OAuth).
+5. Para local: editar `.env.local` y reiniciar `npm run dev`.
+
+### Si filtras un secret (incidente)
+1. Rotar **inmediatamente** el secret en Google Cloud (rota el OAuth) y regenerar `NEXTAUTH_SECRET` (invalida sesiones).
+2. Revisar logs de auth en Vercel para detectar accesos no esperados.
+3. Considerar reducir temporalmente la `MARKETING_ALLOWED_EMAILS` solo a tu correo hasta confirmar que no hubo abuso.
