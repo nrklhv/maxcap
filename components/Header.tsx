@@ -33,8 +33,15 @@ export function Header({ variant }: { variant: HeaderVariant }) {
     variant === "vendedor"
       ? "bg-teal text-white hover:bg-[#085041]"
       : "bg-orange text-white hover:bg-[#E55A00]";
-  const loginHref = `${getPortalUrl()}/login`;
-  const loginLinkClass =
+
+  // Dos puertas explícitas al portal — solucionan el caso multi-rol donde
+  // un mismo email tiene cuenta inversionista y broker. El callbackUrl
+  // garantiza que cada link aterrice en su área.
+  const portalUrl = getPortalUrl();
+  const investorPortalHref = `${portalUrl}/login?callbackUrl=/dashboard`;
+  const brokerPortalHref = `${portalUrl}/login?callbackUrl=/broker/oportunidades`;
+
+  const portalLinkClass =
     variant === "vendedor"
       ? "border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-teal-2"
       : "border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-orange";
@@ -64,18 +71,18 @@ export function Header({ variant }: { variant: HeaderVariant }) {
           FAQ
         </Link>
         <Link
-          href="/brokers"
-          className="border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-orange"
+          href={investorPortalHref}
+          className={portalLinkClass}
           onClick={() => setOpen(false)}
         >
-          Soy broker
+          Portal inversionista
         </Link>
         <Link
-          href={loginHref}
-          className={loginLinkClass}
+          href={brokerPortalHref}
+          className={portalLinkClass}
           onClick={() => setOpen(false)}
         >
-          Iniciar sesión
+          Portal broker
         </Link>
         <Link
           href="/#form"
@@ -109,18 +116,18 @@ export function Header({ variant }: { variant: HeaderVariant }) {
           Preguntas
         </Link>
         <Link
-          href="/"
-          className="border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-orange transition-colors h-14 flex items-center hover:text-orange-2 hover:border-teal-2 !text-orange !font-semibold"
+          href={investorPortalHref}
+          className={portalLinkClass}
           onClick={() => setOpen(false)}
         >
-          Quiero invertir
+          Portal inversionista
         </Link>
         <Link
-          href={loginHref}
-          className={loginLinkClass}
+          href={brokerPortalHref}
+          className={portalLinkClass}
           onClick={() => setOpen(false)}
         >
-          Iniciar sesión
+          Portal broker
         </Link>
         <Link
           href="/vendedor#form"
@@ -156,18 +163,18 @@ export function Header({ variant }: { variant: HeaderVariant }) {
         FAQ
       </Link>
       <Link
-        href="/"
-        className="border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-orange"
+        href={investorPortalHref}
+        className={portalLinkClass}
         onClick={() => setOpen(false)}
       >
-        Soy inversionista
+        Portal inversionista
       </Link>
       <Link
-        href={loginHref}
-        className={loginLinkClass}
+        href={brokerPortalHref}
+        className={portalLinkClass}
         onClick={() => setOpen(false)}
       >
-        Iniciar sesión
+        Portal broker
       </Link>
       <Link
         href="/brokers#form"
