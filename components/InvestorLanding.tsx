@@ -273,30 +273,29 @@ export function InvestorLanding() {
             aria-hidden
           />
           <div className="relative z-[1]">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-orange-2">La super alianza</div>
+            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-orange-2">
+              Una iniciativa de Houm
+            </div>
             <h2 className="mb-2 font-serif text-3xl tracking-tight text-white md:text-[clamp(24px,2.2vw+14px,52px)]">
-              Tres líderes.
+              Houm crea el Club.
               <br />
-              Un solo producto.
+              Renta Capital lo lleva al inversionista.
             </h2>
-            <p className="mb-12 max-w-lg text-sm leading-relaxed text-gray-2">
-              Cada empresa aporta lo que las otras no tienen. Juntas hacen posible algo que no existía en el mercado
-              chileno.
+            <p className="mb-12 max-w-2xl text-sm leading-relaxed text-gray-2">
+              MaxRent es la primera apuesta de Houm para que invertir en propiedades usadas sea masivo, con la red de
+              gestión que ya administra <strong className="text-white">+20.000 propiedades</strong> en Chile, Colombia
+              y México.
             </p>
 
             <div className="mb-12">
               <div className="divide-y divide-white/10 overflow-hidden rounded-xl border border-white/10 bg-white/5 sm:hidden">
                 <div className="px-5 py-4">
                   <div className="text-sm font-semibold text-white">Houm</div>
-                  <div className="mt-0.5 text-xs text-gray-3">Administración + garantía</div>
+                  <div className="mt-0.5 text-xs text-gray-3">Crea y administra el Club</div>
                 </div>
                 <div className="px-5 py-4">
                   <div className="text-sm font-semibold text-white">Renta Capital</div>
-                  <div className="mt-0.5 text-xs text-gray-3">Canal de ventas</div>
-                </div>
-                <div className="px-5 py-4">
-                  <div className="text-sm font-semibold text-white">Banco Aliado</div>
-                  <div className="mt-0.5 text-xs text-gray-3">Financiamiento</div>
+                  <div className="mt-0.5 text-xs text-gray-3">Canal de inversionistas</div>
                 </div>
               </div>
 
@@ -304,16 +303,7 @@ export function InvestorLanding() {
                 <div className="flex flex-1 items-center gap-2.5 bg-white/5 px-5 py-4 sm:rounded-l-xl">
                   <div>
                     <div className="text-sm font-semibold text-white">Houm</div>
-                    <div className="mt-0.5 text-xs text-gray-3">Administración + garantía</div>
-                  </div>
-                </div>
-                <div className="flex w-8 shrink-0 items-center justify-center self-stretch bg-orange text-sm font-semibold text-white">
-                  +
-                </div>
-                <div className="flex flex-1 items-center bg-white/5 px-5 py-4">
-                  <div>
-                    <div className="text-sm font-semibold text-white">Renta Capital</div>
-                    <div className="mt-0.5 text-xs text-gray-3">Canal de ventas</div>
+                    <div className="mt-0.5 text-xs text-gray-3">Crea y administra el Club</div>
                   </div>
                 </div>
                 <div className="flex w-8 shrink-0 items-center justify-center self-stretch bg-orange text-sm font-semibold text-white">
@@ -321,17 +311,16 @@ export function InvestorLanding() {
                 </div>
                 <div className="flex flex-1 items-center bg-white/5 px-5 py-4 sm:rounded-r-xl">
                   <div>
-                    <div className="text-sm font-semibold text-white">Banco Aliado</div>
-                    <div className="mt-0.5 text-xs text-gray-3">Financiamiento</div>
+                    <div className="text-sm font-semibold text-white">Renta Capital</div>
+                    <div className="mt-0.5 text-xs text-gray-3">Canal de inversionistas</div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <EmpresaCard variant="houm" />
               <EmpresaCard variant="renta" />
-              <EmpresaCard variant="bci" />
             </div>
 
             <div className="mt-10 flex items-center gap-6 rounded-xl border border-orange/25 bg-orange/10 p-6">
@@ -339,8 +328,10 @@ export function InvestorLanding() {
                 ✦
               </div>
               <p className="text-sm leading-relaxed text-white">
-                Juntos tienen el activo, el canal de ventas y el financiamiento.{" "}
-                <strong className="text-orange-2">Lo que no existía por separado, existe unido.</strong>
+                Houm aporta el activo y la administración, Renta Capital la asesoría experta.{" "}
+                <strong className="text-orange-2">
+                  Lo que no existía por separado, existe unido en el Club MaxRent.
+                </strong>
               </p>
             </div>
           </div>
@@ -448,7 +439,7 @@ function Insight({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function EmpresaCard({ variant }: { variant: "houm" | "renta" | "bci" }) {
+function EmpresaCard({ variant }: { variant: "houm" | "renta" }) {
   const styles = {
     houm: {
       top: "before:bg-orange",
@@ -460,29 +451,22 @@ function EmpresaCard({ variant }: { variant: "houm" | "renta" | "bci" }) {
       logo: "text-teal-2",
       badge: "bg-teal-2/10 text-[#9FE1CB]",
     },
-    bci: {
-      top: "before:bg-[#F5A623]",
-      logo: "text-[#F5A623]",
-      badge: "bg-[#F5A623]/12 text-[#D4890A]",
-    },
   }[variant];
 
   const body =
     variant === "houm" ? (
       <>
-        Líder en administración de propiedades en <strong className="text-white">Chile, Colombia y México</strong>.{" "}
-        <strong className="text-white">Garantiza el arriendo los primeros 24 meses</strong> y certifica el historial
-        de cada arrendatario antes de la venta.
-      </>
-    ) : variant === "renta" ? (
-      <>
-        Fundada por Antonio Roa, cofundador de Buydepa — <strong className="text-white">20 años de experiencia</strong>{" "}
-        en el mercado inmobiliario de inversión.
+        Líder en administración de propiedades en <strong className="text-white">Chile, Colombia y México</strong>.
+        MaxRent es una iniciativa de Houm: certifican el inventario, gestionan el{" "}
+        <strong className="text-white">pool de propiedades del Club</strong> tras la escritura, y respaldan la
+        operación con su red de +20.000 unidades.
       </>
     ) : (
       <>
-        <strong className="text-white">Financia hasta el 90% del valor</strong> con tasa 4,5% UF a 30 años. Los primeros
-        24 meses solo pagas el 50% del dividendo — el arriendo cubre esa cuota.
+        Fundada por Antonio Roa, cofundador de Buydepa — <strong className="text-white">20 años de experiencia</strong>{" "}
+        en el mercado inmobiliario de inversión. Cada inversionista del Club es{" "}
+        <strong className="text-white">acompañado por un especialista</strong> de Renta Capital, desde la evaluación
+        hasta la firma.
       </>
     );
 
@@ -491,28 +475,19 @@ function EmpresaCard({ variant }: { variant: "houm" | "renta" | "bci" }) {
       <>
         <div className={`font-serif text-2xl tracking-tight ${styles.logo}`}>houm</div>
         <div className={`mt-2 inline-block text-xs font-semibold uppercase tracking-wide ${styles.badge}`}>
-          Administración · Garantía · Escala
+          Crea el Club · Administra el pool
         </div>
         <div className="mt-4 font-serif text-4xl tracking-tight text-white">20.000+</div>
         <div className="mb-4 text-xs text-gray-3">propiedades administradas</div>
       </>
-    ) : variant === "renta" ? (
+    ) : (
       <>
         <div className={`font-serif text-2xl tracking-tight ${styles.logo}`}>Renta Capital</div>
         <div className={`mt-2 inline-block text-xs font-semibold uppercase tracking-wide ${styles.badge}`}>
-          Canal de ventas · Inversionistas
+          Canal de inversionistas · Asesoría
         </div>
         <div className="mt-4 font-serif text-4xl tracking-tight text-white">+UF 3M</div>
         <div className="mb-4 text-xs text-gray-3">en ventas de propiedades de inversión</div>
-      </>
-    ) : (
-      <>
-        <div className={`font-serif text-lg leading-tight tracking-tight ${styles.logo}`}>Banco Aliado</div>
-        <div className={`mt-2 inline-block text-xs font-semibold uppercase tracking-wide ${styles.badge}`}>
-          Financiamiento
-        </div>
-        <div className="mt-4 font-serif text-4xl tracking-tight text-white">90%</div>
-        <div className="mb-4 text-xs text-gray-3">financiamiento + 24 meses de gracia</div>
       </>
     );
 
