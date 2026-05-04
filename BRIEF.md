@@ -99,11 +99,9 @@ La marca refleja que **MaxRent es una iniciativa de Houm** — el "by Houm" func
 - Campos: Nombre, Apellido, Email, WhatsApp
 - CTA fijo: `Inscríbete al Club →`
 - Microcopy: `Sin compromiso · Sin costo · Tu reserva se devuelve si no obtienes el crédito`
-- 3 mini-bloques debajo del form (icon + título + body):
-  - **Plazos del Club**: Apertura 1 jun · Cierre 28 sep 2026
-  - **Reserva 100% reembolsable**: en 5 días hábiles si no obtiene crédito o no se materializa
-  - **Refiere y gana $500.000**: descontables de la inversión, sin límite
 - Tras submit: post a `{PORTAL_URL}/api/public/leads` + pantalla `¡Bienvenido al Club!` con CTA `Continuar al portal →` que redirige con email pre-cargado.
+
+**FAQ (`lib/faqInvestor.ts`):** 14 entradas alineadas al modelo Club. Cubre plazos, política de devolución, programa de referidos, evaluación 5 min, pie en cuotas, comisión 0%, primer arriendo, pool, vacancia/morosidad, crédito hipotecario, propiedades disponibles (modo ciego), comisión Houm, venta anticipada, portal del inversionista.
 
 **Header (sticky, ambas variantes):**
 - Logo `MaxRent by Houm` (izquierda)
