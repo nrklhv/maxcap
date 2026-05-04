@@ -10,10 +10,10 @@ import { NextResponse } from "next/server";
 import { findPieza } from "@/lib/piezas/registry";
 import { DIMENSIONES } from "@/lib/piezas/types";
 import { imageResponseFonts } from "@/lib/piezas/fonts";
-import { PilarSingle } from "@/lib/piezas/templates/PilarSingle";
+import { EditorialSingle } from "@/lib/piezas/templates/EditorialSingle";
+import { TwoColumnsSingle } from "@/lib/piezas/templates/TwoColumnsSingle";
+import { PreguntaSingle } from "@/lib/piezas/templates/PreguntaSingle";
 
-// Edge runtime: ImageResponse va más rápido y soporta el fetch de fuentes desde CDN.
-// Auth: el middleware ya valida sesión antes de llegar acá (devuelve 401 si no).
 export const runtime = "edge";
 
 function stripExt(s: string): string {
@@ -35,14 +35,22 @@ export async function GET(
 
   let element: React.ReactElement;
   switch (pieza.tipo) {
-    case "pilar":
-      element = <PilarSingle pieza={pieza} ancho={ancho} alto={alto} />;
+    case "editorial":
+      element = <EditorialSingle pieza={pieza} ancho={ancho} alto={alto} />;
       break;
-    default:
+    case "two-columns":
+      element = <TwoColumnsSingle pieza={pieza} ancho={ancho} alto={alto} />;
+      break;
+    case "pregunta":
+      element = <PreguntaSingle pieza={pieza} ancho={ancho} alto={alto} />;
+      break;
+    default: {
+      const _exhaustive: never = pieza;
       return NextResponse.json(
-        { error: `Tipo de pieza no soportado: ${(pieza as { tipo: string }).tipo}` },
+        { error: `Tipo de pieza no soportado: ${(_exhaustive as { tipo: string }).tipo}` },
         { status: 500 }
       );
+    }
   }
 
   const png = new ImageResponse(element, {
@@ -53,7 +61,6 @@ export async function GET(
 
   const url = new URL(request.url);
   if (url.searchParams.get("download")) {
-    // Re-empaquetar para sumar Content-Disposition: attachment.
     const buf = await png.arrayBuffer();
     return new NextResponse(buf, {
       headers: {
