@@ -79,3 +79,24 @@ body {
     transform: translateY(0);
   }
 }
+
+/* Pulso visual del form lateral cuando un CTA del header apunta a #form
+ * y el form ya está en pantalla (desktop sticky). Disparado vía
+ * lib/scrollToForm.ts que agrega `.form-pulse` por ~0.8s. */
+@keyframes formPulse {
+  0% {
+    outline: 2px solid rgba(255, 103, 1, 0);
+    outline-offset: -2px;
+  }
+  30% {
+    outline: 2px solid rgba(255, 103, 1, 0.7);
+    outline-offset: -2px;
+  }
+  100% {
+    outline: 2px solid rgba(255, 103, 1, 0);
+    outline-offset: -2px;
+  }
+}
+.form-pulse {
+  animation: formPulse 0.8s ease-out;
+}
