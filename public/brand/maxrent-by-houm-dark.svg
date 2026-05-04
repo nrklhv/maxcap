@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 42" role="img" aria-label="MaxRent by Houm">
+  <title>MaxRent by Houm</title>
+  <desc>Logo MaxRent by Houm — variante dark, wordmark navy sobre fondos claros.</desc>
+  <polyline points="18.5,3 3,14.5 18.5,26" stroke="#FF6701" stroke-width="3" stroke-linecap="square" fill="none"/>
+  <polyline points="31.5,3 16,14.5 31.5,26" stroke="#CC4A28" stroke-width="3" stroke-linecap="square" fill="none"/>
+  <text x="40" y="21"
+        font-family="'DM Sans', 'Helvetica Neue', Arial, sans-serif"
+        font-size="15.4" font-weight="300" letter-spacing="2"
+        fill="#001F30">MAXRENT</text>
+  <text x="132" y="37"
+        font-family="'DM Serif Display', Georgia, serif"
+        font-size="9.5" font-style="italic" font-weight="400" letter-spacing="0.4"
+        fill="#001F30" fill-opacity="0.85" text-anchor="end">by Houm</text>
+</svg>
