@@ -49,9 +49,9 @@ export default function SignInContent() {
         </button>
 
         <p className="mt-6 text-center text-xs text-gray-3">
-          Si necesitas acceso, escribe a{" "}
-          <a href="mailto:hola@maxrent.cl" className="text-orange hover:underline">
-            hola@maxrent.cl
+          Si necesitas acceso, escríbele a{" "}
+          <a href="mailto:nk@houm.com" className="text-orange hover:underline">
+            NK
           </a>
           .
         </p>
