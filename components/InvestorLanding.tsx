@@ -380,7 +380,7 @@ export function InvestorLanding() {
               }
             >
               Si tu propiedad queda vacía, el pool reparte el flujo de las otras 99 mientras Houm encuentra un nuevo
-              arrendatario. No esperás meses sin renta.
+              arrendatario. No esperas meses sin renta.
             </PilarCard>
             <PilarCard
               variant="orange"
@@ -435,7 +435,7 @@ export function InvestorLanding() {
               }
             >
               Cuando un arrendatario sale, hay pintura, arreglos, comisión de re-arriendo. En el pool, esos costos se
-              prorratean entre las 100 propiedades, no caen 100% sobre vos.
+              prorratean entre las 100 propiedades — no caen al 100% sobre ti.
             </PilarCard>
           </div>
 

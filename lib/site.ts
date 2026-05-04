@@ -20,7 +20,7 @@ export function getPortalUrl(): string {
 // =============================================================================
 // Club de Inversionistas Calificados — fechas del lanzamiento
 // =============================================================================
-// Editar acá si los plazos del Club cambian. El landing y el portal
+// Editar aquí si los plazos del Club cambian. El landing y el portal
 // consumen estas constantes vía `lib/clubPhase.ts`.
 
 /** Apertura oficial del Club: empiezan a tomarse reservas formales. */
