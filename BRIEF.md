@@ -82,7 +82,14 @@ La marca refleja que **MaxRent es una iniciativa de Houm** — el "by Houm" func
 5. **Usada vs Nueva** — tabla comparativa de 7 filas: cap rate (3,0–3,6% vs +5% objetivo), arriendo bruto, primer arriendo (mes 37–40 vs día 1), pie, riesgo arrendatario, renta garantizada (no existe vs pool diversificado administrado por Houm), comisión de compra (0%/0% con énfasis "único en propiedades usadas"). TIR a 10 años: 7,9% nueva / 11,0% Club MaxRent. Diferencial `+3,1 pp`. 4 insights con foco en cap rate +5%, plusvalía base real, costo de 36 meses sin arriendo y filtro del Club. Sin "riesgo crédito" (no hay Banco Aliado)
 6. **Alianza · Una iniciativa de Houm** — header `Houm crea el Club · Renta Capital lo lleva al inversionista`; strip horizontal de 2 partes (Houm "Crea y administra" + Renta Capital "Canal de inversionistas"); 2 EmpresaCards (variantes `houm` + `renta`, sin `bci`); banner final con mensaje de complementariedad (sin Banco Aliado)
 7. **Pool de Propiedades** — sección nueva (`id="pool"`, fondo blanco). Header `Tu propiedad. / Estabilidad de un fondo.` + bajada explicando que la propiedad sigue a nombre del inversionista pero entra a un pool administrado por Houm. 3 cards (Vacancia diversificada `1/100`, Morosidad absorbida `100%`, Gastos prorrateados `÷100`). Callout final con la frase clave: *"Tu inversión sigue siendo inmobiliaria. La experiencia se vuelve financiera."*
-8. **Cómo funciona** — 6 pasos: registro, evaluación 5 min, reserva 1 UF post-calificación, crédito, firma, pool
+8. **Cómo funciona** — 6 pasos secuenciales (`StepRow` con línea conectora vertical):
+   1. Inscripción en el portal MaxRent (form → portal del inversionista).
+   2. Evaluación digital en < 5 min.
+   3. Reserva del cupo por 1 UF (post-calificación, devolución según política).
+   4. Asesoría en crédito hipotecario por especialista de Renta Capital (sin Banco Aliado).
+   5. Firma de compraventa cuando el Club cierra los 100 cupos.
+   6. Propiedad entra al pool administrado por Houm.
+   Callout final: todo se gestiona dentro del portal del inversionista, especialista de Renta Capital a un click
 9. **FAQ** — accordion (incluye plazos, devolución, referidos, pool)
 10. **Footer**
 
