@@ -30,7 +30,44 @@ export default async function HomePage() {
           </p>
         </section>
 
+        <section className="mb-12">
+          <Link
+            href="/identidad"
+            className="group block bg-dark text-cream rounded-2xl p-8 sm:p-10 hover:opacity-95 transition shadow-sm overflow-hidden relative"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+              <div className="flex-1">
+                <p className="text-xs uppercase tracking-widest text-orange font-semibold mb-3">
+                  Sistema visual
+                </p>
+                <h2 className="text-3xl sm:text-4xl mb-3">
+                  Identidad de marca
+                </h2>
+                <p className="text-sm text-cream/80 max-w-md">
+                  Logos (con y sin endoso), paleta de colores con click-to-copy
+                  y tipografías. Todo lo que necesitas para mantener la marca
+                  consistente.
+                </p>
+              </div>
+              <div className="shrink-0 flex items-center gap-3">
+                <div className="flex -space-x-2">
+                  <span className="w-8 h-8 rounded-full bg-orange ring-2 ring-dark" />
+                  <span className="w-8 h-8 rounded-full bg-[#CC4A28] ring-2 ring-dark" />
+                  <span className="w-8 h-8 rounded-full bg-[#EDE0CC] ring-2 ring-dark" />
+                  <span className="w-8 h-8 rounded-full bg-cream ring-2 ring-dark" />
+                </div>
+                <span className="text-sm font-medium text-orange group-hover:underline whitespace-nowrap">
+                  Ver identidad →
+                </span>
+              </div>
+            </div>
+          </Link>
+        </section>
+
         <section>
+          <p className="text-xs uppercase tracking-widest text-gray-3 font-semibold mb-4">
+            Recursos por categoría
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {conConteo.map((cat) => (
               <Link
