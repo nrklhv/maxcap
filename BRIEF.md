@@ -94,9 +94,21 @@ La marca refleja que **MaxRent es una iniciativa de Houm** — el "by Houm" func
 10. **Footer**
 
 **Formulario sticky (desktop):**
+- Título: `Reserva tu cupo / en el Club.`
+- Bajada: `Un especialista de Renta Capital te contacta en 24 horas...`
 - Campos: Nombre, Apellido, Email, WhatsApp
-- CTA: contextual al fase del Club (`Reservar mi cupo` durante apertura)
-- Tras submit: post a `{PORTAL_URL}/api/public/leads` + redirige al portal con email pre-cargado
+- CTA fijo: `Inscríbete al Club →`
+- Microcopy: `Sin compromiso · Sin costo · Tu reserva se devuelve si no obtienes el crédito`
+- 3 mini-bloques debajo del form (icon + título + body):
+  - **Plazos del Club**: Apertura 1 jun · Cierre 28 sep 2026
+  - **Reserva 100% reembolsable**: en 5 días hábiles si no obtiene crédito o no se materializa
+  - **Refiere y gana $500.000**: descontables de la inversión, sin límite
+- Tras submit: post a `{PORTAL_URL}/api/public/leads` + pantalla `¡Bienvenido al Club!` con CTA `Continuar al portal →` que redirige con email pre-cargado.
+
+**Header (sticky, ambas variantes):**
+- Logo `MaxRent by Houm` (izquierda)
+- Nav links + **link `Iniciar sesión`** (apunta a `{PORTAL_URL}/login` — toggle inversionista/broker)
+- CTA: `Inscribirme` (inversionista) o `Enviar datos` (vendedor)
 
 **Plazos del Club (variables en `lib/site.ts`):**
 - `CLUB_OPEN_DATE = 1 de junio`

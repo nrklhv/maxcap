@@ -555,6 +555,64 @@ export function InvestorLanding() {
           <div className="pointer-events-none absolute left-0 right-0 top-0 z-[1] hidden h-1 bg-orange md:block" aria-hidden />
           <div className="relative max-h-[min(100vh,900px)] overflow-y-auto md:max-h-full md:py-3">
             <FormInversionista onReserved={() => {}} />
+            <div className="mt-5 space-y-3 border-t border-gray-1 pt-4">
+              <FormSideNote
+                title="Plazos del Club"
+                body="Apertura el 1 de junio · Cierre el 28 de septiembre 2026"
+                icon={
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
+                    <rect x="2" y="3" width="12" height="11" rx="1.5" stroke="#FF6701" strokeWidth="1.4" />
+                    <path d="M2 6h12" stroke="#FF6701" strokeWidth="1.4" />
+                    <path d="M5 1.5v3 M11 1.5v3" stroke="#FF6701" strokeWidth="1.4" strokeLinecap="round" />
+                  </svg>
+                }
+              />
+              <FormSideNote
+                title="Reserva 100% reembolsable"
+                body="Si no obtienes el crédito o no se materializa la inversión, devolvemos tu UF en 5 días hábiles."
+                icon={
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
+                    <path
+                      d="M3.5 8a4.5 4.5 0 1 1 1.4 3.2"
+                      stroke="#FF6701"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                      fill="none"
+                    />
+                    <path
+                      d="M3.5 4v3.5h3.5"
+                      stroke="#FF6701"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      fill="none"
+                    />
+                  </svg>
+                }
+              />
+              <FormSideNote
+                title="Refiere y gana $500.000"
+                body="Por cada inversionista que se sume al Club gracias a ti, descontamos $500.000 de tu inversión."
+                icon={
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
+                    <circle cx="5.5" cy="6" r="2" stroke="#FF6701" strokeWidth="1.4" />
+                    <circle cx="11" cy="5.5" r="1.6" stroke="#FF6701" strokeWidth="1.4" />
+                    <path
+                      d="M2 13c0-1.7 1.6-3 3.5-3s3.5 1.3 3.5 3"
+                      stroke="#FF6701"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M9.5 13c0-1.4 1.2-2.5 2.7-2.5s2.3 1 2.3 2.5"
+                      stroke="#FF6701"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                }
+              />
+            </div>
           </div>
         </aside>
       </div>
@@ -562,6 +620,28 @@ export function InvestorLanding() {
       <MobileLeadBar variant="inversionista" />
       <Footer variant="inversionista" />
     </>
+  );
+}
+
+function FormSideNote({
+  title,
+  body,
+  icon,
+}: {
+  title: string;
+  body: string;
+  icon: ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-2.5">
+      <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-orange-light">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs font-semibold text-dark">{title}</p>
+        <p className="mt-0.5 text-xs leading-snug text-gray-3">{body}</p>
+      </div>
+    </div>
   );
 }
 
