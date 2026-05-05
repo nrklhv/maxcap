@@ -389,12 +389,30 @@ El costo es mínimo: para reportería staff unificada se hace `UNION` cuando se 
    │       → Referral.status PENDING → SIGNED_UP, signedUpAt = ahora,
    │         referredUserId = Juan.user.id,
    │         expiresAt = signedUpAt + 120 días
-6. Juan escritura una propiedad del Club
-   → PR 6 (futuro): Referral.status → SIGNED, signedAt = ahora,
-                    payoutStatus = PENDING
+6. Staff escritura la reserva de Juan:
+   POST /api/staff/reservations/[id]/escriturar
+   ├─ Reservation.status → CONFIRMED
+   └─ triggerEscrituraPayouts(juan.user.id):
+        → Referral.status SIGNED_UP/QUALIFIED → SIGNED, signedAt = ahora,
+          payoutStatus = PENDING (toca pagar a Pedro)
 7. Staff procesa transferencia en /staff/atribuciones (PR 7 futuro)
    → Referral: payoutStatus → PAID, paidAt = ahora,
                payoutNote = "Transferencia BCI 12345 - 15-may-2026"
+```
+
+**Job nocturno de expiración** (Vercel Cron `0 6 * * *` UTC, configurado en `maxrent-portal/vercel.json`):
+
+```
+GET /api/cron/referrals/expire
+  Authorization: Bearer <CRON_SECRET>
+
+→ expireOverdueAttributions() corre dos updateMany en transacción:
+   - Referral con expiresAt < now y status IN (PENDING, SIGNED_UP, QUALIFIED)
+     → status = EXPIRED
+   - BrokerLead con expiresAt < now y status IN (NEW, SIGNED_UP, QUALIFIED)
+     → status = LOST
+
+Filas ya terminales (SIGNED, EXPIRED, CONTRACT_SIGNED, LOST) excluidas del WHERE.
 ```
 
 Para `BrokerLead` el flujo es idéntico cambiando `INV-` por `BRK-` y `SIGNED` por `CONTRACT_SIGNED`. El monto en `payoutNote` lo decide staff caso a caso (comisión variable acordada offline).

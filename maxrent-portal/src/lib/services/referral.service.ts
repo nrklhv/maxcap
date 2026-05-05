@@ -353,6 +353,139 @@ export async function linkUserToPendingAttribution(
 }
 
 // -----------------------------------------------------------------------------
+// Trigger de payout al escriturar (gatillado por staff desde una Reservation)
+// -----------------------------------------------------------------------------
+
+/**
+ * Resumen de transiciones aplicadas por `triggerEscrituraPayouts`.
+ * Útil para devolver al staff qué se actualizó y mostrarlo en UI.
+ */
+export type EscrituraPayoutResult = {
+  /** ID del Referral que pasó a SIGNED, si existía. */
+  referralId: string | null;
+  /** ID del BrokerLead que pasó a CONTRACT_SIGNED, si existía. */
+  brokerLeadId: string | null;
+};
+
+/**
+ * Cuando un User escritura una propiedad del Club (transición de su
+ * `Reservation` a `CONFIRMED`), gatillamos los payouts de su atribución:
+ *   • Referral: PENDING/SIGNED_UP/QUALIFIED → SIGNED, signedAt = now,
+ *     payoutStatus = PENDING (queda esperando que staff transfiera los
+ *     $500.000 al referidor).
+ *   • BrokerLead: NEW/SIGNED_UP/QUALIFIED → CONTRACT_SIGNED, contractSignedAt = now,
+ *     payoutStatus = PENDING (staff pagará la comisión variable acordada).
+ *
+ * Idempotente: si ya está en SIGNED/CONTRACT_SIGNED o EXPIRED/LOST, no toca nada.
+ * Si no hay Referral ni BrokerLead asociado al User, retorna `{ null, null }` sin error.
+ */
+export async function triggerEscrituraPayouts(
+  userId: string
+): Promise<EscrituraPayoutResult> {
+  const now = new Date();
+  const result: EscrituraPayoutResult = {
+    referralId: null,
+    brokerLeadId: null,
+  };
+
+  // --- Referral (User como referido) ---
+  const referral = await prisma.referral.findUnique({
+    where: { referredUserId: userId },
+    select: { id: true, status: true },
+  });
+  if (
+    referral &&
+    (referral.status === "PENDING" ||
+      referral.status === "SIGNED_UP" ||
+      referral.status === "QUALIFIED")
+  ) {
+    await prisma.referral.update({
+      where: { id: referral.id },
+      data: {
+        status: "SIGNED",
+        signedAt: now,
+        // payoutStatus ya viene PENDING por default; lo dejamos explícito por
+        // claridad en caso de re-trigger desde un estado raro.
+        payoutStatus: "PENDING",
+      },
+    });
+    result.referralId = referral.id;
+  }
+
+  // --- BrokerLead (User como prospect) ---
+  const brokerLead = await prisma.brokerLead.findUnique({
+    where: { prospectUserId: userId },
+    select: { id: true, status: true },
+  });
+  if (
+    brokerLead &&
+    (brokerLead.status === "NEW" ||
+      brokerLead.status === "SIGNED_UP" ||
+      brokerLead.status === "QUALIFIED")
+  ) {
+    await prisma.brokerLead.update({
+      where: { id: brokerLead.id },
+      data: {
+        status: "CONTRACT_SIGNED",
+        contractSignedAt: now,
+        payoutStatus: "PENDING",
+      },
+    });
+    result.brokerLeadId = brokerLead.id;
+  }
+
+  return result;
+}
+
+// -----------------------------------------------------------------------------
+// Job nocturno: expirar atribuciones vencidas
+// -----------------------------------------------------------------------------
+
+/** Conteo de filas afectadas por la corrida de expiración. */
+export type ExpirationResult = {
+  referralsExpired: number;
+  brokerLeadsLost: number;
+};
+
+/**
+ * Recorre Referrals y BrokerLeads con `expiresAt < now` y status no terminal,
+ * y los marca como `EXPIRED` / `LOST`. Llamado por:
+ *   • Vercel Cron diario (`/api/cron/referrals/expire`).
+ *   • Manualmente por staff si hace falta.
+ *
+ * Idempotente: las filas ya en estado terminal (SIGNED / EXPIRED para Referral,
+ * CONTRACT_SIGNED / LOST para BrokerLead) están excluidas del WHERE.
+ *
+ * No toca `payoutStatus` porque las atribuciones expiradas NO generan payout
+ * (no se puede revivir el flujo después de EXPIRED).
+ */
+export async function expireOverdueAttributions(): Promise<ExpirationResult> {
+  const now = new Date();
+
+  const [referralsExpired, brokerLeadsLost] = await prisma.$transaction([
+    prisma.referral.updateMany({
+      where: {
+        expiresAt: { lt: now },
+        status: { in: ["PENDING", "SIGNED_UP", "QUALIFIED"] },
+      },
+      data: { status: "EXPIRED" },
+    }),
+    prisma.brokerLead.updateMany({
+      where: {
+        expiresAt: { lt: now },
+        status: { in: ["NEW", "SIGNED_UP", "QUALIFIED"] },
+      },
+      data: { status: "LOST" },
+    }),
+  ]);
+
+  return {
+    referralsExpired: referralsExpired.count,
+    brokerLeadsLost: brokerLeadsLost.count,
+  };
+}
+
+// -----------------------------------------------------------------------------
 // Errores tolerables
 // -----------------------------------------------------------------------------
 
