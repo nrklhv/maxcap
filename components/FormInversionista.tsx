@@ -11,6 +11,7 @@ import {
   spanishWhatsAppInvalid,
 } from "@/lib/nativeValidityEs";
 import { readStoredAttribution } from "@/lib/marketingAttribution";
+import { readReferralCode } from "@/lib/referralCookie";
 import { getPortalUrl } from "@/lib/site";
 
 type Props = {
@@ -46,6 +47,7 @@ export function FormInversionista({ onReserved }: Props) {
     setSubmitError(null);
     const fd = new FormData(form);
     const email = String(fd.get("email") ?? "").toLowerCase();
+    const referralCode = readReferralCode();
     const body = {
       type: "inversionista" as const,
       nombre: String(fd.get("nombre") ?? ""),
@@ -53,6 +55,9 @@ export function FormInversionista({ onReserved }: Props) {
       email,
       whatsapp: String(fd.get("whatsapp") ?? ""),
       marketing_attribution: readStoredAttribution(),
+      // Code de referido leído de la cookie `mxr_ref` (60d, first-touch).
+      // El portal valida que corresponda a un User real antes de atribuir.
+      ...(referralCode ? { referral_code: referralCode } : {}),
     };
 
     try {

@@ -307,9 +307,17 @@ maxrent-portal/
 ### Captura de leads (público — landing → portal)
 | Método | Ruta | Auth | Descripción |
 |---|---|---|---|
-| POST | `/api/public/leads` | No | Recibe el body del form del landing (inversionista o vendedor). Upsert idempotente de `Lead` por email. Para `kind=INVESTOR` nuevo, dispara welcome email vía la capa de notifications. |
+| POST | `/api/public/leads` | No | Recibe el body del form del landing (inversionista, vendedor o broker). Upsert idempotente de `Lead` por email. Para `kind=INVESTOR` nuevo, dispara welcome email vía la capa de notifications. Acepta opcionalmente `referral_code` (ver atribución abajo). |
 
 CORS: orígenes permitidos vía `LEADS_ALLOWED_ORIGINS` (CSV). Por defecto: `https://www.maxrent.cl` y `https://maxrent.cl`. En non-prod, también `*.vercel.app`.
+
+**Atribución de referidos** (PR #47, captura — la creación de `Referral`/`BrokerLead` viene en PR siguiente):
+
+- El landing setea cookie `mxr_ref` con el `?ref=` cuando alguien visita con un code válido (formato `INV-XXXXXX` o `BRK-XXXXXX`). TTL **60 días**, política **first-touch** (no se sobrescribe en visitas posteriores). Implementación en `lib/referralCookie.ts` del repo del landing.
+- Los 3 forms (`FormInversionista`, `FormVendedor`, `FormBroker`) leen la cookie y mandan el code en el body como `referral_code`. Schema Zod `referralCodeFieldSchema` valida prefijo + cuerpo alfanumérico.
+- El endpoint resuelve el code contra `User.investorReferralCode` o `User.brokerReferralCode`. Si matchea, persiste en `Lead.marketingAttribution.referralCode` + `referralKind`, y override de `Lead.source` a `"investor-referral"` o `"broker-referral"` (en lugar de `"landing-investor"`).
+- **Códigos inválidos o sin match → ignorados silenciosamente.** El lead se crea igual sin atribución (no falla el form).
+- **First-touch** garantizado en server: si el lead ya existe con `referralCode` previo en su `marketingAttribution`, NO se sobrescriben `source` ni `marketingAttribution` en el update (solo se refrescan firstName/lastName/phone/etc.).
 
 ### Notifications (público — webhook firmado)
 | Método | Ruta | Auth | Descripción |
@@ -359,11 +367,31 @@ APIs bajo `/api/staff/*` para inventario, aprobación de brokers, gestión de in
 
 ### 6.0 Captura de Lead desde el landing
 ```
+0. (Opcional) Visita previa con ?ref=INV-XXX o ?ref=BRK-XXX
+   → MarketingAttributionCapture (cliente) llama captureFirstTouchReferralFromUrl()
+   → Cookie `mxr_ref` con el code (60d, SameSite=Lax, Secure en prod, first-touch)
+   → captureFirstTouchFromUrl() también guarda UTMs/referrer en sessionStorage
+
 1. Inversionista llena el form en https://www.maxrent.cl
 2. POST {PORTAL_URL}/api/public/leads (CORS permitido para www.maxrent.cl)
-   → upsert Lead por email (idempotente; refresca datos pero no degrada status)
-   → si es Lead nuevo de tipo INVESTOR, dispara welcome email vía notifyTemplate()
-     (fire-and-forget; cualquier fallo queda en Notification con status=FAILED)
+   Body incluye:
+     - type, nombre, apellido, email, whatsapp (+ campos específicos por type)
+     - marketing_attribution (UTMs/gclid/fbclid/referrer del sessionStorage)
+     - referral_code (opcional, leído de la cookie mxr_ref)
+   →
+   a. Validación Zod (formato INV-/BRK- + alfanuméricos para referral_code).
+   b. Si hay referral_code: resolveReferralCode() busca User.investorReferralCode
+      o User.brokerReferralCode. Si matchea → atribución válida; si no → se
+      ignora silenciosamente, lead se crea como orgánico.
+   c. Lookup del Lead existente por email para decidir first-touch:
+      - Si existe con referralCode previo → preservar source y attribution.
+      - Caso contrario → usar los nuevos.
+   d. Upsert Lead (idempotente, no degrada status):
+      - source = "investor-referral" / "broker-referral" / "landing-*"
+      - marketingAttribution.referralCode = "INV-XXX" / "BRK-XXX" si aplica
+      - marketingAttribution.referralKind = "INVESTOR" / "BROKER"
+   e. Si es Lead nuevo INVESTOR → welcome email vía notifyTemplate() (f&f).
+
 3. Landing muestra pantalla "Recibimos tus datos" con CTA "Continuar al portal →"
 4. Click → redirige a {PORTAL_URL}/login?email=...&newLead=1&callbackUrl=/perfil
 5. /login del portal lee los query params:
@@ -373,6 +401,8 @@ APIs bajo `/api/staff/*` para inventario, aprobación de brokers, gestión de in
 ```
 
 Vendedor sigue el mismo POST pero NO entra al portal — staff lo contacta.
+
+> **PR siguiente (PR 3 del sistema de referidos)** crea automáticamente el `Referral` o `BrokerLead` con `leadId` apuntando al lead recién creado. Acá solo se captura la atribución cruda en `marketingAttribution`.
 
 ### 6.1 Registro + Onboarding (signup vía Google o magic link)
 ```

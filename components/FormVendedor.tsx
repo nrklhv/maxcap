@@ -11,6 +11,7 @@ import {
   spanishWhatsAppInvalid,
 } from "@/lib/nativeValidityEs";
 import { readStoredAttribution } from "@/lib/marketingAttribution";
+import { readReferralCode } from "@/lib/referralCookie";
 import { getPortalUrl } from "@/lib/site";
 
 /** Slightly shorter fields so the vendedor sidebar fits above the fold on typical laptop heights. */
@@ -41,6 +42,7 @@ export function FormVendedor() {
     setSubmitting(true);
     setSubmitError(null);
     const fd = new FormData(form);
+    const referralCode = readReferralCode();
     const body = {
       type: "vendedor" as const,
       nombre: String(fd.get("nombre") ?? ""),
@@ -51,6 +53,8 @@ export function FormVendedor() {
       arrendadas: String(fd.get("arrendadas") ?? ""),
       admin_houm: String(fd.get("admin_houm") ?? ""),
       marketing_attribution: readStoredAttribution(),
+      // Code de referido leído de la cookie `mxr_ref` (60d, first-touch).
+      ...(referralCode ? { referral_code: referralCode } : {}),
     };
 
     try {
