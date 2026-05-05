@@ -4,7 +4,7 @@ App Next.js para el sitio interno de **recursos de marca** en `marketing.maxrent
 
 ## Qué hace
 - Sitio gated (Google sign-in + allowlist de emails) para distribuir logos, piezas de campaña, fotografía y material de prensa.
-- Sin BD propia: la autorización vive 100% en la env var `MARKETING_ALLOWED_EMAILS`.
+- Sin BD propia — comparte la **Neon del portal** vía `@neondatabase/serverless` y solo lee/escribe la tabla `marketing_access` (allowlist de correos).
 - Los archivos NO se sirven desde `/public` — viven en `private/recursos/<categoria>/` y se sirven via `/api/recursos/...` para que el allowlist también proteja descargas directas.
 
 ## Requisitos
@@ -29,7 +29,7 @@ openssl rand -base64 32
 - Next.js 14.2 · App Router · `src/`
 - NextAuth v5 beta (Google provider, JWT session)
 - Tailwind 3 · DM Sans + DM Serif Display (idéntico al portal)
-- Sin Prisma, sin BD
+- `@neondatabase/serverless` (HTTP-based, Edge-safe) — reusa la Neon del portal · sin Prisma client en este app
 
 ## Estructura
 ```
@@ -80,7 +80,16 @@ Estas credenciales se crean **una sola vez** y se reusan para local + producció
 Editar el mismo OAuth client en Google Cloud Console y sumar el origin + redirect URI a las listas. Sin esto, Google rechaza el callback con `redirect_uri_mismatch`.
 
 ## Agregar acceso a un email
-Editar la env var `MARKETING_ALLOWED_EMAILS` en Vercel (o `.env.local` en dev). Acepta CSV, espacios o `;`. Ejemplo:
+
+### Opción A — desde la UI (recomendado para producción)
+1. Loguéate en `marketing.maxrent.cl` con un correo de `MARKETING_SUPER_ADMINS`.
+2. En el header, click en **"Administrar accesos"**.
+3. Agregás/quitás correos desde la página `/admin`. Cambios efectivos al instante (no hay redeploy).
+
+La lista se almacena en la tabla `marketing_access` de la Neon del portal (compartida).
+
+### Opción B — env var (legacy / dev local sin BD)
+`MARKETING_ALLOWED_EMAILS` (CSV) sigue funcionando como fallback cuando no hay `DATABASE_URL`. Útil en dev local sin DB. Ejemplo:
 ```
 MARKETING_ALLOWED_EMAILS=nk@houm.com,rodrigo@maxrent.cl,chama@houm.com
 ```
@@ -119,7 +128,9 @@ Proyecto Vercel separado (no comparte con landing ni portal).
 | `NEXTAUTH_SECRET` | 32 bytes random | Generar con `openssl rand -base64 32`, distinto al de dev |
 | `GOOGLE_CLIENT_ID` | (de Google Cloud) | Mismo valor que en local |
 | `GOOGLE_CLIENT_SECRET` | (de Google Cloud) | Mismo valor que en local |
-| `MARKETING_ALLOWED_EMAILS` | CSV de emails | Sin la var, app cerrada |
+| `MARKETING_SUPER_ADMINS` | CSV de emails | Tienen acceso permanente y pueden gestionar la allowlist desde `/admin` |
+| `DATABASE_URL` | conn string Neon | Mismo valor que el portal — solo se accede a la tabla `marketing_access` |
+| `MARKETING_ALLOWED_EMAILS` | CSV de emails (opcional) | Fallback dev local; en prod usar `/admin` |
 
 ## Rotar secrets
 

@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { auth, signOut } from "@/lib/auth";
+import { isSuperAdmin } from "@/lib/marketing-access";
 
 export async function SiteHeader() {
   const session = await auth();
+  const userEmail = session?.user?.email ?? null;
+  const showAdminLink = isSuperAdmin(userEmail);
+
   return (
     <header className="border-b border-gray-1 bg-cream/80 backdrop-blur sticky top-0 z-10">
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -12,24 +16,33 @@ export async function SiteHeader() {
             Recursos de marca
           </span>
         </Link>
-        {session?.user?.email && (
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/signin" });
-            }}
-            className="flex items-center gap-3"
-          >
+        {userEmail && (
+          <div className="flex items-center gap-3">
+            {showAdminLink && (
+              <Link
+                href="/admin"
+                className="text-xs font-medium text-orange hover:underline"
+              >
+                Administrar accesos
+              </Link>
+            )}
             <span className="text-xs text-gray-3 hidden sm:inline">
-              {session.user.email}
+              {userEmail}
             </span>
-            <button
-              type="submit"
-              className="text-xs font-medium text-dark border border-gray-2 rounded-full px-3 py-1.5 hover:bg-white transition"
+            <form
+              action={async () => {
+                "use server";
+                await signOut({ redirectTo: "/signin" });
+              }}
             >
-              Cerrar sesión
-            </button>
-          </form>
+              <button
+                type="submit"
+                className="text-xs font-medium text-dark border border-gray-2 rounded-full px-3 py-1.5 hover:bg-white transition"
+              >
+                Cerrar sesión
+              </button>
+            </form>
+          </div>
         )}
       </div>
     </header>

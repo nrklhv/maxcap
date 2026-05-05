@@ -512,6 +512,23 @@ model Property {
   @@map("properties")
 }
 
+/// Allowlist de correos autorizados a entrar a `marketing.maxrent.cl`.
+/// La app de marketing comparte la DB del portal pero NO la usa para ninguna otra
+/// cosa — sólo lee/escribe esta tabla para gestionar accesos. Los super-admins se
+/// definen en la env var `MARKETING_SUPER_ADMINS` del proyecto Vercel de marketing
+/// (no se almacenan en BD para no requerir bootstrap).
+model MarketingAccess {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  /// Email del super-admin que agregó este acceso (audit trail informal).
+  addedBy   String?
+  /// Nota opcional (ej. "Rodrigo - diseñador FB/IG", "Chama - tracking").
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@map("marketing_access")
+}
+
 /// Staging row (Houm sync or CSV import) until staff approves publication to `Property`.
 model PropertyCatalogDraft {
   id                      String                     @id @default(cuid())
