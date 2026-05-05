@@ -21,6 +21,12 @@ erDiagram
   User ||--o{ BrokerInvestorInvite : "broker sends"
   User ||--o{ BrokerInvestorInvite : "investor consumes"
   User }o--o| User : "sponsorBrokerUserId"
+  User ||--o{ Referral : "refers (referrer)"
+  User ||--o| Referral : "is referred (referred)"
+  User ||--o{ BrokerLead : "trae (broker)"
+  User ||--o| BrokerLead : "es traido (prospect)"
+  Lead ||--o| Referral : "atribuye (peer)"
+  Lead ||--o| BrokerLead : "atribuye (broker)"
   CreditEvaluation ||--o{ Reservation : optional
   Property ||--o| PropertyCatalogDraft : "promoted from"
 
@@ -56,6 +62,8 @@ erDiagram
     string leadId FK
     enum brokerAccessStatus
     datetime brokerReviewedAt
+    string investorReferralCode UK
+    string brokerReferralCode UK
   }
 
   Profile {
@@ -202,6 +210,45 @@ erDiagram
     datetime createdAt
     datetime updatedAt
   }
+
+  Referral {
+    string id PK
+    string code
+    string referrerUserId FK
+    string referredEmail
+    string referredUserId FK UK
+    string leadId FK UK
+    enum status
+    datetime signedUpAt
+    datetime qualifiedAt
+    datetime signedAt
+    datetime expiresAt
+    int rewardCLP
+    enum payoutStatus
+    datetime paidAt
+    text payoutNote
+    datetime createdAt
+    datetime updatedAt
+  }
+
+  BrokerLead {
+    string id PK
+    string code
+    string brokerUserId FK
+    string prospectEmail
+    string prospectUserId FK UK
+    string leadId FK UK
+    enum status
+    datetime signedUpAt
+    datetime qualifiedAt
+    datetime contractSignedAt
+    datetime expiresAt
+    enum payoutStatus
+    datetime paidAt
+    text payoutNote
+    datetime createdAt
+    datetime updatedAt
+  }
 ```
 
 ## Notas
@@ -225,6 +272,98 @@ erDiagram
 - **VerificationToken:** modelo NextAuth; no referencia `User` por FK.
 - **CreditEvaluation:** `consentAt` / `consentVersion` registran el consentimiento explícito antes de llamar a Floid; `floidCaseId` guarda el identificador de caso Floid cuando aplica (p. ej. flujo asíncrono); `downloadPdfUrl` apunta al reporte completo del widget; `staffNotes` permite anotaciones internas no visibles al inversionista. Con `status = COMPLETED`, staff puede fijar o anular `staffReservationApprovedAt` vía APIs `approve-reservation` / `revoke-reservation-approval` (portal `/staff/inversionistas`).
 
+## Atribución de referidos
+
+El portal trackea dos canales de atribución por separado: **peer-to-peer** entre inversionistas (`Referral`) y **comercial** vía broker (`BrokerLead`). Las dos tablas son intencionalmente paralelas en estructura física pero independientes en semántica de negocio.
+
+### Codes en `User`
+
+Cada cuenta tiene hasta dos codes únicos que sirven como identificador para `?ref=<code>` en links compartibles:
+
+| Campo | Prefijo | Cuándo se genera |
+|---|---|---|
+| `User.investorReferralCode` | `INV-` | Al cumplir `canInvest = true` (todo inversionista calificado del Club). |
+| `User.brokerReferralCode` | `BRK-` | Al pasar a `brokerAccessStatus = APPROVED`. |
+
+Multi-rol: una cuenta que es inversionista **y** broker aprobado tiene **ambos codes**. El sistema sabe por qué canal entró un referido leyendo el prefijo del code usado: `INV-` → `Referral`; `BRK-` → `BrokerLead`. Cero ambigüedad.
+
+### Tabla `Referral` (peer-to-peer)
+
+Se crea cuando un inversionista (referidor) comparte su `INV-` y otra persona (referido) llega al landing con `?ref=INV-XXXX` y llena el form. **El flujo siempre crea `Lead` primero**; el `Referral` se crea en el mismo paso con `leadId` apuntando al lead (no nullable — sin excepciones en v1).
+
+- **Reward fijo: $500.000 CLP** (`rewardCLP = 500000`, columna por si en el futuro se hacen campañas con montos distintos).
+- **Pago en cash al referidor** cuando el referido escritura una propiedad del Club. Se transfiere a la cuenta bancaria del referidor — la captura de datos bancarios queda fuera de v1 (staff la pide por mail al momento del payout).
+- **Sin tope de referidos por usuario en v1.** Si alguien refiere a 10 personas que escrituran, recibe $5.000.000 CLP. Monitoreo manual; agregar tope es 1 línea si vemos abuso.
+- **El beneficio es siempre del referidor, nunca del referido.** El referido NO recibe descuento ni nada — entra en condiciones idénticas a cualquier otro inversionista.
+
+### Tabla `BrokerLead` (comercial)
+
+Se crea cuando un broker aprobado comparte su `BRK-` y un prospect llega con `?ref=BRK-XXXX` y llena el form. Mismo flujo: Lead siempre primero, `leadId` NOT NULL.
+
+- **Comisión variable.** El monto se acuerda offline entre MaxRent y cada broker (puede ser % del ticket, fee fijo, escalonado por volumen, etc.). **No hay campos de monto en schema** — staff registra el pago como texto libre en `payoutNote` al procesar la transferencia. Ej: `"Boleta hon. 2026-0123 - $850.000 - Transferencia BCI 18-jun-2026"`.
+- **Pago al momento de la escritura** del prospect (transición a `CONTRACT_SIGNED`).
+- **Coexiste con `BrokerInvestorInvite`.** El invite es flujo de invitación explícita por token único; el `BrokerLead` es atribución por code compartible. Un mismo broker puede usar los dos canales.
+- **Sponsorship**: cuando el prospect crea cuenta, además de linkearse al `BrokerLead` se setea `User.sponsorBrokerUserId = brokerUserId` para mantener consistencia con el modelo de sponsorship pre-existente.
+
+### Atribución first-touch con cookie de 60 días
+
+Política aplicada uniformemente a los dos canales:
+
+1. Primer visit con `?ref=<code>` → cookie `mxr_ref` con el code, válida por **60 días**.
+2. Visits posteriores con otro `?ref=` → **se ignoran** (la primera atribución manda).
+3. Cookie expirada sin conversión → libre para atribución nueva.
+4. Si el lead ya tiene `marketingAttribution.referralCode` y vuelve a entrar con otro code → **no se sobrescribe**.
+
+### Estados (`status`) y expiración (`expiresAt`)
+
+Ambas tablas usan **un solo campo** `expiresAt` que se reinterpreta según el status actual:
+
+| Status | Significado | `expiresAt` referido a |
+|---|---|---|
+| `PENDING` (Referral) / `NEW` (BrokerLead) | Lead capturado, sin cuenta del portal todavía | `createdAt + 60 días` (espera de signup) |
+| `SIGNED_UP` | Referido/prospect creó cuenta | `signedUpAt + 120 días` (espera de escrituración) |
+| `QUALIFIED` | Referido/prospect pasó `canInvest = true` | Mismo `signedUpAt + 120 días` |
+| `SIGNED` (Referral) / `CONTRACT_SIGNED` (BrokerLead) | Escrituró → gatilla payout | (ya no expira) |
+| `EXPIRED` (Referral) / `LOST` (BrokerLead) | Pasó `expiresAt` sin escriturar | (terminal — payout nunca aplica) |
+
+Job nocturno marca como `EXPIRED`/`LOST` cualquier registro con `now > expiresAt` y status no terminal.
+
+**UX explícita en los portales:** la regla de 120 días post-signup se comunica claramente al referidor y al broker en sus respectivos dashboards, con countdown visible por cada referral y warning visual cuando faltan menos de 30 días. Esto evita reclamos del estilo "pero yo lo referí hace 5 meses".
+
+### Por qué dos tablas separadas y no una sola con discriminator
+
+Decisión arquitectónica explícita. Pros y contras evaluados:
+
+- ✗ Tabla única `Referral` con `referrerKind = INVESTOR | BROKER`: tentadora por DRY, pero los campos divergen rápido. Inversionista tiene reward fijo conocido; broker tiene fee variable, factura/boleta, comisiones escalonadas. Mantener una tabla habría requerido columnas nullables (la mitad solo aplica a un kind), filtros condicionales en cada query (olvidar `WHERE referrerKind = X` mezcla dominios), y la palabra "referral" miente para el broker (es su pipeline comercial, no un referido).
+- ✓ Dos tablas separadas: cada dominio evoluciona en sus propios términos, permisos naturales (broker no ve referrals peer; inversionista no ve broker leads), reportería simple sin filtros condicionales, fiscal/contable distinto.
+
+El costo es mínimo: para reportería staff unificada se hace `UNION` cuando se necesita, sin downtime ni migración futura.
+
+### Flujo end-to-end (ejemplo Referral)
+
+```
+1. Pedro (canInvest=true) → User.investorReferralCode = "INV-AB12CD"
+2. Pedro comparte: https://www.maxrent.cl/?ref=INV-AB12CD
+3. Juan visita el landing → cookie mxr_ref=INV-AB12CD (60 días)
+4. Juan llena el form → POST /api/public/leads
+   ├─ Crea Lead (Juan): source = "investor-referral",
+   │                    marketingAttribution.referralCode = "INV-AB12CD"
+   └─ Crea Referral: code = "INV-AB12CD", referrerUserId = Pedro.id,
+                     referredEmail = juan@..., leadId = Juan.lead.id,
+                     status = PENDING, expiresAt = createdAt + 60d
+5. Juan recibe magic link → crea cuenta
+   └─ Referral: status → SIGNED_UP, signedUpAt = ahora,
+                expiresAt = signedUpAt + 120d, referredUserId = Juan.user.id
+6. Juan escritura una propiedad del Club
+   └─ Referral: status → SIGNED, signedAt = ahora,
+                payoutStatus = PENDING (toca pagar a Pedro)
+7. Staff procesa transferencia en /staff/atribuciones
+   └─ Referral: payoutStatus → PAID, paidAt = ahora,
+                payoutNote = "Transferencia BCI 12345 - 15-may-2026"
+```
+
+Para `BrokerLead` el flujo es idéntico cambiando `INV-` por `BRK-` y `SIGNED` por `CONTRACT_SIGNED`. El monto en `payoutNote` lo decide staff caso a caso (comisión variable acordada offline).
+
 ## Enums (resumen)
 
 | Enum | Valores |
@@ -242,3 +381,6 @@ erDiagram
 | `ReservationStatus` | PENDING_PAYMENT, PAYMENT_PROCESSING, PAID, CONFIRMED, CANCELLED, EXPIRED, REFUNDED |
 | `NotificationChannel` | EMAIL, SMS, WHATSAPP, PUSH |
 | `NotificationStatus` | QUEUED, SENT, DELIVERED, OPENED, BOUNCED, COMPLAINED, FAILED |
+| `ReferralStatus` | PENDING, SIGNED_UP, QUALIFIED, SIGNED, EXPIRED |
+| `BrokerLeadStatus` | NEW, SIGNED_UP, QUALIFIED, CONTRACT_SIGNED, LOST |
+| `PayoutStatus` | PENDING, PAID |
