@@ -271,6 +271,7 @@ erDiagram
 - **PropertyCatalogDraft:** staging de propiedades antes de que staff las publique al catálogo definitivo. `source` discrimina HOUM vs CSV. Al aprobar, se crea/actualiza la `Property` correspondiente y `propertyId` queda apuntando a ella.
 - **VerificationToken:** modelo NextAuth; no referencia `User` por FK.
 - **CreditEvaluation:** `consentAt` / `consentVersion` registran el consentimiento explícito antes de llamar a Floid; `floidCaseId` guarda el identificador de caso Floid cuando aplica (p. ej. flujo asíncrono); `downloadPdfUrl` apunta al reporte completo del widget; `staffNotes` permite anotaciones internas no visibles al inversionista. Con `status = COMPLETED`, staff puede fijar o anular `staffReservationApprovedAt` vía APIs `approve-reservation` / `revoke-reservation-approval` (portal `/staff/inversionistas`).
+- **MarketingAccess:** allowlist de correos autorizados a entrar a `marketing.maxrent.cl`. La marketing app comparte esta Neon pero NO usa Prisma client — sólo lee/escribe esta tabla con `@neondatabase/serverless`. El portal no consume la tabla; existe acá porque el portal es dueño de las migraciones del schema. Super-admins (los que pueden agregar/quitar emails desde la UI `/admin` de marketing) viven en la env `MARKETING_SUPER_ADMINS` del proyecto Vercel de marketing — NO en BD para evitar bootstrap problem.
 
 ## Atribución de referidos
 

@@ -6,11 +6,15 @@
 // Esta config la importa el middleware (Edge Runtime). Los providers reales
 // viven en `auth.ts` (Node runtime).
 //
-// Acceso restringido por allowlist en `MARKETING_ALLOWED_EMAILS` (env var).
-// Sin allowlist definida → app cerrada (nadie entra). Por diseño.
+// Acceso restringido por:
+//   1. Super-admins via `MARKETING_SUPER_ADMINS` (env var, CSV) — siempre entran.
+//   2. Allowlist en BD (tabla `marketing_access` en la Neon del portal),
+//      gestionable desde `/admin`.
+//   3. Fallback `MARKETING_ALLOWED_EMAILS` (env var) para dev local sin DB.
 // =============================================================================
 
 import type { NextAuthConfig } from "next-auth";
+import { isEmailAllowed } from "./marketing-access";
 
 function isLikelyNextBuildPhase(): boolean {
   if (process.env.NEXT_PHASE === "phase-production-build") return true;
@@ -40,20 +44,6 @@ function resolveAuthSecret(): string {
   return "maxrent-marketing-dev-placeholder";
 }
 
-export function marketingAllowlist(): Set<string> {
-  const raw = process.env.MARKETING_ALLOWED_EMAILS?.trim();
-  if (!raw) return new Set();
-  const parts = raw.split(/[,;\s]+/).map((e) => e.trim().toLowerCase());
-  return new Set(parts.filter(Boolean));
-}
-
-export function isAllowedEmail(email: string | null | undefined): boolean {
-  const allow = marketingAllowlist();
-  if (allow.size === 0) return false;
-  const e = email?.trim().toLowerCase();
-  return !!e && allow.has(e);
-}
-
 export const authConfig = {
   trustHost: true,
   secret: resolveAuthSecret(),
@@ -73,7 +63,7 @@ export const authConfig = {
   callbacks: {
     async signIn({ user, profile }) {
       const email = user?.email ?? profile?.email ?? null;
-      return isAllowedEmail(email);
+      return await isEmailAllowed(email);
     },
 
     async redirect({ url, baseUrl }) {
