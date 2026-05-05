@@ -361,6 +361,17 @@ APIs bajo `/api/broker/*` para postulación, perfil, oportunidades visibles, inv
 ### Staff (`SUPER_ADMIN` only)
 APIs bajo `/api/staff/*` para inventario, aprobación de brokers, gestión de inversionistas, notas de evaluaciones, etc.
 
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST | `/api/staff/reservations/[id]/escriturar` | Marca una reserva como `CONFIRMED` y dispara los payouts de atribución del usuario asociado: el `Referral` del referido pasa a `SIGNED` ($500.000 PENDING) y el `BrokerLead` del prospect pasa a `CONTRACT_SIGNED` (PENDING). Idempotente. Devuelve `{ reservationId, alreadyEscriturada, payouts: { referralId, brokerLeadId } }`. |
+| POST | `/api/staff/reservations/[id]/cancel` | (Existente) Cancela una reserva activa y reconcilia inventario. |
+
+### Cron jobs
+
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| GET/POST | `/api/cron/referrals/expire` | `Bearer <CRON_SECRET>` | Recorre `Referral` y `BrokerLead` con `expiresAt < now` y status no terminal, marca como `EXPIRED` / `LOST`. Configurado en `vercel.json` para correr diariamente a las 06:00 UTC (≈02:00–03:00 Chile según horario de verano). Si `CRON_SECRET` no está seteado en el server → responde 503. |
+
 ---
 
 ## 6. FLUJOS TÉCNICOS DETALLADOS
@@ -511,6 +522,49 @@ Lazy-fix análogo: si el broker no tiene `brokerReferralCode`, la page llama a `
 8. Verificar firma → obtener detalle del pago → paymentService.handleWebhook()
 9. Si aprobado: status=PAID, guardar paymentMethod y paidAt
 10. (Futuro) Enviar email de confirmación
+```
+
+### 6.4 Escrituración + Trigger de payouts de atribución
+```
+1. Reserva del inversionista llega a status=PAID (pago confirmado)
+2. Llega el momento de escriturar la propiedad. Staff verifica condiciones
+   y dispara manualmente:
+   POST /api/staff/reservations/[id]/escriturar
+3. Endpoint:
+   a. Verifica session staff SUPER_ADMIN.
+   b. Marca Reservation.status = CONFIRMED (si no estaba ya).
+   c. Llama triggerEscrituraPayouts(reservation.userId):
+      • Busca Referral con referredUserId = userId; si está en PENDING /
+        SIGNED_UP / QUALIFIED → transiciona a SIGNED, signedAt = now,
+        payoutStatus = PENDING. Idempotente.
+      • Busca BrokerLead con prospectUserId = userId; si está en NEW /
+        SIGNED_UP / QUALIFIED → transiciona a CONTRACT_SIGNED,
+        contractSignedAt = now, payoutStatus = PENDING.
+   d. Devuelve { reservationId, alreadyEscriturada, payouts: { referralId,
+      brokerLeadId } }.
+4. Resultado:
+   - El referidor (en /dashboard) ve su referido como "Pago en curso".
+   - El broker (en /broker/referidos) ve su prospect como "Pago pendiente".
+   - Staff procesa la transferencia y registra en payoutNote
+     (UI completa: PR 7).
+```
+
+### 6.5 Job nocturno: expiración de atribuciones
+```
+Vercel Cron (config en maxrent-portal/vercel.json):
+  schedule: "0 6 * * *"  (06:00 UTC = ~02:00–03:00 Chile)
+  path: /api/cron/referrals/expire
+
+1. Vercel envía request con header Authorization: Bearer <CRON_SECRET>.
+2. Endpoint valida secret. Si no setea CRON_SECRET → 503 (defensivo).
+3. expireOverdueAttributions() corre dos updateMany() en transacción:
+   • Referral con expiresAt < now y status IN (PENDING, SIGNED_UP,
+     QUALIFIED) → status = EXPIRED.
+   • BrokerLead con expiresAt < now y status IN (NEW, SIGNED_UP,
+     QUALIFIED) → status = LOST.
+4. Devuelve { ok, referralsExpired, brokerLeadsLost, ranAt }.
+
+Idempotente: las filas ya en estado terminal están excluidas del WHERE.
 ```
 
 ---
