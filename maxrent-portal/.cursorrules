@@ -100,7 +100,7 @@ src/
 - `StaffRole`: NONE | SUPER_ADMIN
 - `BrokerAccessStatus`: PENDING | APPROVED | REJECTED
 - `BrokerInvestorInviteStatus`: PENDING | COMPLETED | EXPIRED
-- `LeadKind`: INVESTOR | SELLER
+- `LeadKind`: INVESTOR | SELLER | BROKER
 - `LeadStatus`: NEW → INVITED → REGISTERED → CONVERTED (o DISCARDED)
 - `PropertyStatus`: AVAILABLE | RESERVED | SOLD | ARCHIVED
 - `CatalogDraftSource`: HOUM | CSV
@@ -126,6 +126,14 @@ src/
 - **Patrón**: Crear preferencia de pago → redirigir usuario → webhook confirma
 - El código comentado muestra la implementación exacta para Mercado Pago
 
+## Identidad de marca
+
+- Componente `<Logo />` en `src/components/Logo.tsx` con prop `tone="light|dark"`. Heredado del landing público. `tone="dark"` para fondos claros del portal (sidebars, login screen).
+- Headings principales de páginas (h1) usan `font-serif` (DM Serif Display) + `text-dark` + `tracking-tight`.
+- Resto del UI usa `font-sans` (DM Sans).
+- Colores MaxRent en tailwind: `dark`, `cream`, `orange.DEFAULT/2/light`. La paleta `broker.*` corporativa coexiste.
+- Login screen y puntos de transición landing→portal usan naranja MaxRent. CTAs autenticados (Save, etc.) siguen azules (`bg-blue-600`).
+
 ## Autenticación (NextAuth.js v5)
 
 - **Providers**: Google OAuth + magic link (Resend, pero `sendVerificationRequest` overrideado para usar nuestra capa de notifications — magic links quedan en tabla `Notification`).
@@ -137,6 +145,10 @@ src/
   2. Crea Profile (vacío salvo lo de arriba).
   3. Vincula `User.leadId` al Lead encontrado.
   4. Llama `backfillUserNotifications` para asociar las Notifications enviadas pre-cuenta (welcome email) al `userId`.
+- **Dos puertas de login**:
+  - `/login` — puerta del marketing (linkeada desde el header del landing con `callbackUrl=/dashboard` o `=/broker/oportunidades`). **NUNCA redirige a `/staff`** aunque la cuenta sea SUPER_ADMIN. La pantalla adapta su heading según el `callbackUrl` (Portal Inversionista / Portal Broker).
+  - `/staff/login` — única vía a `/staff/*`. URL interna no enlazada desde el landing.
+- **Switch entre portales (multi-rol)**: las cuentas que tienen `canInvest=true` Y `brokerAccessStatus=APPROVED` ven en el sidebar un link al otro portal. Helper: `brokerSwitchHrefFor()` en `components/portal/sidebar.tsx`.
 
 ## Capa de comunicaciones (`lib/services/notifications`)
 

@@ -81,6 +81,13 @@ Toda comunicación saliente del portal (welcome, magic link, recordatorios futur
 
 Sin `RESEND_API_KEY` el adapter falla y la notificación queda en `Notification` con `status=FAILED` (el flujo de negocio sigue funcionando, solo no llega el email). Sin `RESEND_WEBHOOK_SECRET` el endpoint del webhook rechaza con 401 — es necesario para ver `status` evolucionar de SENT → DELIVERED/OPENED/etc.
 
+### Endpoint público de leads — CORS
+
+`POST /api/public/leads` recibe los formularios del landing público (inversionista, vendedor, broker). Solo acepta requests desde orígenes registrados:
+
+- `LEADS_ALLOWED_ORIGINS` (CSV): orígenes adicionales separados por coma o espacio. Si no se setea, default a `https://www.maxrent.cl,https://maxrent.cl`.
+- `LEADS_ALLOW_VERCEL_PREVIEWS=true`: cuando esté en true, también acepta orígenes `*.vercel.app` (útil para QA contra preview deploys del landing). En `NODE_ENV != production` se acepta automáticamente.
+
 ### Floid (evaluación crediticia)
 
 1. Obtener en el [dashboard Floid](https://dashboard.floid.io) el **token API**, **URL base** (sandbox vs prod), **ruta del producto** y si el flujo es **async** (callback).

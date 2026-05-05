@@ -156,7 +156,7 @@ Property
 - Índices en [userId, status] y [paymentExternalId]
 
 **Lead** (capturado desde el landing inversionista o vendedor — fuente única de leads)
-- `id`, `email` (unique), `kind` (`LeadKind`: INVESTOR / SELLER), `status` (`LeadStatus`: NEW → INVITED → REGISTERED → CONVERTED, o DISCARDED).
+- `id`, `email` (unique), `kind` (`LeadKind`: INVESTOR / SELLER / **BROKER**), `status` (`LeadStatus`: NEW → INVITED → REGISTERED → CONVERTED, o DISCARDED).
 - Datos personales (snapshot del form): `firstName`, `lastName`, `name` (compatibilidad), `phone`.
 - Campos solo de vendedor: `cantidadPropiedades`, `arrendadas`, `adminHoum`.
 - Origen y atribución: `source` (`landing-investor`, `landing-seller`, `broker-invite`…), `marketingAttribution` (UTMs, gclid, referrer, captured_at).
@@ -189,7 +189,7 @@ Property
 enum StaffRole                  { NONE, SUPER_ADMIN }
 enum BrokerAccessStatus         { PENDING, APPROVED, REJECTED }
 enum BrokerInvestorInviteStatus { PENDING, COMPLETED, EXPIRED }
-enum LeadKind                   { INVESTOR, SELLER }
+enum LeadKind                   { INVESTOR, SELLER, BROKER }
 enum LeadStatus                 { NEW, INVITED, REGISTERED, CONVERTED, DISCARDED }
 enum PropertyStatus             { AVAILABLE, RESERVED, SOLD, ARCHIVED }
 enum CatalogDraftSource         { HOUM, CSV }
@@ -233,9 +233,13 @@ maxrent-portal/
 │   │           ├── checkout/route.ts        ← POST crear checkout
 │   │           └── webhook/route.ts         ← POST webhook pasarela
 │   ├── components/
-│   │   ├── portal/sidebar.tsx  ← Sidebar navegación (responsive)
-│   │   ├── ui/                 ← Componentes reutilizables (por crear)
-│   │   └── auth/               ← Componentes de auth (si se necesitan)
+│   │   ├── Logo.tsx            ← Wordmark MaxRent by Houm (prop tone="light|dark")
+│   │   ├── portal/sidebar.tsx  ← Sidebar inversionista (con switch al portal broker
+│   │   │                         para cuentas multi-rol)
+│   │   ├── broker/broker-sidebar.tsx ← Sidebar broker (con switch al portal inversionista)
+│   │   ├── floid/              ← Reporte Floid (summary + detail)
+│   │   ├── staff/              ← Componentes panel interno
+│   │   └── ui/                 ← Componentes reutilizables (por crear)
 │   ├── lib/
 │   │   ├── auth.ts             ← Configuración NextAuth.js v5
 │   │   ├── prisma.ts           ← Singleton Prisma Client
@@ -340,7 +344,11 @@ Vendedor sigue el mismo POST pero NO entra al portal — staff lo contacta.
 
 ### 6.1 Registro + Onboarding (signup vía Google o magic link)
 ```
-1. Usuario llega a /login (típicamente desde el landing, ver 6.0)
+1. Usuario llega a /login (típicamente desde el header del landing,
+   con callbackUrl preconfigurado: /dashboard para Portal inversionista,
+   /broker/oportunidades para Portal broker — ver sección 7).
+   La pantalla del /login adapta su heading según el callbackUrl:
+   "Portal Inversionista" / "Portal Broker" / "Acceso Staff".
 2. Elige Google OAuth o ingresa email para magic link (Resend, vía la
    capa de notifications: el envío queda registrado en Notification con
    templateKey="magic-link")
@@ -405,15 +413,41 @@ Vendedor sigue el mismo POST pero NO entra al portal — staff lo contacta.
 ## 7. PROTECCIÓN DE RUTAS (Middleware)
 
 ```
-Ruta pública:       /, /login                      → Siempre accesible
-API auth:           /api/auth/*                     → Siempre accesible (NextAuth)
-Webhook pago:       /api/payments/webhook           → Siempre accesible (validar firma)
-Ruta protegida:     Todo lo demás                   → Requiere auth
+Ruta pública:       /, /login, /staff/login, /brokers, /i/[token]
+API pública:        /api/auth/*, /api/public/*, /api/notifications/webhook/*,
+                    /api/payments/webhook, /api/floid/callback
+Ruta protegida:     Todo lo demás → requiere auth.
 
 Si NO logueado + ruta protegida → Redirect a /login?callbackUrl=...
-Si logueado + /login            → Redirect a /dashboard
 Si logueado + !onboarding       → Redirect a /perfil (excepto /perfil y /api)
 ```
+
+### Redirects post-login según puerta de entrada
+
+**REGLA FUNDAMENTAL**: el acceso a `/staff` está aislado de la puerta principal del marketing. Hay dos puertas de login:
+
+#### `/login` — puerta del marketing (linkeada desde el header del landing)
+Nunca redirige a `/staff`, **aunque la cuenta sea SUPER_ADMIN**. El header del landing tiene dos enlaces a esta puerta con `callbackUrl` preconfigurado:
+- `Portal inversionista` → `/login?callbackUrl=/dashboard`
+- `Portal broker` → `/login?callbackUrl=/broker/oportunidades`
+
+Lógica del redirect cuando el usuario logueado entra a `/login`:
+1. Si hay `callbackUrl` interno seguro y NO empieza con `/staff` → respeta callback.
+2. Si `canInvest` → `/dashboard`.
+3. Si `brokerAccessStatus = APPROVED` → `/broker/oportunidades`.
+4. Si `brokerAccessStatus = PENDING` → `/broker/pending`.
+5. Fallback → `/dashboard` (el sub-middleware de onboarding decide).
+
+#### `/staff/login` — puerta interna (URL no enlazada desde marketing)
+Única vía a `/staff/*`. El SUPER_ADMIN la conoce y la usa directo. No aparece en headers ni en footers.
+
+### Switch entre portales para cuentas multi-rol
+
+Una misma cuenta puede tener `canInvest=true` Y `brokerAccessStatus=APPROVED`. Para cambiar de área sin re-login:
+- Sidebar inversionista (`Sidebar`): muestra al final un link al portal broker (`/broker/oportunidades` si APPROVED, `/broker/pending` si PENDING, `/broker/rechazado` si REJECTED). No se muestra si `brokerAccessStatus = null`.
+- Sidebar broker (`BrokerSidebar`): siempre muestra al final un link al portal inversionista si `canInvest = true`.
+
+Helper: `brokerSwitchHrefFor()` en `components/portal/sidebar.tsx`.
 
 ---
 
@@ -468,6 +502,22 @@ Si logueado + !onboarding       → Redirect a /perfil (excepto /perfil y /api)
 | Mercado Pago | ~3.5% + IVA por transacción |
 | Floid API | Variable (según contrato) |
 | **Total fijo (sin Floid)** | **$20 – $40 USD/mes** |
+
+---
+
+## 9.5 IDENTIDAD DE MARCA EN EL PORTAL
+
+El portal hereda la identidad de marca del landing público (`BRIEF.md` del repo raíz):
+
+- **Logo**: componente `<Logo size="sm|md|lg" tone="light|dark" />`. Misma SVG que el landing con prop `tone` extra:
+  - `tone="light"` (default): wordmark crema (`#EDE0CC`) para fondos oscuros.
+  - `tone="dark"`: wordmark navy (`#001F30`) para fondos claros del portal (sidebars, login).
+  Se usa en `sidebar.tsx`, `broker-sidebar.tsx` y `(auth)/login/login-content.tsx`.
+- **Tipografía**: `DM Sans` (var `--font-dm-sans`) para el cuerpo, `DM Serif Display` (var `--font-dm-serif`) para los headings principales (`h1` de Dashboard, Perfil, Evaluación, Reservas, Oportunidades, Login). Ambas cargadas en `app/layout.tsx`.
+- **Colores MaxRent en `tailwind.config.ts`**: `dark` (#001F30), `cream` (#FBF7F3), `orange.DEFAULT/2/light`. Coexisten con la paleta `broker.*` corporativa que ya existía.
+- **Login screen** usa `bg-cream`, logo grande, heading serif, botón "Enviar link de acceso" en naranja MaxRent.
+- **CTAs primarios del portal autenticado** (Save, etc.) **siguen siendo azules** (`bg-blue-600`) — decisión de producto para mantener foco funcional. El naranja es solo para puntos de transición landing→portal (login).
+- **Sidebar item activo** sigue `bg-blue-50 text-blue-700` (sin tocar la UX existente).
 
 ---
 
