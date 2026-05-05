@@ -421,6 +421,18 @@ Después de upsertear el Lead, si hubo `referralResolution` y NO se preservó at
 
 Lazy-fix: si el User no tiene `investorReferralCode` (cuentas pre-existentes al PR de generación), el dashboard llama a `ensureInvestorReferralCode` antes de renderizar.
 
+**Vista del broker en `/broker/referidos`:**
+
+Página dedicada (item nuevo en el sidebar broker, `Share2` icon, label "Mis referidos"). Renderiza el componente **`<BrokerLeadsCard />`** que adapta la vista del referidor a las reglas comerciales:
+
+- Header **NO menciona monto**. Solo refiere a "la comisión acordada" — la comisión es variable, definida offline entre MaxRent y cada broker.
+- Link copiable con `BRK-XXXXXX` (mismo `ReferralCopyButton`, recibe URL ya armado y override de styles vía prop `className` para usar `bg-broker-navy`).
+- **Stats funnel** visible (5 cards): `Lead capturado` (NEW) / `Creó cuenta` (SIGNED_UP) / `Calificado` (QUALIFIED) / `Escrituró` (CONTRACT_SIGNED — verde) / `Perdido` (LOST — gris). Si hay escrituras con `payoutStatus = PENDING` se muestra un banner naranja contando cuántas.
+- Lista de prospects con countdown 120d, mismo patrón de warning ≤30d.
+- Diferencia con `/broker/inversionistas`: esa página muestra cuentas YA inversionistas vinculadas por sponsorship (clientes en uso); `/broker/referidos` muestra el **pipeline comercial** (BrokerLeads en cualquier status). Las dos coexisten.
+
+Lazy-fix análogo: si el broker no tiene `brokerReferralCode`, la page llama a `ensureBrokerReferralCode` antes de renderizar.
+
 ### 6.1 Registro + Onboarding (signup vía Google o magic link)
 ```
 1. Usuario llega a /login (típicamente desde el header del landing,

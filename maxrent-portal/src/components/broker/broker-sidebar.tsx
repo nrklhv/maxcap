@@ -17,6 +17,7 @@ import {
   LogOut,
   MailPlus,
   Menu,
+  Share2,
   Sparkles,
   User,
   Users,
@@ -99,6 +100,11 @@ export function BrokerSidebar({ brokerAccessStatus, canInvest }: BrokerSidebarPr
         href: "/broker/inversionistas",
         label: "Inversionistas",
         icon: Users,
+      });
+      items.push({
+        href: "/broker/referidos",
+        label: "Mis referidos",
+        icon: Share2,
       });
     }
 
