@@ -62,9 +62,33 @@ model User {
   sponsoredInvestors User[] @relation("BrokerSponsorship")
 
   /// Invites sent by this user when they act as an approved broker.
-  brokerInvestorInvitesSent BrokerInvestorInvite[] @relation("BrokerInvestorInviteBroker")
+  brokerInvestorInvitesSent     BrokerInvestorInvite[] @relation("BrokerInvestorInviteBroker")
   /// Invites consumed when this user registered / claimed as investor.
   brokerInvestorInvitesConsumed BrokerInvestorInvite[] @relation("BrokerInvestorInviteRegistered")
+
+  // =============================================================================
+  // ATRIBUCIÓN DE REFERIDOS (peer-to-peer y broker → cliente)
+  // =============================================================================
+  // Codes que este usuario comparte para que terceros lleguen al landing con
+  // `?ref=<code>` y queden atribuidos a él. Dos namespaces independientes:
+  //   • investorReferralCode: prefijo "INV-" — peer-to-peer ($500.000 CLP fijos).
+  //   • brokerReferralCode:   prefijo "BRK-" — comercial (comisión variable).
+  // Multi-rol: un mismo User puede tener ambos codes (canInvest + broker APPROVED).
+  // El sistema sabe por cuál entró el referido por el prefijo del code usado.
+  // Detalle: docs/DATABASE.md sección "Atribución de referidos".
+  /// Code de referidos peer-to-peer (formato "INV-XXXXXX"). Se genera al cumplir canInvest.
+  investorReferralCode String? @unique
+  /// Code para clientes traídos por broker (formato "BRK-XXXXXX"). Se genera al pasar a brokerAccessStatus=APPROVED.
+  brokerReferralCode   String? @unique
+
+  /// Referrals donde este User es el referidor (canInvest, comparte INV-).
+  referralsAsReferrer  Referral[]   @relation("ReferralReferrer")
+  /// Referral donde este User fue referido (1:1 — cada cuenta puede ser referido de uno solo).
+  referralAsReferred   Referral?    @relation("ReferralReferred")
+  /// BrokerLeads donde este User es el broker que trajo al cliente.
+  brokerLeadsAsBroker  BrokerLead[] @relation("BrokerLeadBroker")
+  /// BrokerLead donde este User fue traído como cliente (1:1).
+  brokerLeadAsProspect BrokerLead?  @relation("BrokerLeadProspect")
 
   @@index([sponsorBrokerUserId])
   @@map("users")
@@ -115,20 +139,20 @@ model VerificationToken {
 // =============================================================================
 
 model Profile {
-  id                   String   @id @default(cuid())
-  userId               String   @unique
-  firstName            String?
-  lastName             String?
-  contactEmail         String?  @unique // Email de contacto (no es el email de login NextAuth)
-  rut                  String?  @unique
-  phone                String?
-  address              String?
-  commune              String?  // Comuna
-  city                 String?
-  onboardingCompleted  Boolean  @default(false)
-  additionalData       Json?    // Datos extra que se vayan necesitando
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  firstName           String?
+  lastName            String?
+  contactEmail        String?  @unique // Email de contacto (no es el email de login NextAuth)
+  rut                 String?  @unique
+  phone               String?
+  address             String?
+  commune             String? // Comuna
+  city                String?
+  onboardingCompleted Boolean  @default(false)
+  additionalData      Json? // Datos extra que se vayan necesitando
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -154,26 +178,26 @@ model BrokerProfile {
 }
 
 model CreditEvaluation {
-  id               String              @id @default(cuid())
-  userId           String
-  status           EvaluationStatus    @default(PENDING)
-  score            Int?
-  riskLevel        RiskLevel?
-  maxApprovedAmount Decimal?           @db.Decimal(12, 2)
-  summary          String?             @db.Text
-  rawResponse      Json?               // Respuesta completa de Floid
-  errorMessage     String?             // Si falló, por qué
-  requestedAt      DateTime            @default(now())
-  completedAt      DateTime?
+  id                               String           @id @default(cuid())
+  userId                           String
+  status                           EvaluationStatus @default(PENDING)
+  score                            Int?
+  riskLevel                        RiskLevel?
+  maxApprovedAmount                Decimal?         @db.Decimal(12, 2)
+  summary                          String?          @db.Text
+  rawResponse                      Json? // Respuesta completa de Floid
+  errorMessage                     String? // Si falló, por qué
+  requestedAt                      DateTime         @default(now())
+  completedAt                      DateTime?
   /// Consentimiento explícito del inversionista antes de llamar a Floid
-  consentAt        DateTime?
-  consentVersion   String?
+  consentAt                        DateTime?
+  consentVersion                   String?
   /// Identificador de caso devuelto por Floid (útil en flujos asíncronos / auditoría)
-  floidCaseId      String?
+  floidCaseId                      String?
   /// URL absoluta al PDF del reporte completo generado por Floid (widget devuelve `download_pdf`).
-  downloadPdfUrl   String?             @db.Text
+  downloadPdfUrl                   String?          @db.Text
   /// Notas internas del equipo staff sobre esta evaluación (no visibles al inversionista).
-  staffNotes       String?             @db.Text
+  staffNotes                       String?          @db.Text
   /// Staff habilitó al inversionista a usar «Reservar» (además de status COMPLETED).
   staffReservationApprovedAt       DateTime?
   /// Id del usuario staff que aprobó (sin FK para no duplicar relación User↔CreditEvaluation).
@@ -188,27 +212,27 @@ model CreditEvaluation {
 }
 
 model Reservation {
-  id               String            @id @default(cuid())
-  userId           String
-  evaluationId     String?
-  propertyId       String            // ID de la propiedad (puede venir de otro sistema)
-  propertyName     String?           // Nombre/dirección para mostrar
-  status           ReservationStatus @default(PENDING_PAYMENT)
-  amount           Decimal           @db.Decimal(12, 2)
-  currency         String            @default("CLP")
+  id           String            @id @default(cuid())
+  userId       String
+  evaluationId String?
+  propertyId   String // ID de la propiedad (puede venir de otro sistema)
+  propertyName String? // Nombre/dirección para mostrar
+  status       ReservationStatus @default(PENDING_PAYMENT)
+  amount       Decimal           @db.Decimal(12, 2)
+  currency     String            @default("CLP")
 
   // Pago
-  paymentExternalId String?          // ID de Mercado Pago / Stripe
+  paymentExternalId String? // ID de Mercado Pago / Stripe
   paymentMethod     String?
-  paymentUrl        String?          // URL de checkout generada
+  paymentUrl        String? // URL de checkout generada
   paidAt            DateTime?
 
   // Metadata
-  notes            String?           @db.Text
-  metadata         Json?             // Datos extra del pago o propiedad
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  expiresAt        DateTime?         // Cuándo expira la reserva si no se paga
+  notes     String?   @db.Text
+  metadata  Json? // Datos extra del pago o propiedad
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  expiresAt DateTime? // Cuándo expira la reserva si no se paga
 
   user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   evaluation CreditEvaluation? @relation(fields: [evaluationId], references: [id])
@@ -276,6 +300,12 @@ model Lead {
   // Relación con usuario del portal (cuando el lead se registra)
   user User?
 
+  /// Atribución por code peer-to-peer (cuando el lead llegó con `?ref=INV-XXX`).
+  /// 1:1 — cada lead puede ser fuente de a lo más un Referral.
+  referral   Referral?
+  /// Atribución por code de broker (cuando el lead llegó con `?ref=BRK-XXX`).
+  brokerLead BrokerLead?
+
   @@index([kind, status])
   @@map("leads")
 }
@@ -329,6 +359,137 @@ model Notification {
 }
 
 // =============================================================================
+// ATRIBUCIÓN — Referrals (peer) y BrokerLeads (comercial)
+// =============================================================================
+// Dos tablas separadas, intencionalmente paralelas. Misma estructura física
+// (atribución + payout), pero distinta semántica de negocio:
+//
+//   • `Referral`: peer-to-peer. Inversionista refiere a otro inversionista.
+//     Reward fijo de $500.000 CLP al referidor cuando el referido escritura.
+//     Sin tope de referidos por usuario en v1.
+//
+//   • `BrokerLead`: comercial. Broker APPROVED trae a un cliente inversionista.
+//     Comisión variable (acordada offline entre MaxRent y broker), staff la
+//     registra como texto libre en `payoutNote` al pagar. Sin monto en schema.
+//
+// Por qué separadas: los campos divergen rápido (incentivo fijo vs variable,
+// fiscal distinto, UX y permisos distintos en cada portal). Mantener una tabla
+// con discriminator habría requerido columnas nullables y filtros condicionales
+// en cada query — invita a bugs y mezcla de dominios.
+//
+// Atribución: first-touch con cookie `mxr_ref` de 60 días.
+// Expiración del registro: `expiresAt` cubre los dos hitos:
+//   - Antes de SIGNED_UP/NEW: createdAt + 60 días.
+//   - Tras SIGNED_UP: signedUpAt + 120 días para llegar a SIGNED/CONTRACT_SIGNED.
+//   - Job nocturno marca EXPIRED/LOST cuando se cumple.
+//
+// Detalle full: docs/DATABASE.md sección "Atribución de referidos".
+// =============================================================================
+
+/// Atribución peer-to-peer: un User (canInvest) refiere a otro inversionista
+/// que llega al landing con `?ref=INV-XXX`. Si el referido escritura una
+/// propiedad del Club, el referidor recibe $500.000 CLP cash al banco.
+model Referral {
+  id             String  @id @default(cuid())
+  /// Code que el referidor compartió. Denormalizado desde User.investorReferralCode
+  /// para queries rápidas. Formato "INV-XXXXXX".
+  code           String
+  /// Inversionista que generó el code (canInvest=true al crearse).
+  referrerUserId String
+  referrer       User    @relation("ReferralReferrer", fields: [referrerUserId], references: [id], onDelete: Cascade)
+  /// Email del referido tal como llegó al `/api/public/leads` (snapshot).
+  referredEmail  String
+  /// User del referido cuando crea cuenta. Null mientras solo es Lead.
+  /// Único: cada cuenta puede haber sido referida por a lo más un Referral.
+  referredUserId String? @unique
+  referredUser   User?   @relation("ReferralReferred", fields: [referredUserId], references: [id], onDelete: SetNull)
+  /// Lead generado por el referido al llenar form. NOT NULL — el flujo siempre
+  /// crea Lead primero. 1:1 con Lead (cada lead puede gatillar a lo más un Referral).
+  leadId         String  @unique
+  lead           Lead    @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  status      ReferralStatus @default(PENDING)
+  /// Cuando el referido creó cuenta (transición PENDING → SIGNED_UP).
+  signedUpAt  DateTime?
+  /// Cuando el referido pasó a canInvest=true (post-evaluación crediticia).
+  qualifiedAt DateTime?
+  /// Cuando el referido escrituró la propiedad — gatilla el payout al referidor.
+  signedAt    DateTime?
+  /// Hito límite. Antes de SIGNED_UP: createdAt + 60 días. Tras SIGNED_UP: signedUpAt + 120 días.
+  /// Si pasa sin avanzar a SIGNED → status = EXPIRED y rewardCLP no se paga.
+  expiresAt   DateTime
+
+  /// Monto a pagar al referidor cuando el referido escritura.
+  /// Constante en v1 ($500.000 CLP). Se mantiene como columna por si en el
+  /// futuro queremos campañas con montos distintos (sin migración de datos).
+  rewardCLP    Int          @default(500000)
+  payoutStatus PayoutStatus @default(PENDING)
+  /// Cuando staff marcó el payout como pagado (transferencia hecha al banco del referidor).
+  paidAt       DateTime?
+  /// Texto libre que escribe staff al registrar el pago.
+  /// Ej: "Transferencia BCI ref 12345678 - 15-may-2026".
+  payoutNote   String?      @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([referrerUserId])
+  @@index([code])
+  @@index([status])
+  @@index([payoutStatus])
+  @@index([expiresAt])
+  @@map("referrals")
+}
+
+/// Atribución comercial: broker APPROVED trae a un prospect inversionista
+/// vía `?ref=BRK-XXX`. Si el prospect escritura, MaxRent paga al broker una
+/// comisión cuyo monto es variable y se acuerda offline. Staff registra el
+/// pago como texto libre en `payoutNote` (no hay regla automática de monto).
+model BrokerLead {
+  id             String  @id @default(cuid())
+  /// Code que el broker compartió. Denormalizado desde User.brokerReferralCode.
+  /// Formato "BRK-XXXXXX".
+  code           String
+  /// Broker (brokerAccessStatus = APPROVED al crearse).
+  brokerUserId   String
+  broker         User    @relation("BrokerLeadBroker", fields: [brokerUserId], references: [id], onDelete: Cascade)
+  /// Email del prospect tal como llegó al `/api/public/leads` (snapshot).
+  prospectEmail  String
+  /// User del prospect cuando crea cuenta. Null mientras solo es Lead.
+  prospectUserId String? @unique
+  prospect       User?   @relation("BrokerLeadProspect", fields: [prospectUserId], references: [id], onDelete: SetNull)
+  /// Lead generado por el prospect. NOT NULL — siempre se crea Lead primero.
+  leadId         String  @unique
+  lead           Lead    @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  status           BrokerLeadStatus @default(NEW)
+  signedUpAt       DateTime?
+  qualifiedAt      DateTime?
+  /// Cuando el prospect escrituró — gatilla el payout al broker.
+  contractSignedAt DateTime?
+  /// Hito límite. NEW: createdAt + 60 días. SIGNED_UP: signedUpAt + 120 días.
+  /// Si pasa sin avanzar a CONTRACT_SIGNED → status = LOST.
+  expiresAt        DateTime
+
+  payoutStatus PayoutStatus @default(PENDING)
+  paidAt       DateTime?
+  /// Texto libre. La comisión es VARIABLE — staff registra acá monto, fecha,
+  /// medio de pago, número de boleta/factura. Ej:
+  /// "Boleta hon. 2026-0123 - $850.000 - Transferencia BCI 18-jun-2026".
+  payoutNote   String?      @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([brokerUserId])
+  @@index([code])
+  @@index([status])
+  @@index([payoutStatus])
+  @@index([expiresAt])
+  @@map("broker_leads")
+}
+
+// =============================================================================
 // INVENTARIO — Catálogo (staff + portal broker)
 // =============================================================================
 
@@ -353,24 +514,24 @@ model Property {
 
 /// Staging row (Houm sync or CSV import) until staff approves publication to `Property`.
 model PropertyCatalogDraft {
-  id                      String                       @id @default(cuid())
+  id                      String                     @id @default(cuid())
   source                  CatalogDraftSource
-  houmPropertyId          String?                      @unique
-  inventoryCode           String?                      @unique
+  houmPropertyId          String?                    @unique
+  inventoryCode           String?                    @unique
   title                   String
   metadata                Json?
-  status                  PropertyCatalogDraftStatus     @default(PENDING)
+  status                  PropertyCatalogDraftStatus @default(PENDING)
   /// CSV-only: target status when promoted to `Property` (Houm uses env default on approve).
   pendingPropertyStatus   PropertyStatus?
   pendingVisibleToBrokers Boolean?
   /// Set when approved: links to the official catalog row.
-  propertyId              String?                      @unique
-  property                Property?                    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  propertyId              String?                    @unique
+  property                Property?                  @relation(fields: [propertyId], references: [id], onDelete: SetNull)
   reviewedAt              DateTime?
   reviewedByUserId        String?
-  rejectionReason         String?                      @db.Text
-  createdAt               DateTime                     @default(now())
-  updatedAt               DateTime                     @updatedAt
+  rejectionReason         String?                    @db.Text
+  createdAt               DateTime                   @default(now())
+  updatedAt               DateTime                   @updatedAt
 
   @@map("property_catalog_drafts")
 }
@@ -479,4 +640,43 @@ enum NotificationStatus {
   COMPLAINED
   /// Falló en el lado del proveedor o nuestro al intentar enviar.
   FAILED
+}
+
+/// Estados del funnel de un Referral peer-to-peer.
+enum ReferralStatus {
+  /// Lead capturado con `?ref=INV-XXX` pero el referido aún no creó cuenta.
+  PENDING
+  /// Referido creó cuenta en el portal.
+  SIGNED_UP
+  /// Referido pasó canInvest=true (post-evaluación crediticia OK).
+  QUALIFIED
+  /// Referido escrituró una propiedad → se gatilla el payout de $500.000 al referidor.
+  SIGNED
+  /// Pasaron 60 días desde el lead sin SIGNED_UP, o 120 días desde SIGNED_UP sin SIGNED.
+  /// El referidor pierde la oportunidad de cobrar este referido.
+  EXPIRED
+}
+
+/// Estados del funnel de un BrokerLead (cliente traído por broker).
+enum BrokerLeadStatus {
+  /// Lead capturado con `?ref=BRK-XXX` pero el prospect aún no creó cuenta.
+  NEW
+  /// Prospect creó cuenta en el portal.
+  SIGNED_UP
+  /// Prospect pasó canInvest=true.
+  QUALIFIED
+  /// Prospect escrituró → gatilla payout de comisión al broker (monto variable).
+  CONTRACT_SIGNED
+  /// Pasaron 60 días desde el lead sin SIGNED_UP, o 120 días desde SIGNED_UP sin escriturar.
+  /// El broker pierde la oportunidad de cobrar comisión por este prospect.
+  LOST
+}
+
+/// Estado del pago al referidor (Referral) o al broker (BrokerLead).
+/// Compartido entre ambas tablas porque el flujo es idéntico: queda PENDING al
+/// gatillarse el evento de escrituración hasta que staff procesa la transferencia
+/// y registra `paidAt` + `payoutNote` con detalle de la operación.
+enum PayoutStatus {
+  PENDING
+  PAID
 }

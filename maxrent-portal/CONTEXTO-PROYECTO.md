@@ -116,7 +116,15 @@ User (NextAuth)
  ├── 1:N Notification (audit trail de toda comunicación enviada)
  ├── 1:1 Lead (vinculación con lead existente, opcional)
  ├── self → User (sponsorBrokerUserId — broker aprobado que apadrina)
- └── 1:N BrokerInvestorInvite (sent / consumed según rol)
+ ├── 1:N BrokerInvestorInvite (sent / consumed según rol)
+ ├── 1:N Referral (referrals como referidor — código INV-)
+ ├── 1:1 Referral (como referido — única atribución posible)
+ ├── 1:N BrokerLead (clientes traídos como broker — código BRK-)
+ └── 1:1 BrokerLead (como prospect traído por broker)
+
+Lead
+ ├── 1:1 Referral (atribución peer-to-peer cuando llegó con ?ref=INV-XXX)
+ └── 1:1 BrokerLead (atribución comercial cuando llegó con ?ref=BRK-XXX)
 
 Property
  └── 1:1 PropertyCatalogDraft (staging Houm/CSV antes de publicar)
@@ -130,7 +138,9 @@ Property
 - `id` (cuid), `email` (unique), `name`, `image`, `emailVerified`
 - `canInvest` (boolean), `staffRole` (NONE | SUPER_ADMIN), `brokerAccessStatus` + `brokerReviewedAt` para flujo broker
 - `leadId`: relación opcional con lead existente
-- Relaciones: accounts[], sessions[], profile, creditEvaluations[], reservations[]
+- `investorReferralCode` (unique, prefijo `INV-`): code para compartir como peer-to-peer. Generado al cumplir `canInvest`.
+- `brokerReferralCode` (unique, prefijo `BRK-`): code para compartir como broker. Generado al pasar a `brokerAccessStatus = APPROVED`.
+- Relaciones: accounts[], sessions[], profile, creditEvaluations[], reservations[], referralsAsReferrer[], referralAsReferred (1:1), brokerLeadsAsBroker[], brokerLeadAsProspect (1:1)
 
 **Profile** (datos personales obligatorios)
 - `userId` (unique FK), `rut` (unique), `phone`, `address`, `commune`, `city`
@@ -180,6 +190,25 @@ Property
 - `id`, `token` (unique, en URL `/i/[token]`), `brokerUserId` (FK), `inviteeEmail` (opcional), `status` (PENDING / COMPLETED / EXPIRED), `registeredUserId` (FK al User que claimea).
 - Al claimear, setea `User.sponsorBrokerUserId` del invitado.
 
+**Referral** (atribución peer-to-peer entre inversionistas)
+- `id`, `code` (denormalizado de `User.investorReferralCode`, formato `INV-XXXXXX`), `referrerUserId` (FK), `referredEmail`, `referredUserId` (FK unique opcional), `leadId` (FK unique, **NOT NULL** — siempre se crea Lead primero).
+- `status` (`ReferralStatus`: PENDING → SIGNED_UP → QUALIFIED → SIGNED, o EXPIRED).
+- Timestamps de transición: `signedUpAt`, `qualifiedAt`, `signedAt`. `expiresAt` cubre dos hitos (createdAt+60d antes de SIGNED_UP, signedUpAt+120d después).
+- `rewardCLP` (default `500000`): monto fijo a pagar al referidor cuando el referido escritura. Constante de negocio en v1; columna por si en el futuro se hacen campañas con montos distintos.
+- `payoutStatus` (`PayoutStatus`: PENDING / PAID), `paidAt`, `payoutNote` (texto libre que escribe staff al transferir, ej. `"Transferencia BCI ref 12345 - 15-may-2026"`).
+- **El beneficio es siempre del referidor, nunca del referido.** No hay descuento ni nada para el referido — entra en condiciones idénticas a cualquier inversionista.
+- **Sin tope de referidos por usuario en v1.** Acumulable.
+- Detalle full en `docs/DATABASE.md` sección "Atribución de referidos".
+
+**BrokerLead** (atribución comercial — broker trae cliente)
+- `id`, `code` (de `User.brokerReferralCode`, formato `BRK-XXXXXX`), `brokerUserId` (FK), `prospectEmail`, `prospectUserId` (FK unique opcional), `leadId` (FK unique, NOT NULL).
+- `status` (`BrokerLeadStatus`: NEW → SIGNED_UP → QUALIFIED → CONTRACT_SIGNED, o LOST).
+- Timestamps: `signedUpAt`, `qualifiedAt`, `contractSignedAt`. `expiresAt` igual que Referral.
+- **Comisión variable** acordada offline entre MaxRent y broker. **Sin campos de monto en schema** — staff registra el pago como texto libre en `payoutNote` al procesar la transferencia (ej. `"Boleta hon. 2026-0123 - $850.000 - BCI 18-jun-2026"`).
+- `payoutStatus`, `paidAt`, `payoutNote` mismo significado que en Referral.
+- Coexiste con `BrokerInvestorInvite` (que es invitación explícita por token, no atribución por code compartible).
+- Cuando el prospect crea cuenta, además del link a `BrokerLead.prospectUserId` se setea `User.sponsorBrokerUserId` para mantener consistencia con el modelo de sponsorship.
+
 **Property + PropertyCatalogDraft** (inventario + staging)
 - `Property`: `inventoryCode` y `houmPropertyId` como business keys únicas; `status` (AVAILABLE / RESERVED / SOLD / ARCHIVED), `visibleToBrokers`, `metadata` Json.
 - `PropertyCatalogDraft`: filas de staging (CSV o sync Houm) hasta que staff aprueba la publicación. Ver `docs/HOUM_CATALOG_METADATA.md` y `docs/PROPERTY_INVENTORY_IMPORT.md`.
@@ -199,6 +228,9 @@ enum RiskLevel                  { LOW, MEDIUM, HIGH }
 enum ReservationStatus          { PENDING_PAYMENT, PAYMENT_PROCESSING, PAID, CONFIRMED, CANCELLED, EXPIRED, REFUNDED }
 enum NotificationChannel        { EMAIL, SMS, WHATSAPP, PUSH }
 enum NotificationStatus         { QUEUED, SENT, DELIVERED, OPENED, BOUNCED, COMPLAINED, FAILED }
+enum ReferralStatus             { PENDING, SIGNED_UP, QUALIFIED, SIGNED, EXPIRED }
+enum BrokerLeadStatus           { NEW, SIGNED_UP, QUALIFIED, CONTRACT_SIGNED, LOST }
+enum PayoutStatus               { PENDING, PAID }
 ```
 
 ---
