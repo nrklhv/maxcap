@@ -4,6 +4,10 @@ import {
   isBrokerProfileComplete,
   type BrokerProfilePatchInput,
 } from "@/lib/broker/broker-profile-schema";
+import {
+  ensureBrokerReferralCode,
+  safeRunReferralHook,
+} from "@/lib/services/referral.service";
 
 export async function listBrokerUsers() {
   return prisma.user.findMany({
@@ -40,7 +44,7 @@ export async function approveBroker(userId: string) {
   if (u.brokerAccessStatus !== "PENDING") {
     throw new Error("Solo se puede aprobar una solicitud en estado pendiente");
   }
-  return prisma.user.update({
+  const updated = await prisma.user.update({
     where: { id: userId },
     data: {
       brokerAccessStatus: "APPROVED",
@@ -52,6 +56,16 @@ export async function approveBroker(userId: string) {
       brokerAccessStatus: true,
     },
   });
+
+  // Generar el code BRK- ahora que el broker está aprobado. Idempotente: si
+  // ya existe (caso edge: broker re-aprobado tras rechazo previo) no se toca.
+  // Best-effort: si falla, no rompemos la aprobación — se puede regenerar
+  // después con `ensureBrokerReferralCode`.
+  await safeRunReferralHook("ensureBrokerReferralCode", () =>
+    ensureBrokerReferralCode(userId)
+  );
+
+  return updated;
 }
 
 export async function rejectBroker(userId: string) {
