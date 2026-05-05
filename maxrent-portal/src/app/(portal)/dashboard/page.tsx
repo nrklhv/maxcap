@@ -5,15 +5,30 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isInvestorPerfilCompleteForPortal } from "@/lib/portal/profile-labor";
+import {
+  ensureInvestorReferralCode,
+  safeRunReferralHook,
+} from "@/lib/services/referral.service";
+import { ReferralsCard, type ReferralRow } from "@/components/portal/ReferralsCard";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+
+/**
+ * Base URL del landing público para armar el link `?ref=<code>` que el
+ * inversionista comparte. Configurable vía env (preview/QA), default a prod.
+ */
+function getLandingBaseUrl(): string {
+  const env = process.env.NEXT_PUBLIC_LANDING_URL?.trim();
+  if (env) return env.replace(/\/$/, "");
+  return "https://www.maxrent.cl";
+}
 
 export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
   // Obtener datos del usuario para el dashboard
-  const [profile, latestEvaluation, reservations] = await Promise.all([
+  const [profile, latestEvaluation, reservations, currentUser, referrals] = await Promise.all([
     prisma.profile.findUnique({
       where: { userId: session.user.id },
       select: {
@@ -31,9 +46,39 @@ export default async function DashboardPage() {
       orderBy: { createdAt: "desc" },
       take: 5,
     }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { investorReferralCode: true, canInvest: true },
+    }),
+    prisma.referral.findMany({
+      where: { referrerUserId: session.user.id },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        referredEmail: true,
+        status: true,
+        signedUpAt: true,
+        signedAt: true,
+        expiresAt: true,
+        rewardCLP: true,
+        payoutStatus: true,
+        paidAt: true,
+        createdAt: true,
+      },
+    }),
   ]);
 
   const perfilListo = isInvestorPerfilCompleteForPortal(profile);
+
+  // Lazy fix: si el User no tiene investorReferralCode (cuenta pre-existente
+  // al PR de generación de codes, o el hook falló), lo generamos ahora.
+  // Best-effort — si falla, ocultamos la sección de referidos en el render.
+  let referralCode = currentUser?.investorReferralCode ?? null;
+  if (!referralCode && currentUser?.canInvest) {
+    referralCode = await safeRunReferralHook("dashboard:ensureInvestorReferralCode", () =>
+      ensureInvestorReferralCode(session.user.id!)
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -138,6 +183,15 @@ export default async function DashboardPage() {
           />
         </div>
       </div>
+
+      {/* Referidos — solo si el usuario es inversionista (canInvest) y tiene code */}
+      {referralCode && (
+        <ReferralsCard
+          code={referralCode}
+          referrals={referrals as ReferralRow[]}
+          landingBaseUrl={getLandingBaseUrl()}
+        />
+      )}
     </div>
   );
 }

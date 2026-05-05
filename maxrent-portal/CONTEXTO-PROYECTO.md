@@ -406,6 +406,21 @@ Vendedor sigue el mismo POST pero NO entra al portal — staff lo contacta.
 
 Después de upsertear el Lead, si hubo `referralResolution` y NO se preservó atribución previa (caso first-touch repetido), el endpoint llama a `createReferralForLead` o `createBrokerLeadForLead` (ver `src/lib/services/referral.service.ts`). Idempotentes vía `upsert(where: { leadId })` — repetir el submit del form no duplica la fila. Errores se loguean pero NO rompen la respuesta del lead.
 
+**Vista del referidor en el dashboard:**
+
+`/dashboard` (portal inversionista) incluye la sección **`<ReferralsCard />`** que muestra:
+
+- Header explícito de cómo funciona el programa: $500.000 cash al banco, 120 días desde signup para escriturar, sin tope.
+- Link copiable `${LANDING_URL}/?ref=${code}` con botón "Copiar link" (componente cliente `ReferralCopyButton`).
+- Totales acumulados (`Recibido` / `Pendiente de pago`) cuando aplica.
+- Lista de referidos con:
+  - Status humano: `Sin cuenta` (PENDING) / `Activo` (SIGNED_UP) / `Calificado` (QUALIFIED) / `Pago en curso` (SIGNED + PENDING) / `Pagado` (SIGNED + PAID) / `Vencido` (EXPIRED).
+  - Días para vencer; si quedan ≤30 días → badge naranja con `⚠️`.
+
+`NEXT_PUBLIC_LANDING_URL` (env opcional) permite apuntar a previews/staging; default `https://www.maxrent.cl`.
+
+Lazy-fix: si el User no tiene `investorReferralCode` (cuentas pre-existentes al PR de generación), el dashboard llama a `ensureInvestorReferralCode` antes de renderizar.
+
 ### 6.1 Registro + Onboarding (signup vía Google o magic link)
 ```
 1. Usuario llega a /login (típicamente desde el header del landing,
