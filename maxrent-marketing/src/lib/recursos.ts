@@ -14,7 +14,6 @@ import path from "node:path";
 
 export type CategoriaSlug =
   | "logos"
-  | "piezas-feed"
   | "piezas-pagadas"
   | "fotos"
   | "prensa";
@@ -30,11 +29,6 @@ export const CATEGORIES: Categoria[] = [
     slug: "logos",
     titulo: "Logos",
     descripcion: "Isotipo, logotipo y variaciones en distintos formatos.",
-  },
-  {
-    slug: "piezas-feed",
-    titulo: "Piezas feed",
-    descripcion: "Material orgánico para feed de Instagram y Facebook.",
   },
   {
     slug: "piezas-pagadas",
