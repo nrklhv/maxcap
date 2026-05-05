@@ -365,6 +365,8 @@ APIs bajo `/api/staff/*` para inventario, aprobación de brokers, gestión de in
 |---|---|---|
 | POST | `/api/staff/reservations/[id]/escriturar` | Marca una reserva como `CONFIRMED` y dispara los payouts de atribución del usuario asociado: el `Referral` del referido pasa a `SIGNED` ($500.000 PENDING) y el `BrokerLead` del prospect pasa a `CONTRACT_SIGNED` (PENDING). Idempotente. Devuelve `{ reservationId, alreadyEscriturada, payouts: { referralId, brokerLeadId } }`. |
 | POST | `/api/staff/reservations/[id]/cancel` | (Existente) Cancela una reserva activa y reconcilia inventario. |
+| POST | `/api/staff/referrals/[id]/mark-paid` | Marca un `Referral` como pagado al referidor (transferencia bancaria realizada). Body: `{ note: string }`. Solo permitido si `status = SIGNED` y `payoutStatus = PENDING`. |
+| POST | `/api/staff/broker-leads/[id]/mark-paid` | Marca un `BrokerLead` como pagado al broker. Body: `{ note: string }`. Solo permitido si `status = CONTRACT_SIGNED` y `payoutStatus = PENDING`. La nota DEBE incluir monto y referencia (la comisión es variable, no está en schema). |
 
 ### Cron jobs
 
@@ -431,6 +433,18 @@ Después de upsertear el Lead, si hubo `referralResolution` y NO se preservó at
 `NEXT_PUBLIC_LANDING_URL` (env opcional) permite apuntar a previews/staging; default `https://www.maxrent.cl`.
 
 Lazy-fix: si el User no tiene `investorReferralCode` (cuentas pre-existentes al PR de generación), el dashboard llama a `ensureInvestorReferralCode` antes de renderizar.
+
+**Vista interna del staff en `/staff/atribuciones`:**
+
+Página interna con dos tabs (`?tab=referrals` / `?tab=broker-leads`). Cada tab renderiza:
+
+- Stats agregados arriba (activos, calificados, escrituraron, pago pendiente, pagados, vencidos, totales en CLP para Referrals).
+- Tabla con todas las filas (limit 200, ordenadas createdAt desc).
+- Por cada fila: detalle del referidor/broker, code, prospect, status, payout, y acción "Marcar pagado" (componente cliente `<MarkPaidForm />`) cuando aplica.
+
+`MarkPaidForm` es un patrón "click para expandir": primer click muestra textarea + botón Confirmar; submit hace POST al endpoint correspondiente y `router.refresh()` la página. Solo aparece cuando el registro está en `SIGNED`/`CONTRACT_SIGNED` con `payoutStatus = PENDING`.
+
+Banner azul informativo en la tab BrokerLeads recordando que la nota DEBE incluir monto + referencia (la comisión no está en schema).
 
 **Vista del broker en `/broker/referidos`:**
 
@@ -545,8 +559,16 @@ Lazy-fix análogo: si el broker no tiene `brokerReferralCode`, la page llama a `
 4. Resultado:
    - El referidor (en /dashboard) ve su referido como "Pago en curso".
    - El broker (en /broker/referidos) ve su prospect como "Pago pendiente".
-   - Staff procesa la transferencia y registra en payoutNote
-     (UI completa: PR 7).
+   - Staff entra a /staff/atribuciones y ve la fila con badge "Pendiente" +
+     botón "Marcar pagado" → abre textarea para registrar el detalle de la
+     transferencia (banco, referencia, fecha) y confirma.
+5. Staff procesa la transferencia POR FUERA del sistema (la app NO ejecuta
+   pagos). Vuelve a /staff/atribuciones, click "Marcar pagado":
+   POST /api/staff/referrals/[id]/mark-paid    (peer)
+   POST /api/staff/broker-leads/[id]/mark-paid (broker)
+   Body: { note: "Transferencia BCI ref 12345 - 15-may-2026" }
+   → payoutStatus = PAID, paidAt = now, payoutNote registrada.
+6. El referidor / broker ve actualizado el estado a "Pagado" en su portal.
 ```
 
 ### 6.5 Job nocturno: expiración de atribuciones
