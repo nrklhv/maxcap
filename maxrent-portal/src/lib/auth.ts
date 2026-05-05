@@ -20,6 +20,11 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { Prisma } from "@prisma/client";
 import { isInvestorPerfilCompleteForPortal } from "@/lib/portal/profile-labor";
 import {
+  ensureInvestorReferralCode,
+  linkUserToPendingAttribution,
+  safeRunReferralHook,
+} from "@/lib/services/referral.service";
+import {
   backfillUserNotifications,
   notifyTemplate,
 } from "@/lib/services/notifications";
@@ -145,6 +150,21 @@ function buildAuthProviders() {
                 data: { leadId: existingLead.id },
               });
             }
+
+            // Atribución de referidos (paralelo al evento createUser de NextAuth,
+            // que NO se dispara con Credentials provider).
+            await safeRunReferralHook("ensureInvestorReferralCode (dev)", () =>
+              ensureInvestorReferralCode(user!.id)
+            );
+            await safeRunReferralHook(
+              "linkUserToPendingAttribution (dev)",
+              () =>
+                linkUserToPendingAttribution({
+                  userId: user!.id,
+                  leadId: existingLead?.id ?? null,
+                  email,
+                })
+            );
           } else {
             const profile = await prisma.profile.findUnique({
               where: { userId: user.id },
@@ -319,6 +339,35 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }).catch(() => {
           // Best-effort; no romper alta si falla.
         });
+      }
+
+      // ---------------------------------------------------------------------
+      // Atribución de referidos
+      // ---------------------------------------------------------------------
+      // 1. Generar `investorReferralCode` para el nuevo User. Default del
+      //    schema es `canInvest=true`, así que todo User nace con su code
+      //    de inversionista listo para compartir.
+      // 2. Si el User llegó atribuido a un Referral o BrokerLead existente
+      //    (porque el Lead ya tenía atribución cuando llenó el form), vincular
+      //    `referredUserId`/`prospectUserId` y transitar a SIGNED_UP. Para
+      //    BrokerLead además seteamos `User.sponsorBrokerUserId`.
+      //
+      // Best-effort en ambos pasos: si fallan, NO rompemos el alta — el code
+      // se puede regenerar después con `ensureInvestorReferralCode` cuando
+      // el inversionista entre a su dashboard, y el linking se reintenta vía
+      // job nocturno (PR 6) buscando referrals con `referredUserId=null` y
+      // email matching.
+      await safeRunReferralHook("ensureInvestorReferralCode", () =>
+        ensureInvestorReferralCode(user.id!)
+      );
+      if (user.email) {
+        await safeRunReferralHook("linkUserToPendingAttribution", () =>
+          linkUserToPendingAttribution({
+            userId: user.id!,
+            leadId: existingLead?.id ?? null,
+            email: user.email!.trim().toLowerCase(),
+          })
+        );
       }
     },
   },

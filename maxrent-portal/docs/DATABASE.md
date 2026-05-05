@@ -280,10 +280,16 @@ El portal trackea dos canales de atribución por separado: **peer-to-peer** entr
 
 Cada cuenta tiene hasta dos codes únicos que sirven como identificador para `?ref=<code>` en links compartibles:
 
-| Campo | Prefijo | Cuándo se genera |
-|---|---|---|
-| `User.investorReferralCode` | `INV-` | Al cumplir `canInvest = true` (todo inversionista calificado del Club). |
-| `User.brokerReferralCode` | `BRK-` | Al pasar a `brokerAccessStatus = APPROVED`. |
+| Campo | Prefijo | Cuándo se genera | Hook |
+|---|---|---|---|
+| `User.investorReferralCode` | `INV-` | Al crear cuenta (todo User nace con `canInvest=true` por default). | `events.createUser` en `lib/auth.ts` y rama Credentials del provider dev → `ensureInvestorReferralCode()`. |
+| `User.brokerReferralCode` | `BRK-` | Al pasar a `brokerAccessStatus = APPROVED`. | `approveBroker()` en `services/broker.service.ts` → `ensureBrokerReferralCode()`. |
+
+Generación: 6 caracteres alfanuméricos uppercase del charset `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (sin `0/O/1/I/L` para legibilidad). ~887M combinaciones. Verificación de unicidad por lookup en la columna correspondiente; reintenta hasta 8 veces antes de tirar error.
+
+**Idempotencia**: `ensureInvestorReferralCode` / `ensureBrokerReferralCode` son no-ops si el code ya existe. Llamarlos dos veces no genera codes nuevos.
+
+**Tolerancia a fallas**: ambos hooks corren bajo `safeRunReferralHook()` que loguea pero no propaga errores — la atribución es feature lateral, NO bloqueamos el alta o la aprobación si Prisma falla. Para regenerar codes faltantes (por error transitorio), basta con que el inversionista entre a su dashboard o staff re-apruebe al broker.
 
 Multi-rol: una cuenta que es inversionista **y** broker aprobado tiene **ambos codes**. El sistema sabe por qué canal entró un referido leyendo el prefijo del code usado: `INV-` → `Referral`; `BRK-` → `BrokerLead`. Cero ambigüedad.
 
@@ -361,27 +367,39 @@ El costo es mínimo: para reportería staff unificada se hace `UNION` cuando se 
 ### Flujo end-to-end (ejemplo Referral)
 
 ```
-1. Pedro (canInvest=true) → User.investorReferralCode = "INV-AB12CD"
+1. Pedro crea cuenta → events.createUser → ensureInvestorReferralCode
+   → User.investorReferralCode = "INV-AB12CD"
 2. Pedro comparte: https://www.maxrent.cl/?ref=INV-AB12CD
-3. Juan visita el landing → cookie mxr_ref=INV-AB12CD (60 días)
+3. Juan visita el landing → captureFirstTouchReferralFromUrl
+   → cookie mxr_ref="INV-AB12CD" (60 días, first-touch)
 4. Juan llena el form → POST /api/public/leads
-   ├─ Crea Lead (Juan): source = "investor-referral",
-   │                    marketingAttribution.referralCode = "INV-AB12CD"
-   └─ Crea Referral: code = "INV-AB12CD", referrerUserId = Pedro.id,
-                     referredEmail = juan@..., leadId = Juan.lead.id,
-                     status = PENDING, expiresAt = createdAt + 60d
-5. Juan recibe magic link → crea cuenta
-   └─ Referral: status → SIGNED_UP, signedUpAt = ahora,
-                expiresAt = signedUpAt + 120d, referredUserId = Juan.user.id
+   ├─ resolveReferralCode("INV-AB12CD") → encuentra User Pedro
+   ├─ Upsert Lead (Juan): source = "investor-referral",
+   │                      marketingAttribution.referralCode = "INV-AB12CD",
+   │                      marketingAttribution.referralKind = "INVESTOR"
+   └─ createReferralForLead({ leadId, code, referrerUserId: Pedro.id,
+                               referredEmail: juan@... })
+        → Referral nuevo: status = PENDING,
+                          expiresAt = createdAt + 60 días
+5. Juan recibe magic link → NextAuth crea User
+   ├─ events.createUser:
+   │  ├─ Vincula Lead (User.leadId = Juan.lead.id)
+   │  ├─ ensureInvestorReferralCode → Juan también tiene su propio INV-
+   │  └─ linkUserToPendingAttribution:
+   │       → Referral.status PENDING → SIGNED_UP, signedUpAt = ahora,
+   │         referredUserId = Juan.user.id,
+   │         expiresAt = signedUpAt + 120 días
 6. Juan escritura una propiedad del Club
-   └─ Referral: status → SIGNED, signedAt = ahora,
-                payoutStatus = PENDING (toca pagar a Pedro)
-7. Staff procesa transferencia en /staff/atribuciones
-   └─ Referral: payoutStatus → PAID, paidAt = ahora,
-                payoutNote = "Transferencia BCI 12345 - 15-may-2026"
+   → PR 6 (futuro): Referral.status → SIGNED, signedAt = ahora,
+                    payoutStatus = PENDING
+7. Staff procesa transferencia en /staff/atribuciones (PR 7 futuro)
+   → Referral: payoutStatus → PAID, paidAt = ahora,
+               payoutNote = "Transferencia BCI 12345 - 15-may-2026"
 ```
 
 Para `BrokerLead` el flujo es idéntico cambiando `INV-` por `BRK-` y `SIGNED` por `CONTRACT_SIGNED`. El monto en `payoutNote` lo decide staff caso a caso (comisión variable acordada offline).
+
+Adicionalmente, en el paso 5 `linkUserToPendingAttribution` setea `User.sponsorBrokerUserId = brokerUserId` para mantener consistencia con el sistema de sponsorship existente (solo si el campo está null — no pisa atribuciones manuales de staff o vía `BrokerInvestorInvite`).
 
 ## Enums (resumen)
 

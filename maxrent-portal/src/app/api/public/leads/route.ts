@@ -35,6 +35,11 @@ import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { notifyTemplate } from "@/lib/services/notifications";
+import {
+  createBrokerLeadForLead,
+  createReferralForLead,
+  safeRunReferralHook,
+} from "@/lib/services/referral.service";
 import { leadPublicBodySchema } from "@/lib/validations";
 
 // Edge no soporta Prisma; forzamos node runtime.
@@ -297,6 +302,38 @@ export async function POST(req: NextRequest) {
     });
 
     const isNew = lead.createdAt.getTime() === lead.updatedAt.getTime();
+
+    // -----------------------------------------------------------------------
+    // Crear Referral / BrokerLead idempotentemente si hubo atribución resuelta.
+    // -----------------------------------------------------------------------
+    // Solo cuando NO preservamos atribución previa — si el lead ya tenía
+    // referralCode y mantenemos first-touch, asumimos que el Referral/BrokerLead
+    // original ya existe (se creó cuando llegó por primera vez).
+    //
+    // El service hace upsert con leadId como key; corre sin riesgo de duplicar.
+    // Errores se loguean pero NO rompen la respuesta — la atribución es
+    // best-effort, el lead ya quedó persistido.
+    if (referralResolution && !preserveExistingReferral) {
+      if (referralResolution.kind === "INVESTOR") {
+        await safeRunReferralHook("createReferralForLead", () =>
+          createReferralForLead({
+            leadId: lead.id,
+            code: referralResolution.code,
+            referrerUserId: referralResolution.referrerUserId,
+            referredEmail: email,
+          })
+        );
+      } else {
+        await safeRunReferralHook("createBrokerLeadForLead", () =>
+          createBrokerLeadForLead({
+            leadId: lead.id,
+            code: referralResolution.code,
+            brokerUserId: referralResolution.brokerUserId,
+            prospectEmail: email,
+          })
+        );
+      }
+    }
 
     // Disparar email de bienvenida solo para inversionistas nuevos.
     // Vendedor por ahora no recibe email transaccional desde este flujo.

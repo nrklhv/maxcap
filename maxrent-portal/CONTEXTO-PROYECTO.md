@@ -139,7 +139,7 @@ Property
 - `canInvest` (boolean), `staffRole` (NONE | SUPER_ADMIN), `brokerAccessStatus` + `brokerReviewedAt` para flujo broker
 - `leadId`: relación opcional con lead existente
 - `investorReferralCode` (unique, prefijo `INV-`): code para compartir como peer-to-peer. Generado al cumplir `canInvest`.
-- `brokerReferralCode` (unique, prefijo `BRK-`): code para compartir como broker. Generado al pasar a `brokerAccessStatus = APPROVED`.
+- `brokerReferralCode` (unique, prefijo `BRK-`): code para compartir como broker. Generado al pasar a `brokerAccessStatus = APPROVED` (en `approveBroker()`, ver `services/broker.service.ts`).
 - Relaciones: accounts[], sessions[], profile, creditEvaluations[], reservations[], referralsAsReferrer[], referralAsReferred (1:1), brokerLeadsAsBroker[], brokerLeadAsProspect (1:1)
 
 **Profile** (datos personales obligatorios)
@@ -402,7 +402,9 @@ APIs bajo `/api/staff/*` para inventario, aprobación de brokers, gestión de in
 
 Vendedor sigue el mismo POST pero NO entra al portal — staff lo contacta.
 
-> **PR siguiente (PR 3 del sistema de referidos)** crea automáticamente el `Referral` o `BrokerLead` con `leadId` apuntando al lead recién creado. Acá solo se captura la atribución cruda en `marketingAttribution`.
+**Creación de `Referral`/`BrokerLead` post-upsert:**
+
+Después de upsertear el Lead, si hubo `referralResolution` y NO se preservó atribución previa (caso first-touch repetido), el endpoint llama a `createReferralForLead` o `createBrokerLeadForLead` (ver `src/lib/services/referral.service.ts`). Idempotentes vía `upsert(where: { leadId })` — repetir el submit del form no duplica la fila. Errores se loguean pero NO rompen la respuesta del lead.
 
 ### 6.1 Registro + Onboarding (signup vía Google o magic link)
 ```
@@ -422,6 +424,20 @@ Vendedor sigue el mismo POST pero NO entra al portal — staff lo contacta.
    c. Si encontró Lead, setea User.leadId
    d. backfillUserNotifications: las notificaciones enviadas pre-cuenta
       (welcome email al Lead) se asocian al User.id para timeline completo
+   e. ensureInvestorReferralCode: genera User.investorReferralCode
+      (formato INV-XXXXXX) — todo User nace con su code de referidos
+      listo para compartir, ya que canInvest=true es el default.
+   f. linkUserToPendingAttribution: si existe Referral o BrokerLead
+      con leadId del Lead vinculado (o email matching) en estado inicial:
+        - Setea referredUserId / prospectUserId
+        - Transiciona Referral.status PENDING → SIGNED_UP, signedUpAt=now
+        - Actualiza expiresAt = signedUpAt + 120 días (ventana post-signup)
+        - Para BrokerLead: además, si User.sponsorBrokerUserId está null,
+          lo setea al brokerUserId del BrokerLead (consistencia con
+          el modelo de sponsorship existente).
+      Best-effort: si falla, NO rompe el alta. Job nocturno futuro (PR 6)
+      reintenta el linking buscando Referrals/BrokerLeads con
+      referredUserId/prospectUserId nulos.
 5. Middleware detecta onboardingCompleted=false → redirige a /perfil
 6. /perfil llama GET /api/users/profile que devuelve hidratado con Lead:
    firstName, lastName, contactEmail, phone vienen pre-llenados.
