@@ -16,23 +16,14 @@
 // Detalle del modelo: docs/DATABASE.md sección "Atribución de referidos".
 // =============================================================================
 
-import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
+import { requireStaffSuperAdmin } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
-import { staffSuperAdminAllowlist } from "@/lib/auth.config";
 import { MarkPaidForm } from "@/components/staff/MarkPaidForm";
 
 type SearchParams = { tab?: string };
-
-function isStaff(session: Awaited<ReturnType<typeof auth>>): boolean {
-  if (!session?.user) return false;
-  if (session.user.staffRole === "SUPER_ADMIN") return true;
-  // Allowlist por env (mismo path que en JWT).
-  const email = session.user.email?.trim().toLowerCase();
-  return !!email && staffSuperAdminAllowlist().has(email);
-}
 
 function formatDate(d: Date | null | undefined): string {
   if (!d) return "—";
@@ -56,9 +47,10 @@ export default async function StaffAtribucionesPage({
 }: {
   searchParams: SearchParams;
 }) {
-  const session = await auth();
-  if (!session?.user) redirect("/staff/login?callbackUrl=/staff/atribuciones");
-  if (!isStaff(session)) redirect("/dashboard");
+  // requireStaffSuperAdmin valida session + staffRole === SUPER_ADMIN
+  // (el JWT también incluye allowlist por env via staffSuperAdminAllowlist).
+  const session = await requireStaffSuperAdmin();
+  if (!session) redirect("/staff/login?callbackUrl=/staff/atribuciones");
 
   const tab = searchParams.tab === "broker-leads" ? "broker-leads" : "referrals";
 
