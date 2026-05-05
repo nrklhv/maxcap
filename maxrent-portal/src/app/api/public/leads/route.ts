@@ -11,6 +11,23 @@
 //
 // CORS: solo se aceptan requests desde los orígenes del landing
 // (configurable vía LEADS_ALLOWED_ORIGINS, comma-separated).
+//
+// Atribución de referidos:
+//   • El landing setea cookie `mxr_ref` por 60d cuando alguien visita con
+//     `?ref=INV-XXX` o `?ref=BRK-XXX` (first-touch — ver lib/referralCookie.ts
+//     en el repo del landing).
+//   • Los forms leen la cookie y la mandan en el body como `referral_code`.
+//   • Acá validamos que el code corresponda a un User real (campo
+//     `investorReferralCode` o `brokerReferralCode` en `users`) y persistimos
+//     la atribución en `Lead.marketingAttribution.referralCode` + ajustamos
+//     `Lead.source` a "investor-referral" / "broker-referral".
+//   • First-touch: si el lead ya existe con `referralCode` en su attribution,
+//     NO sobrescribimos — la primera atribución manda.
+//   • Códigos inválidos (formato OK pero no matchean ningún User) se ignoran
+//     silenciosamente, no rompen el flujo del lead.
+//
+// Detalle del sistema de atribución: docs/DATABASE.md sección "Atribución de
+// referidos" + memory/project_referral_attribution.md.
 // =============================================================================
 
 import { NextResponse, type NextRequest } from "next/server";
@@ -76,6 +93,56 @@ function jsonWithCors(
 }
 
 // -----------------------------------------------------------------------------
+// Atribución de referidos
+// -----------------------------------------------------------------------------
+
+type ReferralResolution =
+  | { kind: "INVESTOR"; code: string; referrerUserId: string }
+  | { kind: "BROKER"; code: string; brokerUserId: string };
+
+/**
+ * Recibe un code (formato `INV-XXX` o `BRK-XXX` ya validado por Zod) y lo
+ * intenta matchear contra `User.investorReferralCode` o `User.brokerReferralCode`.
+ * Devuelve null si nadie tiene ese code (atribución silenciosamente ignorada).
+ */
+async function resolveReferralCode(
+  code: string
+): Promise<ReferralResolution | null> {
+  if (code.startsWith("INV-")) {
+    const user = await prisma.user.findUnique({
+      where: { investorReferralCode: code },
+      select: { id: true },
+    });
+    if (!user) return null;
+    return { kind: "INVESTOR", code, referrerUserId: user.id };
+  }
+  if (code.startsWith("BRK-")) {
+    const user = await prisma.user.findUnique({
+      where: { brokerReferralCode: code },
+      select: { id: true },
+    });
+    if (!user) return null;
+    return { kind: "BROKER", code, brokerUserId: user.id };
+  }
+  return null;
+}
+
+/**
+ * Política first-touch: si el lead existente ya guarda un `referralCode` en
+ * su `marketingAttribution`, NO lo sobrescribimos. Evita que un visitante que
+ * vuelve días después con otro `?ref=` cambie a quién quedó atribuido.
+ */
+function existingAttributionHasReferralCode(
+  attribution: Prisma.JsonValue | null | undefined
+): boolean {
+  if (!attribution || typeof attribution !== "object" || Array.isArray(attribution)) {
+    return false;
+  }
+  const ref = (attribution as Record<string, unknown>).referralCode;
+  return typeof ref === "string" && ref.length > 0;
+}
+
+// -----------------------------------------------------------------------------
 // OPTIONS — CORS preflight
 // -----------------------------------------------------------------------------
 
@@ -120,16 +187,49 @@ export async function POST(req: NextRequest) {
       : data.type === "vendedor"
         ? "SELLER"
         : "BROKER";
-  const source =
+
+  // -------------------------------------------------------------------------
+  // Resolver atribución de referido (si vino code en la cookie del landing)
+  // -------------------------------------------------------------------------
+  // Si hay code y matchea con un User real, marcamos source como
+  // "investor-referral" / "broker-referral" en lugar del default "landing-*".
+  // Si el code es inválido o no matchea, tratamos como lead orgánico (no falla).
+  // PR 3 va a crear el `Referral`/`BrokerLead` correspondiente; este PR solo
+  // captura la atribución en `Lead.marketingAttribution.referralCode`.
+  const referralCode = "referral_code" in data ? data.referral_code : undefined;
+  const referralResolution = referralCode
+    ? await resolveReferralCode(referralCode)
+    : null;
+
+  const defaultSource =
     data.type === "inversionista"
       ? "landing-investor"
       : data.type === "vendedor"
         ? "landing-seller"
         : "landing-broker";
-  const marketingAttribution: Prisma.InputJsonValue | undefined =
+  const source = referralResolution
+    ? referralResolution.kind === "INVESTOR"
+      ? "investor-referral"
+      : "broker-referral"
+    : defaultSource;
+
+  // marketingAttribution ahora puede sumar el referralCode si la atribución
+  // resolvió a un User. Lo dejamos siempre como objeto (no null) cuando hay
+  // ALGO que guardar — utm_* del landing o code resuelto.
+  const baseAttribution =
     data.marketing_attribution == null
-      ? undefined
-      : (data.marketing_attribution as Prisma.InputJsonValue);
+      ? {}
+      : (data.marketing_attribution as Record<string, unknown>);
+  const attributionWithReferral: Prisma.InputJsonValue | undefined =
+    referralResolution
+      ? ({
+          ...baseAttribution,
+          referralCode: referralResolution.code,
+          referralKind: referralResolution.kind,
+        } as Prisma.InputJsonValue)
+      : data.marketing_attribution == null
+        ? undefined
+        : (data.marketing_attribution as Prisma.InputJsonValue);
 
   // Campos vendedor (null si es inversionista o broker)
   const cantidadPropiedades =
@@ -143,6 +243,24 @@ export async function POST(req: NextRequest) {
     data.type === "broker" ? { companyName: data.empresa.trim() } : undefined;
 
   try {
+    // First-touch: si el lead ya existe con un referralCode previo en su
+    // marketingAttribution, NO lo sobrescribimos. Lookup primero para decidir.
+    const existingLead = await prisma.lead.findUnique({
+      where: { email },
+      select: { id: true, marketingAttribution: true, source: true },
+    });
+
+    const preserveExistingReferral =
+      existingLead != null &&
+      existingAttributionHasReferralCode(existingLead.marketingAttribution);
+
+    // Cuando preservamos atribución previa, NO tocamos ni `source` ni
+    // `marketingAttribution` en el update — los dejamos como llegaron al
+    // primer hit. Sí actualizamos los demás campos del form.
+    const updateAttributionFields = preserveExistingReferral
+      ? {}
+      : { source, marketingAttribution: attributionWithReferral };
+
     const lead = await prisma.lead.upsert({
       where: { email },
       create: {
@@ -157,7 +275,7 @@ export async function POST(req: NextRequest) {
         arrendadas,
         adminHoum,
         source,
-        marketingAttribution,
+        marketingAttribution: attributionWithReferral,
         data: dataJson,
       },
       update: {
@@ -172,8 +290,7 @@ export async function POST(req: NextRequest) {
         cantidadPropiedades,
         arrendadas,
         adminHoum,
-        source,
-        marketingAttribution,
+        ...updateAttributionFields,
         data: dataJson,
       },
       select: { id: true, status: true, createdAt: true, updatedAt: true },

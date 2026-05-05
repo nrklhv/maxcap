@@ -206,12 +206,28 @@ export const marketingAttributionSchema = z
   .strict()
   .nullish();
 
+/**
+ * Code de referido capturado en cookie `mxr_ref` del landing (TTL 60d).
+ * Prefijo `INV-` (peer-to-peer) o `BRK-` (broker → cliente) + 6+ alfanuméricos.
+ * Validamos formato acá; la verificación de que corresponde a un User real
+ * (`investorReferralCode` / `brokerReferralCode`) sucede en el endpoint.
+ * Detalle en docs/DATABASE.md sección "Atribución de referidos".
+ */
+const referralCodeFieldSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(/^(INV|BRK)-[A-Z0-9]{6,32}$/, "Code de referido con formato inválido")
+  .optional();
+
 const baseLeadFields = {
   nombre: trimmedLead(120),
   apellido: trimmedLead(120),
   email: trimmedLead(254).email(),
   whatsapp: trimmedLead(40),
   marketing_attribution: marketingAttributionSchema,
+  /** First-touch referral code (cookie `mxr_ref` del landing). Opcional. */
+  referral_code: referralCodeFieldSchema,
 };
 
 export const leadInversionistaSchema = z

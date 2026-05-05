@@ -11,6 +11,7 @@ import {
   spanishWhatsAppInvalid,
 } from "@/lib/nativeValidityEs";
 import { readStoredAttribution } from "@/lib/marketingAttribution";
+import { readReferralCode } from "@/lib/referralCookie";
 import { getPortalUrl } from "@/lib/site";
 
 const inputClass =
@@ -42,6 +43,7 @@ export function FormBroker() {
     setSubmitError(null);
     const fd = new FormData(form);
     const email = String(fd.get("email") ?? "").toLowerCase();
+    const referralCode = readReferralCode();
     const body = {
       type: "broker" as const,
       nombre: String(fd.get("nombre") ?? ""),
@@ -50,6 +52,8 @@ export function FormBroker() {
       whatsapp: String(fd.get("whatsapp") ?? ""),
       empresa: String(fd.get("empresa") ?? ""),
       marketing_attribution: readStoredAttribution(),
+      // Code de referido leído de la cookie `mxr_ref` (60d, first-touch).
+      ...(referralCode ? { referral_code: referralCode } : {}),
     };
 
     try {

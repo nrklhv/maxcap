@@ -309,10 +309,29 @@ Se crea cuando un broker aprobado comparte su `BRK-` y un prospect llega con `?r
 
 Política aplicada uniformemente a los dos canales:
 
-1. Primer visit con `?ref=<code>` → cookie `mxr_ref` con el code, válida por **60 días**.
-2. Visits posteriores con otro `?ref=` → **se ignoran** (la primera atribución manda).
+1. Primer visit con `?ref=<code>` en el landing → cookie `mxr_ref` con el code, válida por **60 días**. Implementación: `lib/referralCookie.ts` del repo del landing (componente `<MarketingAttributionCapture />` lo invoca en mount).
+2. Visits posteriores con otro `?ref=` → **se ignoran** en cliente (la cookie tiene política first-touch).
 3. Cookie expirada sin conversión → libre para atribución nueva.
-4. Si el lead ya tiene `marketingAttribution.referralCode` y vuelve a entrar con otro code → **no se sobrescribe**.
+4. Si el lead ya tiene `marketingAttribution.referralCode` y se reenvía el form con otro code → **no se sobrescribe en server**. El endpoint `/api/public/leads` hace lookup previo y omite los campos `source` + `marketingAttribution` del update si ya hay atribución previa (defensa en profundidad por si el cliente cambia la cookie manualmente).
+5. **Códigos con formato OK pero que no matchean ningún `User.investorReferralCode` ni `User.brokerReferralCode`** → se ignoran silenciosamente. El lead se crea sin atribución (como orgánico). No falla el form.
+
+### Forma de la atribución persistida en `Lead.marketingAttribution`
+
+Cuando hay atribución resuelta, el JSON queda con esta forma (acumulativo con los UTMs ya capturados):
+
+```json
+{
+  "utm_source": "instagram",
+  "utm_medium": "story",
+  "referrer": "https://www.instagram.com/...",
+  "landing_path": "/",
+  "captured_at": "2026-05-04T22:31:11.000Z",
+  "referralCode": "INV-AB12CD",
+  "referralKind": "INVESTOR"
+}
+```
+
+Y `Lead.source` se setea a `"investor-referral"` o `"broker-referral"` (sobreescribiendo el `"landing-*"` default).
 
 ### Estados (`status`) y expiración (`expiresAt`)
 
