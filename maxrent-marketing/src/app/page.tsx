@@ -30,7 +30,7 @@ export default async function HomePage() {
           </p>
         </section>
 
-        <section className="mb-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <section className="mb-12 grid grid-cols-1 md:grid-cols-3 gap-6">
           <Link
             href="/identidad"
             className="group block bg-dark text-cream rounded-2xl p-8 hover:opacity-95 transition shadow-sm overflow-hidden relative"
@@ -40,18 +40,17 @@ export default async function HomePage() {
             </p>
             <h2 className="text-2xl sm:text-3xl mb-3">Identidad de marca</h2>
             <p className="text-sm text-cream/80 mb-6">
-              Logos (con y sin endoso), paleta de colores con click-to-copy y
-              tipografías.
+              Logos, paleta con click-to-copy y tipografías.
             </p>
             <div className="flex items-center justify-between">
               <div className="flex -space-x-2">
-                <span className="w-7 h-7 rounded-full bg-orange ring-2 ring-dark" />
-                <span className="w-7 h-7 rounded-full bg-[#CC4A28] ring-2 ring-dark" />
-                <span className="w-7 h-7 rounded-full bg-[#EDE0CC] ring-2 ring-dark" />
-                <span className="w-7 h-7 rounded-full bg-cream ring-2 ring-dark" />
+                <span className="w-6 h-6 rounded-full bg-orange ring-2 ring-dark" />
+                <span className="w-6 h-6 rounded-full bg-[#CC4A28] ring-2 ring-dark" />
+                <span className="w-6 h-6 rounded-full bg-[#EDE0CC] ring-2 ring-dark" />
+                <span className="w-6 h-6 rounded-full bg-cream ring-2 ring-dark" />
               </div>
               <span className="text-sm font-medium text-orange group-hover:underline">
-                Ver identidad →
+                Ver →
               </span>
             </div>
           </Link>
@@ -67,8 +66,7 @@ export default async function HomePage() {
               Piezas para feed
             </h2>
             <p className="text-sm text-gray-3 mb-6">
-              Singles y carruseles para Instagram y Facebook, organizados por
-              batch. Listas para descargar y subir.
+              Singles y carruseles para Instagram y Facebook, listos para subir.
             </p>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -77,7 +75,31 @@ export default async function HomePage() {
                 <span className="text-xs text-gray-3">PNG</span>
               </div>
               <span className="text-sm font-medium text-orange group-hover:underline">
-                Ver piezas →
+                Ver →
+              </span>
+            </div>
+          </Link>
+
+          <Link
+            href="/brief"
+            className="group block bg-cream border border-gray-1 rounded-2xl p-8 hover:border-orange transition shadow-sm relative overflow-hidden"
+          >
+            <p className="text-xs uppercase tracking-widest text-orange font-semibold mb-3">
+              Marketing
+            </p>
+            <h2 className="text-2xl sm:text-3xl text-dark mb-3">
+              Brief
+            </h2>
+            <p className="text-sm text-gray-3 mb-6">
+              Propuesta de valor, audiencia, tono, identidad, KPIs. Para
+              generación de contenido orgánico y campañas pagadas.
+            </p>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-3 font-medium uppercase tracking-wider">
+                Documento vivo
+              </span>
+              <span className="text-sm font-medium text-orange group-hover:underline">
+                Leer →
               </span>
             </div>
           </Link>
