@@ -67,9 +67,11 @@ export function Sidebar() {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar
+          En desktop: sticky al top, altura full screen → no scrollea con el body.
+          En mobile: fixed con slide-in. */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col transition-transform lg:translate-x-0 ${
+        className={`fixed lg:sticky lg:top-0 lg:h-screen inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col transition-transform lg:translate-x-0 lg:overflow-y-auto ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -113,16 +115,22 @@ export function Sidebar() {
           })}
 
           {/* Refiere y gana — entry destacada con badge de monto.
-              Lleva al dashboard al ancla #referidos donde está el ReferralsCard. */}
+              Lleva a la página dedicada /referidos. */}
           <Link
-            href="/dashboard#referidos"
+            href="/referidos"
             onClick={() => setMobileOpen(false)}
-            className="mt-2 flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium border border-orange/30 bg-orange/5 text-orange hover:bg-orange/10 transition-colors"
+            className={`mt-2 flex flex-col gap-1.5 px-3 py-2.5 rounded-lg border transition-colors ${
+              pathname === "/referidos"
+                ? "border-orange/40 bg-orange/10 text-orange"
+                : "border-orange/25 bg-orange/5 text-orange hover:bg-orange/10"
+            }`}
           >
-            <Gift className="w-5 h-5 shrink-0" />
-            <span className="flex-1 min-w-0">Refiere y gana</span>
-            <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-orange text-white">
-              $500K
+            <div className="flex items-center gap-3 text-sm font-medium">
+              <Gift className="w-5 h-5 shrink-0" />
+              <span>Refiere y gana</span>
+            </div>
+            <span className="ml-8 text-[11px] font-semibold text-orange/90">
+              $500.000 por amigo
             </span>
           </Link>
 
