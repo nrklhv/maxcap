@@ -11,7 +11,7 @@ export const BROKER_APPLICATION_REQUIREMENT_LINES: readonly string[] = [
   "Nombre de empresa o razón social (obligatorio).",
   "Cargo en la empresa (obligatorio).",
   "Indicar si trabajás como independiente o no (obligatorio).",
-  "Sitio web y/o perfil de LinkedIn (opcionales; podés escribir www.… o la ruta completa; si falta https:// se agrega al guardar).",
+  "Sitio web y/o perfil de LinkedIn (opcionales; puedes escribir www.… o la ruta completa; si falta https:// se agrega al guardar).",
   "Pitch o comentario comercial (opcional).",
 ];
 

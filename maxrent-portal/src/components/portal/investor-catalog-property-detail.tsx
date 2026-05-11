@@ -105,7 +105,7 @@ export function InvestorCatalogPropertyDetail({ propertyId }: { propertyId: stri
       const checkout = await redirectToReservationCheckout(reservationId);
       if (!checkout.ok) {
         setReserveError(
-          `${checkout.error} Podés intentar de nuevo (la reserva quedó pendiente de pago).`
+          `${checkout.error} Puedes intentar de nuevo (la reserva quedó pendiente de pago).`
         );
       }
     } catch {
@@ -154,7 +154,7 @@ export function InvestorCatalogPropertyDetail({ propertyId }: { propertyId: stri
           {reserveBlockReason === "PENDING_STAFF_APPROVAL" ? (
             <>
               <span className="font-medium">Tu evaluación está lista.</span> El equipo debe
-              habilitar reservas desde el panel interno; te avisaremos o podés consultar con un
+              habilitar reservas desde el panel interno; te avisaremos o puedes consultar con un
               asesor.
             </>
           ) : (
@@ -179,7 +179,7 @@ export function InvestorCatalogPropertyDetail({ propertyId }: { propertyId: stri
             {property.status === "AVAILABLE" && investorHasActiveReservation ? (
               <span
                 className="rounded-lg border border-blue-200 bg-blue-50/90 px-4 py-2 text-sm font-semibold text-blue-800"
-                title="Ya tenés una reserva activa para esta propiedad"
+                title="Ya tienes una reserva activa para esta propiedad"
               >
                 Reservado
               </span>

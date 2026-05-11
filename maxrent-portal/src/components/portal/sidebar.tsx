@@ -13,6 +13,7 @@ import {
   X,
   Building2,
   Sparkles,
+  Gift,
 } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "@/components/Logo";
@@ -110,6 +111,20 @@ export function Sidebar() {
               </Link>
             );
           })}
+
+          {/* Refiere y gana — entry destacada con badge de monto.
+              Lleva al dashboard al ancla #referidos donde está el ReferralsCard. */}
+          <Link
+            href="/dashboard#referidos"
+            onClick={() => setMobileOpen(false)}
+            className="mt-2 flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium border border-orange/30 bg-orange/5 text-orange hover:bg-orange/10 transition-colors"
+          >
+            <Gift className="w-5 h-5 shrink-0" />
+            <span className="flex-1 min-w-0">Refiere y gana</span>
+            <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-orange text-white">
+              $500K
+            </span>
+          </Link>
 
           {/* Switch al portal broker (cuando la cuenta es multi-rol).
               Visualmente separado del nav principal, alineado al patrón

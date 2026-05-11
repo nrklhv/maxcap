@@ -48,7 +48,7 @@ const stepMeta: { key: StepKey; title: string; description: string }[] = [
   {
     key: "submit",
     title: "Enviar solicitud de acceso",
-    description: "Desde «Enviar solicitud» confirmás que querés que MaxRent revise tu cuenta.",
+    description: "Desde «Enviar solicitud» confirmás que quieres que MaxRent revise tu cuenta.",
   },
   {
     key: "review",

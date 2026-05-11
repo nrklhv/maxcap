@@ -281,7 +281,7 @@ export function PropertyInventoryTable({
         const checkout = await redirectToReservationCheckout(reservationId);
         if (!checkout.ok) {
           setReserveError(
-            `${checkout.error} Podés intentar de nuevo desde Oportunidades (la reserva quedó pendiente de pago).`
+            `${checkout.error} Puedes intentar de nuevo desde Oportunidades (la reserva quedó pendiente de pago).`
           );
           return;
         }
@@ -787,7 +787,7 @@ export function PropertyInventoryTable({
                     ) : p.investorHasActiveReservation ? (
                       <span
                         className={investorReservedLabel}
-                        title="Ya tenés una reserva activa para esta propiedad"
+                        title="Ya tienes una reserva activa para esta propiedad"
                       >
                         Reservado
                       </span>

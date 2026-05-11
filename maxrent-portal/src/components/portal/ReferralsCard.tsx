@@ -81,7 +81,10 @@ export function ReferralsCard({ code, referrals, landingBaseUrl }: Props) {
     .reduce((acc, r) => acc + r.rewardCLP, 0);
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6">
+    <div
+      id="referidos"
+      className="rounded-xl border border-gray-200 bg-white p-6 scroll-mt-8"
+    >
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-serif text-xl tracking-tight text-dark">
           Tus referidos
@@ -96,8 +99,8 @@ export function ReferralsCard({ code, referrals, landingBaseUrl }: Props) {
         <p className="mb-2 font-medium text-dark">Cómo funciona</p>
         <ul className="list-inside list-disc space-y-1 text-gray-600">
           <li>
-            Compartí tu link. Por cada amigo que se inscriba al Club y
-            escriture una propiedad, recibís{" "}
+            Comparte tu link. Por cada amigo que se inscriba al Club y
+            escriture una propiedad, recibes{" "}
             <strong className="text-dark">$500.000</strong> en tu cuenta
             bancaria.
           </li>
@@ -150,7 +153,7 @@ export function ReferralsCard({ code, referrals, landingBaseUrl }: Props) {
       {/* Lista de referidos */}
       {referrals.length === 0 ? (
         <p className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
-          Todavía no referiste a nadie. Compartí tu link arriba para empezar.
+          Todavía no has referido a nadie. Comparte tu link arriba para empezar.
         </p>
       ) : (
         <ul className="divide-y divide-gray-100">

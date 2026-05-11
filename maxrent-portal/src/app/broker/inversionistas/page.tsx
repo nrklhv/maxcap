@@ -25,7 +25,7 @@ export default async function BrokerInversionistasPage() {
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-broker-muted">
           Cuentas inversionistas que el equipo (staff) o tus enlaces en{" "}
-          <strong>Invitar inversionista</strong> asociaron a tu corretaje. Podés ver sus{" "}
+          <strong>Invitar inversionista</strong> asociaron a tu corretaje. Puedes ver sus{" "}
           <strong>reservas activas</strong> en el portal (mismos estados que en el catálogo inversionista).
         </p>
       </div>

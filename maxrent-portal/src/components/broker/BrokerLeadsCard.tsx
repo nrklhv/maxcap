@@ -88,8 +88,8 @@ export function BrokerLeadsCard({ code, brokerLeads, landingBaseUrl }: Props) {
           <p className="mb-2 font-medium text-broker-navy">Cómo funciona</p>
           <ul className="list-inside list-disc space-y-1">
             <li>
-              Compartí tu link con prospects. Cada inversionista que entre por
-              acá queda atribuido a tu corretaje en el sistema.
+              Comparte tu link con prospects. Cada inversionista que entre por
+              ahí queda atribuido a tu corretaje en el sistema.
             </li>
             <li>
               Si tu prospect escritura una propiedad, MaxRent te paga la
@@ -138,7 +138,7 @@ export function BrokerLeadsCard({ code, brokerLeads, landingBaseUrl }: Props) {
         </div>
         {stats.pendingPayout > 0 && (
           <p className="mt-4 rounded-lg bg-orange/10 p-3 text-sm text-orange">
-            Tenés <strong>{stats.pendingPayout}</strong> escrituras con pago
+            Tienes <strong>{stats.pendingPayout}</strong> escrituras con pago
             pendiente. Staff procesa la transferencia y registra el detalle.
           </p>
         )}
@@ -151,7 +151,7 @@ export function BrokerLeadsCard({ code, brokerLeads, landingBaseUrl }: Props) {
         </h3>
         {brokerLeads.length === 0 ? (
           <p className="rounded-lg border border-dashed border-gray-200 p-6 text-center text-sm text-broker-muted">
-            Todavía no traes prospects vía tu link. Compartilo arriba para
+            Todavía no tienes prospects vía tu link. Compártelo arriba para
             empezar a poblar el embudo.
           </p>
         ) : (

@@ -233,7 +233,7 @@ export async function claimBrokerInvestorInviteForInvestor(params: {
     throw new Error("Solo cuentas con perfil inversionista pueden vincularse a un broker.");
   }
   if (investor.id === invite.brokerUserId) {
-    throw new Error("No podés usar tu propio enlace de invitación.");
+    throw new Error("No puedes usar tu propio enlace de invitación.");
   }
 
   if (invite.status === "COMPLETED" && invite.registeredUserId === investor.id) {
@@ -244,7 +244,7 @@ export async function claimBrokerInvestorInviteForInvestor(params: {
   }
 
   if (investor.sponsorBrokerUserId && investor.sponsorBrokerUserId !== invite.brokerUserId) {
-    throw new Error("Ya tenés un broker asociado. Contactá a soporte si necesitás cambiarlo.");
+    throw new Error("Ya tienes un broker asociado. Contactá a soporte si necesitás cambiarlo.");
   }
 
   if (investor.sponsorBrokerUserId === invite.brokerUserId) {

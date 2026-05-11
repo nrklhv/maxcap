@@ -16,6 +16,7 @@ import {
   ArrowRight,
   Check,
   ClipboardCheck,
+  Clock,
   FileSearch,
   Loader2,
   Sparkles,
@@ -119,7 +120,8 @@ function nextToneClasses(tone: InvestorJourneyNext["tone"]): {
 function NextToneIcon({ tone }: { tone: InvestorJourneyNext["tone"] }) {
   switch (tone) {
     case "wait":
-      return <Loader2 className="h-4 w-4 animate-spin" aria-hidden />;
+      // Reloj estático en lugar de spinner girando — comunica espera sin distraer.
+      return <Clock className="h-4 w-4" aria-hidden />;
     case "warn":
       return <TriangleAlert className="h-4 w-4" aria-hidden />;
     case "success":

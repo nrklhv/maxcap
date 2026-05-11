@@ -38,7 +38,7 @@ export function BrokerPendingSessionHint() {
     <div className="mt-6 space-y-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
       <p>
         Cuando MaxRent apruebe tu cuenta, a veces hace falta <strong>refrescar la sesión</strong> para que el
-        menú muestre Oportunidades e Inversionistas. Podés usar el botón o cerrar sesión y volver a entrar.
+        menú muestre Oportunidades e Inversionistas. Puedes usar el botón o cerrar sesión y volver a entrar.
       </p>
       <button
         type="button"

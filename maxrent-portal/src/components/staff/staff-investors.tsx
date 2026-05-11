@@ -140,7 +140,7 @@ export function StaffInvestors() {
       } catch {
         setError(
           !res.ok && res.status >= 500
-            ? "El servidor respondió sin JSON válido. Revisá la consola del servidor o ejecutá migraciones Prisma."
+            ? "El servidor respondió sin JSON válido. Revisa la consola del servidor o ejecuta migraciones Prisma."
             : "Respuesta inválida del servidor."
         );
         return;
@@ -330,10 +330,10 @@ export function StaffInvestors() {
           La columna <strong>Evaluación Floid</strong> muestra el estado devuelto por el proveedor
           (por ejemplo <strong>COMPLETED</strong> cuando ya hay resultado crediticio). La columna{" "}
           <strong>Habilitación staff para reservar</strong> es independiente: indica si el equipo ya
-          autorizó al inversionista a usar «Reservar» en oportunidades. Podés{" "}
+          autorizó al inversionista a usar «Reservar» en oportunidades. Puedes{" "}
           <strong>Habilitar reservas</strong> cuando Floid está completo y aún falta ese paso, o{" "}
           <strong>Revocar habilitación</strong> para volver atrás (no cancela reservas ya hechas).
-          Hacé clic en una fila o en <strong>Ver ficha</strong> para ver el detalle completo.
+          Haz clic en una fila o en <strong>Ver ficha</strong> para ver el detalle completo.
         </p>
       </div>
       {error ? (

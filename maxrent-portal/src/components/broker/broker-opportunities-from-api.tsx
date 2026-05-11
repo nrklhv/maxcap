@@ -78,7 +78,7 @@ export function BrokerOpportunitiesFromApi() {
           Disponibles
         </h2>
         <p className="mt-1 text-xs leading-relaxed text-broker-muted">
-          Publicadas por staff y en estado disponible. Podés abrir la ficha para ver el detalle; las reservas las
+          Publicadas por staff y en estado disponible. Puedes abrir la ficha para ver el detalle; las reservas las
           realizan tus inversionistas desde el portal inversionista.
         </p>
       </div>

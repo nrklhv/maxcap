@@ -27,7 +27,7 @@ export async function setSponsorBrokerForInvestorByStaff(params: {
     throw new Error("Solo se asigna broker a cuentas con perfil inversionista (canInvest).");
   }
   if (sponsorBrokerUserId === investorUserId) {
-    throw new Error("No podés asignar al usuario como su propio broker.");
+    throw new Error("No puedes asignar al usuario como su propio broker.");
   }
 
   if (sponsorBrokerUserId) {

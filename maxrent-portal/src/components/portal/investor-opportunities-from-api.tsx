@@ -151,7 +151,7 @@ export function InvestorOpportunitiesFromApi() {
             brokerListMode="myReserved"
             rows={myReservedRows}
             loading={false}
-            emptyLabel="No tenés reservas activas en este momento."
+            emptyLabel="No tienes reservas activas en este momento."
           />
         </div>
 
@@ -160,7 +160,7 @@ export function InvestorOpportunitiesFromApi() {
             <h2 className="text-lg font-semibold tracking-tight text-gray-900">Disponibles</h2>
             <p className="mt-1 text-xs leading-relaxed text-gray-600">
               Publicadas por el equipo y disponibles para iniciar una reserva desde la grilla (si
-              tenés evaluación habilitada).
+              tienes evaluación habilitada).
             </p>
           </div>
           <PropertyInventoryTable

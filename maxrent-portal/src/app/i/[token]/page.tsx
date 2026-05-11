@@ -46,7 +46,7 @@ export default function BrokerInviteLandingPage() {
         }
         router.replace(`/login?callbackUrl=${encodeURIComponent("/dashboard")}`);
       } catch {
-        if (!cancelled) setMessage("No pudimos validar el enlace. Reintentá en unos segundos.");
+        if (!cancelled) setMessage("No pudimos validar el enlace. Reintenta en unos segundos.");
       }
     })();
 

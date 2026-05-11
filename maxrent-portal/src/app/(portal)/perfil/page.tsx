@@ -275,7 +275,7 @@ export default function PerfilPage() {
         <h1 className="font-serif text-2xl tracking-tight text-dark">Mi perfil</h1>
         <p className="mt-1 text-gray-600">
           {onboardingCompleted
-            ? "Revisá o editá tus datos personales y laborales."
+            ? "Revisa o editá tus datos personales y laborales."
             : "Completá tus datos personales y laborales: ambos bloques son obligatorios para finalizar el perfil y seguir con la evaluación crediticia."}
         </p>
       </div>
@@ -607,7 +607,7 @@ function LaborReadSection({
   const body = !has ? (
     <div className="rounded-xl border border-gray-200 bg-white">
       <div className="p-5 text-sm text-gray-500">
-        Aún no cargaste datos laborales. Podés completarlos con «Editar datos» abajo.
+        Aún no cargaste datos laborales. Puedes completarlos con «Editar datos» abajo.
       </div>
       {editFooter}
     </div>

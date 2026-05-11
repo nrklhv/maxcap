@@ -351,7 +351,7 @@ export function StaffProperties() {
         <p className="text-xs text-gray-600 leading-relaxed">
           El listado usa <span className="font-mono">GET</span> a{" "}
           <span className="font-mono">HOUM_API_BASE_URL</span> +{" "}
-          <span className="font-mono">HOUM_PROPERTIES_LIST_PATH</span>. Podés anexar parámetros de
+          <span className="font-mono">HOUM_PROPERTIES_LIST_PATH</span>. Puedes anexar parámetros de
           consulta según el contrato de la API Houm. El servidor aplica un tope{" "}
           <span className="font-mono">HOUM_SYNC_MAX_ROWS</span> (por defecto 500) y avisa si se
           truncó. Modo por IDs requiere <span className="font-mono">HOUM_PROPERTY_BY_ID_PATH</span>{" "}

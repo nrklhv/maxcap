@@ -23,7 +23,7 @@ export default async function BrokerInvitarPage() {
           Invitar inversionista
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-broker-muted">
-          Compartí un enlace para que una persona cree su cuenta o entre con Google: al completar el acceso
+          Comparte un enlace para que una persona cree su cuenta o entre con Google: al completar el acceso
           quedará vinculada a tu corretaje como inversionista patrocinado.
         </p>
       </div>

@@ -48,7 +48,7 @@ export function BrokerProfileForm() {
       } catch {
         setError(
           !res.ok && res.status >= 500
-            ? "El servidor respondió con error y sin JSON válido. Revisá la consola del servidor."
+            ? "El servidor respondió con error y sin JSON válido. Revisa la consola del servidor."
             : "Respuesta inválida del servidor."
         );
         return;
@@ -158,12 +158,12 @@ export function BrokerProfileForm() {
       ) : null}
 
       <p className="text-sm text-broker-muted">
-        Datos solo del canal broker. Completá o actualizá cuando quieras; podés guardar y volver más tarde.
+        Datos solo del canal broker. Completá o actualizá cuando quieras; puedes guardar y volver más tarde.
       </p>
 
       {complete ? (
         <p className="text-sm font-medium text-green-800">
-          Perfil listo. Si aún no enviaste la solicitud, podés ir a <strong>Enviar solicitud</strong> en el menú
+          Perfil listo. Si aún no enviaste la solicitud, puedes ir a <strong>Enviar solicitud</strong> en el menú
           lateral.
         </p>
       ) : null}
@@ -236,7 +236,7 @@ export function BrokerProfileForm() {
             className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 disabled:bg-gray-50"
           />
           <span className="mt-1 block text-xs text-gray-500">
-            Misma regla que el sitio web: podés omitir https://.
+            Misma regla que el sitio web: puedes omitir https://.
           </span>
         </label>
         <label className="block">

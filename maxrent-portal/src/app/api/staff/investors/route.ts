@@ -48,7 +48,7 @@ export async function GET() {
       {
         error:
           process.env.NODE_ENV === "development"
-            ? "No se pudo listar inversionistas. Si acabás de actualizar el código, ejecutá `node scripts/prisma-with-merged-env.cjs migrate deploy` (columnas sponsorBroker)."
+            ? "No se pudo listar inversionistas. Si acabás de actualizar el código, ejecuta `node scripts/prisma-with-merged-env.cjs migrate deploy` (columnas sponsorBroker)."
             : "No se pudo listar inversionistas.",
         ...(process.env.NODE_ENV === "development" ? { debug: { prismaCode, errMsg: errMsg.slice(0, 300) } } : {}),
       },

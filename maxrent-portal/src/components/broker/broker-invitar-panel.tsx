@@ -79,7 +79,7 @@ export function BrokerInvitarPanel() {
         return;
       }
       if (data.invite?.inviteUrl) {
-        setCopyFeedback("Enlace generado. Podés copiarlo desde la tabla.");
+        setCopyFeedback("Enlace generado. Puedes copiarlo desde la tabla.");
         setInviteeEmail("");
       }
       await load();
@@ -119,7 +119,7 @@ export function BrokerInvitarPanel() {
         <h2 className="text-lg font-semibold text-broker-navy font-serif">Nueva invitación</h2>
         <p className="text-sm text-broker-muted">
           Generá un enlace único para que un inversionista se registre o inicie sesión y quede asociado a tu
-          corretaje. Podés anotar un email de referencia (opcional) para identificar la invitación en la lista.
+          corretaje. Puedes anotar un email de referencia (opcional) para identificar la invitación en la lista.
         </p>
         <div>
           <label htmlFor="invitee-email" className="block text-sm font-medium text-gray-700 mb-1">

@@ -50,7 +50,7 @@ export async function GET() {
       {
         error:
           process.env.NODE_ENV === "development"
-            ? "No se pudo cargar el perfil comercial. Revisá migraciones (`node scripts/prisma-with-merged-env.cjs migrate deploy`) y el log del servidor."
+            ? "No se pudo cargar el perfil comercial. Revisa migraciones (`node scripts/prisma-with-merged-env.cjs migrate deploy`) y el log del servidor."
             : "No se pudo cargar el perfil comercial.",
         ...(process.env.NODE_ENV === "development" ? { debug: { prismaCode, errMsg: errMsg.slice(0, 300) } } : {}),
       },

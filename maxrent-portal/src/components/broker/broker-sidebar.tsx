@@ -40,7 +40,7 @@ type StatusStrip = {
 function brokerStatusStrip(status: BrokerSidebarProps["brokerAccessStatus"]): StatusStrip {
   if (status === "APPROVED") {
     return {
-      label: "Cuenta aprobada — tenés acceso a oportunidades e inversionistas.",
+      label: "Cuenta aprobada — tienes acceso a oportunidades e inversionistas.",
       className: "bg-emerald-50 text-emerald-900 border-emerald-200",
     };
   }
@@ -53,7 +53,7 @@ function brokerStatusStrip(status: BrokerSidebarProps["brokerAccessStatus"]): St
   }
   if (status === "REJECTED") {
     return {
-      label: "La última solicitud no fue autorizada. Podés actualizar el perfil y volver a intentar.",
+      label: "La última solicitud no fue autorizada. Puedes actualizar el perfil y volver a intentar.",
       className: "bg-red-50 text-red-900 border-red-200",
       link: { href: "/broker/rechazado", text: "Detalle y próximos pasos" },
     };

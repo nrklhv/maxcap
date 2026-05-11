@@ -36,7 +36,7 @@ export function BrokerPerfilTwoColumn({
           Mi perfil broker
         </h1>
         <p className="mt-1 text-sm text-broker-muted">
-          A la izquierda: datos personales compartidos con el perfil inversionista (una sola ficha; podés editarlos
+          A la izquierda: datos personales compartidos con el perfil inversionista (una sola ficha; puedes editarlos
           desde acá o desde el portal inversionista). A la derecha: datos comerciales exclusivos del canal broker.
         </p>
       </div>

@@ -39,8 +39,8 @@ export default async function BrokerSolicitudPage() {
         </p>
         {brokerAccessStatus === "REJECTED" ? (
           <p className="mt-3 text-sm leading-relaxed text-amber-900 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-            Tu solicitud anterior no fue aprobada. Podés actualizar tu{" "}
-            <strong>Perfil comercial</strong> si hace falta y volver a enviar desde acá.
+            Tu solicitud anterior no fue aprobada. Puedes actualizar tu{" "}
+            <strong>Perfil comercial</strong> si hace falta y volver a enviar desde aquí.
           </p>
         ) : null}
       </div>

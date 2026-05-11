@@ -25,7 +25,7 @@ function fmtCLP(n: number | null | undefined): string {
 
 interface Props {
   rawResponse: unknown;
-  /** Si lo pasás (fallback o porque ya lo tenés persistido) y el parser falla, se muestra. */
+  /** Si lo pasás (fallback o porque ya lo tienes persistido) y el parser falla, se muestra. */
   fallbackSummary?: string | null;
   /** Si lo pasás explícito, ignora el del rawResponse (útil para render con la URL ya persistida). */
   downloadPdfUrl?: string | null;

@@ -62,7 +62,7 @@ export async function POST(req: Request) {
   const gate = await getInvestorReserveGatePayload(session.user.id);
   if (!gate.canReserve || !gate.evaluationId) {
     return NextResponse.json(
-      { error: "No tenés habilitado reservar. Completá la evaluación y esperá la aprobación del equipo." },
+      { error: "No tienes habilitado reservar. Completá la evaluación y esperá la aprobación del equipo." },
       { status: 403 }
     );
   }

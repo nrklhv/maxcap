@@ -166,7 +166,7 @@ export function BrokerPersonalPanel({
           const issues = data.errors;
           if (Array.isArray(issues)) {
             setFieldErrors(mapIssuesToFieldErrors(issues));
-            setError(typeof data.error === "string" ? data.error : "Revisá los campos marcados");
+            setError(typeof data.error === "string" ? data.error : "Revisa los campos marcados");
           } else {
             setError(typeof data.error === "string" ? data.error : "No se pudo guardar");
           }
@@ -196,7 +196,7 @@ export function BrokerPersonalPanel({
     return (
       <>
         <p className="text-xs text-gray-500">
-          Los mismos datos que en el perfil inversionista. Podés crearlos o actualizarlos acá; se guardan en una sola
+          Los mismos datos que en el perfil inversionista. Puedes crearlos o actualizarlos acá; se guardan en una sola
           ficha para toda tu cuenta.
         </p>
         {canInvest ? (
@@ -239,7 +239,7 @@ export function BrokerPersonalPanel({
   return (
     <>
       <p className="text-xs text-gray-500">
-        Los mismos datos que en el perfil inversionista. Podés crearlos o actualizarlos acá; se guardan en una sola
+        Los mismos datos que en el perfil inversionista. Puedes crearlos o actualizarlos acá; se guardan en una sola
         ficha para toda tu cuenta.
       </p>
       {canInvest ? (
