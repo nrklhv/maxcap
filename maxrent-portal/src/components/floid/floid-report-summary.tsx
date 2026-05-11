@@ -81,9 +81,48 @@ export function FloidReportSummary({ rawResponse, fallbackSummary }: Props) {
         ? "grid-cols-1 md:grid-cols-2"
         : "grid-cols-1 md:grid-cols-3";
 
+  // Banner de errores parciales (sección que Floid no pudo completar).
+  const errorBanners: Array<{ key: string; label: string; message: string }> = [];
+  if (report.errors.sp) {
+    errorBanners.push({
+      key: "sp",
+      label: "Renta (Sup. Pensiones)",
+      message: report.errors.sp.message,
+    });
+  }
+  if (report.errors.sii) {
+    errorBanners.push({
+      key: "sii",
+      label: "Tributario (SII)",
+      message: report.errors.sii.message,
+    });
+  }
+  if (report.errors.cmf) {
+    errorBanners.push({
+      key: "cmf",
+      label: "Deuda (CMF)",
+      message: report.errors.cmf.message,
+    });
+  }
+
   return (
     <div className="space-y-4">
       <p className="text-sm text-gray-700 leading-relaxed">{report.summary}</p>
+
+      {errorBanners.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-1">
+          <p className="text-xs font-semibold text-amber-900 uppercase tracking-wide">
+            Reporte parcial — algunas secciones no se pudieron obtener
+          </p>
+          <ul className="text-sm text-amber-900 space-y-0.5 list-disc list-inside marker:text-amber-600">
+            {errorBanners.map((e) => (
+              <li key={e.key}>
+                <span className="font-medium">{e.label}:</span> {e.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {sections.length > 0 && (
         <div className={`grid ${gridCols} gap-3`}>{sections}</div>
@@ -158,6 +197,14 @@ function SectionTributario({ sii }: { sii: NonNullable<FloidWidgetReport["sii"]>
               : "Ninguno"}
           </dd>
         </div>
+        {sii.participacionSociedades.length > 0 && (
+          <div className="flex justify-between gap-2">
+            <dt>Sociedades:</dt>
+            <dd className="font-medium text-gray-800 text-right">
+              {sii.participacionSociedades.length}
+            </dd>
+          </div>
+        )}
         <div className="flex justify-between gap-2">
           <dt>Observaciones:</dt>
           <dd className="font-medium text-gray-800 text-right line-clamp-1">

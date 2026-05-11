@@ -32,6 +32,7 @@ import {
 import { FLOID_CONSENT_VERSION } from "@/lib/floid/constants";
 import { FloidReportSummary } from "@/components/floid/floid-report-summary";
 import { FloidReportDetail } from "@/components/floid/floid-report-detail";
+import { parseFloidWidgetPayload } from "@/lib/floid/parse-floid-response";
 
 type Evaluation = {
   id: string;
@@ -193,6 +194,35 @@ export default function EvaluacionPage() {
       await loadEvaluation();
     } catch {
       setError("Error de conexión");
+    } finally {
+      setRequesting(false);
+    }
+  };
+
+  const cancelAndRetry = async () => {
+    if (!evaluation) return;
+    if (
+      !window.confirm(
+        "Esto descarta el reporte actual para poder volver a iniciar el flujo con Floid. ¿Continuar?"
+      )
+    )
+      return;
+    setRequesting(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/floid/evaluations/${evaluation.id}/cancel`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "No se pudo cancelar la evaluación.");
+        return;
+      }
+      setEvaluation(null);
+      setPreviewChecked(false);
+      setConsentChecked(false);
+    } catch {
+      setError("Error de conexión.");
     } finally {
       setRequesting(false);
     }
@@ -447,13 +477,26 @@ export default function EvaluacionPage() {
   }
 
   // COMPLETED — mostrar resumen + acciones
+  const completedReport = parseFloidWidgetPayload(evaluation.rawResponse);
+  const isPartial = Boolean(completedReport?.partial);
   return (
     <div className="max-w-3xl space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="font-serif text-2xl tracking-tight text-dark">Tu reporte financiero</h1>
-        <div className="flex items-center gap-1.5 text-sm text-green-700">
-          <CheckCircle className="w-4 h-4" />
-          Recibido
+        <div
+          className={`flex items-center gap-1.5 text-sm ${isPartial ? "text-amber-700" : "text-green-700"}`}
+        >
+          {isPartial ? (
+            <>
+              <AlertCircle className="w-4 h-4" />
+              Parcial
+            </>
+          ) : (
+            <>
+              <CheckCircle className="w-4 h-4" />
+              Recibido
+            </>
+          )}
         </div>
       </div>
 
@@ -482,7 +525,33 @@ export default function EvaluacionPage() {
             Descargar PDF (Floid)
           </a>
         )}
+        {isPartial && !evaluation.staffReservationApprovedAt && (
+          <button
+            type="button"
+            onClick={cancelAndRetry}
+            disabled={requesting}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-amber-900 bg-amber-100 border border-amber-300 rounded-lg hover:bg-amber-200 transition-colors disabled:opacity-50"
+          >
+            {requesting ? (
+              <>
+                <RefreshCw className="h-4 w-4 animate-spin" aria-hidden />
+                Reiniciando…
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4" aria-hidden />
+                Reintentar evaluación
+              </>
+            )}
+          </button>
+        )}
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
+          {error}
+        </div>
+      )}
 
       <div className="flex items-center gap-2 text-xs text-gray-400">
         <Clock className="w-3.5 h-3.5" />

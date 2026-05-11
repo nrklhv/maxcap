@@ -254,6 +254,144 @@ describe("parseFloidWidgetPayload", () => {
     expect(r?.cmf?.totalDirectDebt).toBe(1234567);
   });
 
+  it("parses NEW SII shape with actividades_economicas (array) + participacion_sociedades + F22.by_year + cuotas_por_pagar", () => {
+    const payload = {
+      code: 206,
+      consumerId: "15782800-2",
+      custom: "eval-new-shape",
+      SII: {
+        carpeta_tributaria: {
+          code: "200",
+          data: {
+            rut_emisor: "15782800-2",
+            nombre_emisor: "DEMO PERSONA",
+            datos_contribuyente: {
+              fecha_inicio_actividades: "20-12-2007",
+              actividades_economicas: [
+                "SERVICIOS DE INGENIERIA Y FONDOS DE INVERSION",
+              ],
+              actividades_economicas_detalle: [
+                { codigo: "643000", descripcion: "FONDOS Y SOCIEDADES" },
+                { codigo: "711003", descripcion: "INGENIERIA" },
+              ],
+              categoria_tributaria: "Primera Categoría",
+              domicilio: "AVDA. DEMO 123, SANTIAGO",
+              observaciones_tributarias: "No tiene observaciones.",
+              representantes_legales: [],
+              participacion_sociedades: [
+                {
+                  rut: "76116108-3",
+                  razon_social: "COIHUE LTDA",
+                  fecha_incorporacion: "07-10-2010",
+                },
+                {
+                  rut: "77110413-4",
+                  razon_social: "INVERSIONES CALIFORNIA SPA",
+                  fecha_incorporacion: "31-12-2019",
+                },
+              ],
+              ultimos_documentos_timbrados: ["Boletas Honorarios (23-06-2017)"],
+            },
+            bienes_raices: [
+              {
+                rol: "0363000017",
+                comuna: "LO BARNECHEA",
+                destino: "HABITACIONAL",
+                condicion: "AFECTO",
+                direccion: "DIRECCION DEMO",
+                avaluo_fiscal: 351234255,
+                cuotas_vencidas_por_pagar: "NO",
+                cuotas_vigentes_por_pagar: "NO",
+              },
+            ],
+            F22: {
+              by_year: [
+                {
+                  year: "2025",
+                  data: {
+                    "170": {
+                      name: "Renta Líquida Imponible",
+                      value: "181738945",
+                      number: 170,
+                    },
+                    "1098": { name: "Base", value: "181693829", number: 1098 },
+                    "304": { name: "Diferencia", value: "-15.239", number: 304 },
+                  },
+                },
+              ],
+            },
+            boletas_honorarios: [],
+          },
+        },
+      },
+    };
+
+    const r = parseFloidWidgetPayload(payload);
+    expect(r).not.toBeNull();
+    if (!r) throw new Error("expected report");
+
+    // Actividades plural
+    expect(r.sii?.actividadesEconomicas).toHaveLength(1);
+    expect(r.sii?.actividadEconomica).toBe("SERVICIOS DE INGENIERIA Y FONDOS DE INVERSION");
+    expect(r.sii?.actividadEconomicaDetalle).toHaveLength(2);
+    expect(r.sii?.actividadEconomicaDetalle[0]?.codigo).toBe("643000");
+
+    // Sociedades
+    expect(r.sii?.participacionSociedades).toHaveLength(2);
+    expect(r.sii?.participacionSociedades[0]?.razonSocial).toBe("COIHUE LTDA");
+
+    // Bienes raíces: cuotas SI/NO como string deben mapear a boolean
+    expect(r.sii?.bienesRaices[0]?.cuotasVencidas).toBe(false);
+    expect(r.sii?.bienesRaices[0]?.cuotasVigentes).toBe(false);
+
+    // F22 by_year shape (NUEVO) debe parsear correctamente
+    expect(r.sii?.f22Years).toEqual(["2025"]);
+    expect(r.sii?.f22ByYear["2025"]?.codigos["170"]).toBe("181738945");
+    expect(r.sii?.latestF22?.rentaLiquidaImponible).toBe(181738945);
+    expect(r.sii?.latestF22?.baseImponible).toBe(181693829);
+
+    // Payload top-level 206 → partial=true
+    expect(r.partial).toBe(true);
+  });
+
+  it("captura errores parciales por sección con code != 200", () => {
+    const payload = {
+      code: 206,
+      consumerId: "12345678-9",
+      custom: "eval-error",
+      SP: {
+        renta_imponible: {
+          code: 400,
+          error_code: "SERVICE_UNAVAILABLE",
+          error_message: "The service is unavailable",
+          display_message: "El servicio no está disponible",
+        },
+      },
+      SII: {
+        carpeta_tributaria: {
+          code: "200",
+          data: {
+            rut_emisor: "12345678-9",
+            nombre_emisor: "DEMO",
+            datos_contribuyente: {},
+            bienes_raices: [],
+            boletas_honorarios: [],
+            F22: {},
+          },
+        },
+      },
+    };
+
+    const r = parseFloidWidgetPayload(payload);
+    expect(r).not.toBeNull();
+    expect(r?.sp).toBeNull(); // sección con error retorna null
+    expect(r?.errors.sp?.code).toBe("400");
+    expect(r?.errors.sp?.errorCode).toBe("SERVICE_UNAVAILABLE");
+    expect(r?.errors.sp?.message).toBe("El servicio no está disponible");
+    expect(r?.sii).not.toBeNull(); // sección OK se parsea normal
+    expect(r?.partial).toBe(true);
+  });
+
   it("morosidad >0 se refleja en summary", () => {
     const payload = {
       consumerId: "12345678-9",

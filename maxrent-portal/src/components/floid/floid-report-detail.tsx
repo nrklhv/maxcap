@@ -43,6 +43,14 @@ export function FloidReportDetail({
 
   const pdfUrl = downloadPdfUrl ?? report?.downloadPdfUrl ?? null;
 
+  const errorEntries = report
+    ? [
+        report.errors.sp && { key: "sp", label: "Renta (Sup. Pensiones)", err: report.errors.sp },
+        report.errors.sii && { key: "sii", label: "Tributario (SII)", err: report.errors.sii },
+        report.errors.cmf && { key: "cmf", label: "Deuda (CMF)", err: report.errors.cmf },
+      ].filter((x): x is { key: string; label: string; err: NonNullable<typeof x>["err"] } => Boolean(x))
+    : [];
+
   return (
     <div className="space-y-6">
       {/* Header con summary + PDF */}
@@ -62,6 +70,26 @@ export function FloidReportDetail({
           </a>
         )}
       </div>
+
+      {errorEntries.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-1.5">
+          <p className="text-xs font-semibold text-amber-900 uppercase tracking-wide">
+            Reporte parcial — secciones no obtenidas
+          </p>
+          <ul className="text-sm text-amber-900 space-y-1 list-disc list-inside marker:text-amber-600">
+            {errorEntries.map((e) => (
+              <li key={e.key}>
+                <span className="font-medium">{e.label}:</span> {e.err.message}
+                {e.err.errorCode && (
+                  <span className="text-xs text-amber-700 ml-1">
+                    ({e.err.errorCode})
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {report?.sp && <RentaDetail sp={report.sp} />}
       {report?.sii && <TributarioDetail sii={report.sii} />}
@@ -138,9 +166,56 @@ function TributarioDetail({ sii }: { sii: NonNullable<FloidWidgetReport["sii"]> 
         <DLItem label="RUT" value={sii.rutEmisor ?? "—"} />
         <DLItem label="Inicio actividades" value={sii.fechaInicioActividades ?? "—"} />
         <DLItem label="Categoría tributaria" value={sii.categoriaTributaria ?? "—"} />
-        <DLItem label="Actividad económica" value={sii.actividadEconomica ?? "—"} colspan />
         <DLItem label="Domicilio" value={sii.domicilio ?? "—"} colspan />
       </dl>
+
+      {sii.actividadesEconomicas.length > 0 && (
+        <div className="rounded-lg bg-white border border-blue-200 px-3 py-2 text-xs space-y-1">
+          <p className="font-medium text-gray-700">
+            Actividades económicas ({sii.actividadesEconomicas.length})
+          </p>
+          <ul className="text-gray-700 space-y-0.5 list-disc list-inside marker:text-blue-500">
+            {sii.actividadesEconomicas.map((a, i) => (
+              <li key={i}>{a}</li>
+            ))}
+          </ul>
+          {sii.actividadEconomicaDetalle.length > 0 && (
+            <p className="text-gray-500 mt-1">
+              Códigos: {sii.actividadEconomicaDetalle.map((d) => d.codigo).join(", ")}
+            </p>
+          )}
+        </div>
+      )}
+
+      {sii.participacionSociedades.length > 0 && (
+        <div className="space-y-1.5">
+          <h4 className="text-xs font-semibold text-gray-700">
+            Participación en sociedades ({sii.participacionSociedades.length})
+          </h4>
+          <div className="overflow-x-auto rounded-lg border border-blue-100 bg-white">
+            <table className="w-full text-xs">
+              <thead className="bg-blue-50 text-blue-900">
+                <tr>
+                  <th className="px-3 py-1.5 text-left font-medium">RUT</th>
+                  <th className="px-3 py-1.5 text-left font-medium">Razón social</th>
+                  <th className="px-3 py-1.5 text-left font-medium">Incorporación</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sii.participacionSociedades.map((s, i) => (
+                  <tr key={`${s.rut}-${i}`} className="border-t border-blue-50">
+                    <td className="px-3 py-1 text-gray-700 tabular-nums">{s.rut ?? "—"}</td>
+                    <td className="px-3 py-1 text-gray-700">{s.razonSocial ?? "—"}</td>
+                    <td className="px-3 py-1 text-gray-700 tabular-nums">
+                      {s.fechaIncorporacion ?? "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {sii.observacionesTributarias && (
         <div className="rounded-lg bg-white border border-blue-200 px-3 py-2 text-xs text-gray-700">

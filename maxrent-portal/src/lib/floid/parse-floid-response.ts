@@ -49,8 +49,26 @@ export interface FloidWidgetReport {
   sii: SiiCarpetaTributariaSection | null;
   /** Sección CMF deuda — null si no se ejecutó el producto. */
   cmf: CmfDeudaSection | null;
+  /** Errores por sección (Floid devolvió `code != 200` o `error_code`). */
+  errors: ReportErrors;
+  /** true si Floid marcó el payload como Partial Content (`code: 206`) o hay errores por sección. */
+  partial: boolean;
   /** JSON crudo recibido (para auditoría y para mostrar "ver detalle completo"). */
   rawResponse: Record<string, unknown>;
+}
+
+/** Mapa de errores por sección reportados por Floid. */
+export interface ReportErrors {
+  sp?: SectionError;
+  sii?: SectionError;
+  cmf?: SectionError;
+}
+
+export interface SectionError {
+  code: string;
+  errorCode: string | null;
+  /** Mensaje legible para mostrar al usuario, ya en español si lo trae Floid. */
+  message: string;
 }
 
 export interface SpRentaImponibleSection {
@@ -66,13 +84,21 @@ export interface SiiCarpetaTributariaSection {
   nombreEmisor: string | null;
   rutEmisor: string | null;
   fechaInicioActividades: string | null;
+  /** Lista completa de actividades económicas (shape nuevo `actividades_economicas`). */
+  actividadesEconomicas: string[];
+  /** Primera actividad económica (compatibilidad con UI vieja). */
   actividadEconomica: string | null;
+  /** Detalle con código + descripción (shape nuevo `actividades_economicas_detalle` o viejo `actividad_economia_detalle`). */
   actividadEconomicaDetalle: Array<{ codigo: string; descripcion: string }>;
   categoriaTributaria: string | null;
   domicilio: string | null;
   sucursal: string | null;
   observacionesTributarias: string | null;
   ultimosDocumentosTimbrados: string[];
+  /** Sociedades en las que el contribuyente participa (shape nuevo). */
+  participacionSociedades: ParticipacionSociedad[];
+  /** Representantes legales (shape nuevo). Puede ser array de strings o de objetos según el caso. */
+  representantesLegales: string[];
   bienesRaices: BienRaiz[];
   /** Suma de `avaluoFiscal` de todos los bienes raíces. */
   totalAvaluoFiscal: number;
@@ -80,10 +106,16 @@ export interface SiiCarpetaTributariaSection {
   boletasHonorariosCount: number;
   /** Años disponibles del F22, ordenados ascendentemente. */
   f22Years: string[];
-  /** F22 detallado por año (códigos crudos + glosa). */
+  /** F22 detallado por año (códigos crudos). */
   f22ByYear: Record<string, F22YearData>;
   /** Highlights del F22 más reciente — para mostrar en resumen. */
   latestF22: F22Highlights | null;
+}
+
+export interface ParticipacionSociedad {
+  rut: string | null;
+  razonSocial: string | null;
+  fechaIncorporacion: string | null;
 }
 
 export interface F22YearData {
@@ -118,7 +150,9 @@ export interface BienRaiz {
   direccion: string | null;
   destino: string | null;
   avaluoFiscal: number | null;
+  /** true si tiene cuotas vencidas por pagar. Tolerante a "SI"/"NO" o bool. */
   cuotasVencidas: boolean;
+  /** true si tiene cuotas vigentes por pagar. */
   cuotasVigentes: boolean;
   condicion: string | null;
 }
@@ -204,6 +238,9 @@ function parseSpSection(spRoot: unknown): SpRentaImponibleSection | null {
   if (!sp) return null;
   const r = asRecord(sp.renta_imponible);
   if (!r) return null;
+  // Si Floid devolvió error en SP (`code != "200"`), retornamos null para que
+  // el llamador capture el error vía `parseSectionError`.
+  if (r.code !== undefined && String(r.code) !== "200") return null;
   return {
     remuneracion: pickNumber(r.remuneracion),
     mesesCotizados: pickNumber(r.meses_cotizados),
@@ -212,6 +249,42 @@ function parseSpSection(spRoot: unknown): SpRentaImponibleSection | null {
     fuente: pickString(r.fuente),
     fechaConsulta: pickString(r.fecha_consulta),
   };
+}
+
+/**
+ * Extrae el error de una sub-sección si Floid lo reportó.
+ * Devuelve null si la sección no tiene error o no existe.
+ */
+function parseSectionError(
+  sectionRoot: unknown,
+  subKey: string
+): SectionError | null {
+  const root = asRecord(sectionRoot);
+  if (!root) return null;
+  const sub = asRecord(root[subKey]);
+  if (!sub) return null;
+  const code = sub.code;
+  if (code === undefined || String(code) === "200") return null;
+  return {
+    code: String(code),
+    errorCode: pickString(sub.error_code),
+    message:
+      pickString(sub.display_message, sub.error_message) ??
+      "Error sin descripción",
+  };
+}
+
+/**
+ * Acepta booleano o string ("SI"/"NO", "TRUE"/"FALSE") — el SII a veces devuelve
+ * cualquiera de los dos según el shape de la carpeta tributaria.
+ */
+function parseFlexBool(v: unknown): boolean {
+  if (typeof v === "boolean") return v;
+  if (typeof v === "string") {
+    const u = v.trim().toUpperCase();
+    return u === "SI" || u === "TRUE" || u === "YES" || u === "1";
+  }
+  return false;
 }
 
 function parseBienesRaices(arr: unknown): { items: BienRaiz[]; totalAvaluo: number } {
@@ -228,12 +301,36 @@ function parseBienesRaices(arr: unknown): { items: BienRaiz[]; totalAvaluo: numb
       direccion: pickString(r.direccion),
       destino: pickString(r.destino),
       avaluoFiscal: avaluo,
-      cuotasVencidas: r.cuotas_vencidas === true,
-      cuotasVigentes: r.cuotas_vigentes === true,
+      // Shape nuevo: `cuotas_vencidas_por_pagar: "NO"`. Shape viejo: `cuotas_vencidas: false`.
+      cuotasVencidas: parseFlexBool(r.cuotas_vencidas_por_pagar ?? r.cuotas_vencidas),
+      cuotasVigentes: parseFlexBool(r.cuotas_vigentes_por_pagar ?? r.cuotas_vigentes),
       condicion: pickString(r.condicion),
     });
   }
   return { items, totalAvaluo: total };
+}
+
+function parseParticipacionSociedades(arr: unknown): ParticipacionSociedad[] {
+  const out: ParticipacionSociedad[] = [];
+  for (const raw of asArray(arr)) {
+    const r = asRecord(raw);
+    if (!r) continue;
+    const rut = pickString(r.rut);
+    const razonSocial = pickString(r.razon_social, r.razonSocial);
+    const fechaIncorporacion = pickString(r.fecha_incorporacion, r.fechaIncorporacion);
+    if (!rut && !razonSocial) continue;
+    out.push({ rut, razonSocial, fechaIncorporacion });
+  }
+  return out;
+}
+
+function parseStringArray(arr: unknown): string[] {
+  const out: string[] = [];
+  for (const v of asArray(arr)) {
+    const s = pickString(v);
+    if (s) out.push(s);
+  }
+  return out;
 }
 
 function parseSiiSection(siiRoot: unknown): SiiCarpetaTributariaSection | null {
@@ -241,11 +338,27 @@ function parseSiiSection(siiRoot: unknown): SiiCarpetaTributariaSection | null {
   if (!sii) return null;
   const ct = asRecord(sii.carpeta_tributaria);
   if (!ct) return null;
+  // Si Floid devolvió error en SII (`code != "200"`), el llamador toma este null
+  // y captura el error vía `parseSectionError`.
+  if (ct.code !== undefined && String(ct.code) !== "200") return null;
   const data = asRecord(ct.data);
   if (!data) return null;
 
   const dc = asRecord(data.datos_contribuyente) ?? {};
-  const detalleRaw = asArray(dc.actividad_economia_detalle);
+
+  // Actividades económicas — shape NUEVO: array `actividades_economicas`.
+  //                         shape VIEJO: string singular `actividad_economia`.
+  const actividadesEconomicas = parseStringArray(dc.actividades_economicas);
+  if (actividadesEconomicas.length === 0) {
+    const single = pickString(dc.actividad_economia);
+    if (single) actividadesEconomicas.push(single);
+  }
+
+  // Detalle con códigos. NUEVO: `actividades_economicas_detalle` (plural).
+  //                     VIEJO: `actividad_economia_detalle` (singular).
+  const detalleRaw = asArray(
+    dc.actividades_economicas_detalle ?? dc.actividad_economia_detalle
+  );
   const detalle: Array<{ codigo: string; descripcion: string }> = [];
   for (const item of detalleRaw) {
     const r = asRecord(item);
@@ -255,12 +368,6 @@ function parseSiiSection(siiRoot: unknown): SiiCarpetaTributariaSection | null {
     if (codigo && descripcion) detalle.push({ codigo, descripcion });
   }
 
-  const ultimosDocs: string[] = [];
-  for (const v of asArray(dc.ultimos_documentos_timbrados)) {
-    const s = pickString(v);
-    if (s) ultimosDocs.push(s);
-  }
-
   const bienesRaices = parseBienesRaices(data.bienes_raices);
   const { f22ByYear, f22Years, latestF22 } = parseF22(data.F22);
 
@@ -268,13 +375,16 @@ function parseSiiSection(siiRoot: unknown): SiiCarpetaTributariaSection | null {
     nombreEmisor: pickString(data.nombre_emisor),
     rutEmisor: pickString(data.rut_emisor),
     fechaInicioActividades: pickString(dc.fecha_inicio_actividades),
-    actividadEconomica: pickString(dc.actividad_economia),
+    actividadesEconomicas,
+    actividadEconomica: actividadesEconomicas[0] ?? null,
     actividadEconomicaDetalle: detalle,
     categoriaTributaria: pickString(dc.categoria_tributaria),
     domicilio: pickString(dc.domicilio),
     sucursal: pickString(dc.sucursal),
     observacionesTributarias: pickString(dc.observaciones_tributarias),
-    ultimosDocumentosTimbrados: ultimosDocs,
+    ultimosDocumentosTimbrados: parseStringArray(dc.ultimos_documentos_timbrados),
+    participacionSociedades: parseParticipacionSociedades(dc.participacion_sociedades),
+    representantesLegales: parseStringArray(dc.representantes_legales),
     bienesRaices: bienesRaices.items,
     totalAvaluoFiscal: bienesRaices.totalAvaluo,
     cantidadBienesRaices: bienesRaices.items.length,
@@ -311,6 +421,15 @@ export function f22CodeLabel(codigo: string): string | null {
   return F22_KNOWN_CODES[codigo] ?? null;
 }
 
+/**
+ * F22 viene en dos shapes según el contrato/widget de Floid:
+ *
+ * Shape A (NUEVO, observado 2026-05-11 en widget `250c7fa8...`):
+ *   F22: { by_year: [ { year: "2024", data: { "170": { name, value, number } } } ] }
+ *
+ * Shape B (VIEJO, observado en widget `e5dc95a4...`):
+ *   F22: { "2024": { codigos: { "170": "value" }, glosa: { "170": "value" } } }
+ */
 function parseF22(raw: unknown): {
   f22ByYear: Record<string, F22YearData>;
   f22Years: string[];
@@ -318,17 +437,43 @@ function parseF22(raw: unknown): {
 } {
   const root = asRecord(raw) ?? {};
   const out: Record<string, F22YearData> = {};
-  for (const [year, payload] of Object.entries(root)) {
-    const yp = asRecord(payload);
-    if (!yp) continue;
-    const codigos = asRecord(yp.codigos) ?? {};
-    const glosa = asRecord(yp.glosa) ?? {};
-    out[year] = {
-      year,
-      codigos: stringifyRecord(codigos),
-      glosa: stringifyRecord(glosa),
-    };
+
+  // Shape A: F22.by_year es array
+  if (Array.isArray(root.by_year)) {
+    for (const item of root.by_year) {
+      const r = asRecord(item);
+      if (!r) continue;
+      const year = pickString(r.year);
+      const dataRaw = asRecord(r.data);
+      if (!year || !dataRaw) continue;
+      const codigos: Record<string, string> = {};
+      for (const [code, payload] of Object.entries(dataRaw)) {
+        const p = asRecord(payload);
+        if (p) {
+          // Shape detallado: { name, value, number }
+          const value = pickString(p.value);
+          if (value !== null) codigos[code] = value;
+        } else if (typeof payload === "string") {
+          codigos[code] = payload;
+        }
+      }
+      out[year] = { year, codigos, glosa: codigos };
+    }
+  } else {
+    // Shape B: dict por año
+    for (const [year, payload] of Object.entries(root)) {
+      const yp = asRecord(payload);
+      if (!yp) continue;
+      const codigos = asRecord(yp.codigos) ?? {};
+      const glosa = asRecord(yp.glosa) ?? {};
+      out[year] = {
+        year,
+        codigos: stringifyRecord(codigos),
+        glosa: stringifyRecord(glosa),
+      };
+    }
   }
+
   const years = Object.keys(out).sort();
   const latestYear = years[years.length - 1];
   const latestF22: F22Highlights | null = latestYear
@@ -512,6 +657,26 @@ export function parseFloidWidgetPayload(payload: unknown): FloidWidgetReport | n
   const sii = parseSiiSection(o.SII);
   const cmf = parseCmfSection(o.CMF);
 
+  // Errores por sección (cuando Floid devolvió code != 200 para esa sub-sección)
+  const errors: ReportErrors = {};
+  if (hasSp) {
+    const e = parseSectionError(o.SP, "renta_imponible");
+    if (e) errors.sp = e;
+  }
+  if (hasSii) {
+    const e = parseSectionError(o.SII, "carpeta_tributaria");
+    if (e) errors.sii = e;
+  }
+  if (hasCmf) {
+    const e = parseSectionError(o.CMF, "deuda");
+    if (e) errors.cmf = e;
+  }
+
+  // `partial` cuando Floid marcó el payload top-level como 206 o cualquier
+  // sección tiene error reportado.
+  const topCode = typeof o.code === "number" ? o.code : pickNumber(o.code);
+  const partial = topCode === 206 || Object.keys(errors).length > 0;
+
   const consumerId = pickString(o.consumerId);
   const caseid = pickString(o.caseid, o.caseId, o.case_id);
   const custom = pickString(o.custom);
@@ -526,6 +691,8 @@ export function parseFloidWidgetPayload(payload: unknown): FloidWidgetReport | n
     sp,
     sii,
     cmf,
+    errors,
+    partial,
     rawResponse: o,
   };
 }
