@@ -3,12 +3,11 @@
 // =============================================================================
 // Todas las páginas bajo /(portal)/ usan este layout.
 // El middleware ya se encarga de proteger estas rutas.
-// Carga datos compactos para la franja de “viaje del inversionista” y el CTA flotante de asesoría (si hay URL).
+// Carga datos compactos para la franja de "viaje del inversionista".
 // =============================================================================
 
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { AdvisorMeetingFloatingCta } from "@/components/portal/AdvisorMeetingFloatingCta";
 import { BrokerInvestorInviteClaimEffect } from "@/components/portal/BrokerInvestorInviteClaimEffect";
 import { Sidebar } from "@/components/portal/sidebar";
 import { InvestorJourneyStrip } from "@/components/portal/InvestorJourneyStrip";
@@ -53,20 +52,16 @@ export default async function PortalLayout({
     reservationCount,
   });
 
-  const advisorBookingUrl =
-    process.env.NEXT_PUBLIC_ADVISOR_BOOKING_URL?.trim() || null;
-
   return (
     <div className="min-h-screen flex">
       <BrokerInvestorInviteClaimEffect />
       <Sidebar />
-      <main className="flex-1 lg:ml-0 min-w-0 pb-32 sm:pb-36">
+      <main className="flex-1 lg:ml-0 min-w-0">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <InvestorJourneyStrip steps={journey.steps} next={journey.next} />
           {children}
         </div>
       </main>
-      <AdvisorMeetingFloatingCta href={advisorBookingUrl} />
     </div>
   );
 }

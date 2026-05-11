@@ -14,6 +14,7 @@ import {
   Building2,
   Sparkles,
   Gift,
+  Calendar,
 } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "@/components/Logo";
@@ -48,6 +49,13 @@ export function Sidebar() {
   const { data: session } = useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
   const brokerSwitch = brokerSwitchHrefFor(session?.user?.brokerAccessStatus);
+  // URL pública para agendar con asesor (Google Calendar, Calendly, etc.).
+  // Si no está set, el item no aparece. En dev mostramos un placeholder gris
+  // para recordar al equipo configurarla.
+  const advisorBookingUrl =
+    process.env.NEXT_PUBLIC_ADVISOR_BOOKING_URL?.trim() || "";
+  const advisorEnabled = advisorBookingUrl.length > 0;
+  const isDev = process.env.NODE_ENV !== "production";
 
   return (
     <>
@@ -133,6 +141,40 @@ export function Sidebar() {
               $500.000 por amigo
             </span>
           </Link>
+
+          {/* Agenda con asesor financiero — link externo. Se oculta si la
+              env var NEXT_PUBLIC_ADVISOR_BOOKING_URL no está configurada
+              (en prod desaparece; en dev se muestra un placeholder gris). */}
+          {advisorEnabled ? (
+            <a
+              href={advisorBookingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setMobileOpen(false)}
+              className="mt-1 flex flex-col gap-1 px-3 py-2.5 rounded-lg border border-blue-200 bg-blue-50/60 text-blue-800 hover:bg-blue-50 transition-colors"
+            >
+              <div className="flex items-center gap-3 text-sm font-medium">
+                <Calendar className="w-5 h-5 shrink-0" />
+                <span>Agenda con asesor</span>
+              </div>
+              <span className="ml-8 text-[11px] text-blue-700">
+                Reunión gratis con un experto
+              </span>
+            </a>
+          ) : isDev ? (
+            <div
+              className="mt-1 flex flex-col gap-1 px-3 py-2.5 rounded-lg border border-dashed border-gray-300 bg-gray-50 text-gray-500"
+              title="Define NEXT_PUBLIC_ADVISOR_BOOKING_URL en .env.local"
+            >
+              <div className="flex items-center gap-3 text-sm font-medium">
+                <Calendar className="w-5 h-5 shrink-0" />
+                <span>Agenda con asesor</span>
+              </div>
+              <span className="ml-8 text-[10px] text-gray-400">
+                (configura NEXT_PUBLIC_ADVISOR_BOOKING_URL)
+              </span>
+            </div>
+          ) : null}
 
           {/* Switch al portal broker (cuando la cuenta es multi-rol).
               Visualmente separado del nav principal, alineado al patrón
