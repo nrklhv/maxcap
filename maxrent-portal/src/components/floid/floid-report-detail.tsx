@@ -16,6 +16,7 @@ import {
   type FloidWidgetReport,
   type F22YearData,
 } from "@/lib/floid/parse-floid-response";
+import { humanizeFloidError, sectionLabel } from "@/lib/floid/error-messages";
 
 function fmtCLP(n: number | null | undefined): string {
   if (n === null || n === undefined || !Number.isFinite(n)) return "—";
@@ -44,11 +45,13 @@ export function FloidReportDetail({
   const pdfUrl = downloadPdfUrl ?? report?.downloadPdfUrl ?? null;
 
   const errorEntries = report
-    ? [
-        report.errors.sp && { key: "sp", label: "Renta (Sup. Pensiones)", err: report.errors.sp },
-        report.errors.sii && { key: "sii", label: "Tributario (SII)", err: report.errors.sii },
-        report.errors.cmf && { key: "cmf", label: "Deuda (CMF)", err: report.errors.cmf },
-      ].filter((x): x is { key: string; label: string; err: NonNullable<typeof x>["err"] } => Boolean(x))
+    ? (["sp", "sii", "cmf"] as const)
+        .map((key) => {
+          const err = report.errors[key];
+          if (!err) return null;
+          return { key, label: sectionLabel(key), err, humanized: humanizeFloidError(err) };
+        })
+        .filter((x): x is NonNullable<typeof x> => x !== null)
     : [];
 
   return (
@@ -72,18 +75,23 @@ export function FloidReportDetail({
       </div>
 
       {errorEntries.length > 0 && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-1.5">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2">
           <p className="text-xs font-semibold text-amber-900 uppercase tracking-wide">
             Reporte parcial — secciones no obtenidas
           </p>
-          <ul className="text-sm text-amber-900 space-y-1 list-disc list-inside marker:text-amber-600">
+          <ul className="space-y-2">
             {errorEntries.map((e) => (
-              <li key={e.key}>
-                <span className="font-medium">{e.label}:</span> {e.err.message}
+              <li key={e.key} className="text-sm text-amber-900 leading-snug">
+                <div>
+                  <span className="font-medium">{e.label}:</span> {e.humanized.message}
+                </div>
+                {e.humanized.hint && (
+                  <div className="text-xs text-amber-800 mt-0.5">{e.humanized.hint}</div>
+                )}
                 {e.err.errorCode && (
-                  <span className="text-xs text-amber-700 ml-1">
-                    ({e.err.errorCode})
-                  </span>
+                  <div className="text-[10px] text-amber-700 mt-0.5 font-mono">
+                    código: {e.err.errorCode}
+                  </div>
                 )}
               </li>
             ))}

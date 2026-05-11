@@ -15,6 +15,7 @@ import {
   parseFloidWidgetPayload,
   type FloidWidgetReport,
 } from "@/lib/floid/parse-floid-response";
+import { humanizeFloidError, sectionLabel } from "@/lib/floid/error-messages";
 
 function fmtCLP(n: number | null | undefined): string {
   if (n === null || n === undefined || !Number.isFinite(n)) return "—";
@@ -82,42 +83,38 @@ export function FloidReportSummary({ rawResponse, fallbackSummary }: Props) {
         : "grid-cols-1 md:grid-cols-3";
 
   // Banner de errores parciales (sección que Floid no pudo completar).
-  const errorBanners: Array<{ key: string; label: string; message: string }> = [];
-  if (report.errors.sp) {
-    errorBanners.push({
-      key: "sp",
-      label: "Renta (Sup. Pensiones)",
-      message: report.errors.sp.message,
-    });
-  }
-  if (report.errors.sii) {
-    errorBanners.push({
-      key: "sii",
-      label: "Tributario (SII)",
-      message: report.errors.sii.message,
-    });
-  }
-  if (report.errors.cmf) {
-    errorBanners.push({
-      key: "cmf",
-      label: "Deuda (CMF)",
-      message: report.errors.cmf.message,
-    });
-  }
+  const errorBanners = (
+    ["sp", "sii", "cmf"] as const
+  )
+    .map((key) => {
+      const err = report.errors[key];
+      if (!err) return null;
+      const humanized = humanizeFloidError(err);
+      return { key, label: sectionLabel(key), humanized };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null);
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-gray-700 leading-relaxed">{report.summary}</p>
 
       {errorBanners.length > 0 && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-1">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2">
           <p className="text-xs font-semibold text-amber-900 uppercase tracking-wide">
             Reporte parcial — algunas secciones no se pudieron obtener
           </p>
-          <ul className="text-sm text-amber-900 space-y-0.5 list-disc list-inside marker:text-amber-600">
+          <ul className="space-y-2">
             {errorBanners.map((e) => (
-              <li key={e.key}>
-                <span className="font-medium">{e.label}:</span> {e.message}
+              <li
+                key={e.key}
+                className="text-sm text-amber-900 leading-snug"
+              >
+                <span className="font-medium">{e.label}:</span> {e.humanized.message}
+                {e.humanized.hint && (
+                  <span className="block text-xs text-amber-800 mt-0.5">
+                    {e.humanized.hint}
+                  </span>
+                )}
               </li>
             ))}
           </ul>

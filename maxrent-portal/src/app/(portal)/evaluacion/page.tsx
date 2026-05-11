@@ -406,25 +406,11 @@ export default function EvaluacionPage() {
   // En curso (popup abierto / esperando callback)
   if (evaluation.status === "PENDING" || evaluation.status === "PROCESSING") {
     return (
-      <div className="max-w-lg space-y-6">
-        <h1 className="font-serif text-2xl tracking-tight text-dark">Evaluación financiera</h1>
-        <div className="bg-white rounded-xl border border-gray-200 p-6 text-center space-y-4">
-          <div className="w-16 h-16 mx-auto bg-blue-50 rounded-full flex items-center justify-center">
-            <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-gray-900">Esperando información de Floid…</h3>
-            <p className="text-sm text-gray-500 mt-1">
-              Si aún no completaste el flujo en la ventana de Floid, hacelo ahora. Esta página se
-              actualiza automáticamente cuando llegue tu reporte.
-            </p>
-          </div>
-          <p className="text-xs text-gray-400">
-            Si cerraste la ventana de Floid sin querer, espera unos segundos y volveremos a habilitar
-            «Iniciar evaluación».
-          </p>
-        </div>
-      </div>
+      <EvaluacionProcessing
+        requestedAt={evaluation.requestedAt}
+        onCancel={cancelAndRetry}
+        cancelling={requesting}
+      />
     );
   }
 
@@ -566,34 +552,11 @@ export default function EvaluacionPage() {
       </div>
 
       {/* Estado de habilitación de reservas (gate del staff) */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
-        {evaluation.staffReservationApprovedAt ? (
-          <>
-            <p className="text-sm font-medium text-blue-800">
-              El equipo habilitó reservas. Puedes elegir propiedad en Oportunidades de inversión.
-            </p>
-            <a
-              href="/oportunidades"
-              className="inline-block mt-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Ir a Oportunidades de inversión →
-            </a>
-          </>
-        ) : (
-          <>
-            <p className="text-sm font-medium text-blue-800">
-              Tu información fue compartida exitosamente. Nuestro equipo la revisará y habilitará el
-              botón «Reservar» en el catálogo. No hace falta que hagas nada más acá.
-            </p>
-            <a
-              href="/oportunidades"
-              className="inline-block mt-2 text-sm font-medium text-blue-700 underline hover:text-blue-900"
-            >
-              Ver catálogo (solo lectura hasta la habilitación)
-            </a>
-          </>
-        )}
-      </div>
+      <StaffGateBlock
+        approved={Boolean(evaluation.staffReservationApprovedAt)}
+        approvedAt={evaluation.staffReservationApprovedAt}
+        userEmail={session?.user?.email}
+      />
 
       {/* Modal con detalle completo */}
       {showDetail && (
@@ -606,6 +569,240 @@ export default function EvaluacionPage() {
           />
         </DetailModal>
       )}
+    </div>
+  );
+}
+
+/**
+ * Pantalla "en proceso" con mensajes rotativos + reloj + hint para cancelar
+ * si el usuario cerró el popup sin completar.
+ */
+function EvaluacionProcessing({
+  requestedAt,
+  onCancel,
+  cancelling,
+}: {
+  requestedAt: string;
+  onCancel: () => void;
+  cancelling: boolean;
+}) {
+  const [tick, setTick] = useState(0);
+  const elapsedSec = Math.floor((Date.now() - new Date(requestedAt).getTime()) / 1000);
+
+  // Re-render cada 5s para actualizar el tiempo transcurrido y rotar mensajes.
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 5000);
+    return () => clearInterval(id);
+  }, []);
+  // tick se usa solo para forzar re-render; reflejamos el uso para evitar el warning.
+  void tick;
+
+  const messages = [
+    "Conectando con Floid…",
+    "Esperando tu autenticación con Clave Única y SII…",
+    "Procesando renta imponible y carpeta tributaria…",
+    "Casi listo, recibiendo el reporte…",
+  ];
+  const messageIdx = Math.min(
+    Math.floor(elapsedSec / 15),
+    messages.length - 1
+  );
+
+  // A los 2 minutos sin respuesta, asumimos que el usuario cerró el popup o algo se demora.
+  const showStuckHint = elapsedSec >= 120;
+
+  return (
+    <div className="max-w-lg space-y-6">
+      <h1 className="font-serif text-2xl tracking-tight text-dark">
+        Evaluación financiera
+      </h1>
+
+      <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center space-y-5 shadow-sm">
+        {/* Loader con anillos animados */}
+        <div className="relative mx-auto h-20 w-20">
+          <div className="absolute inset-0 rounded-full border-4 border-blue-100" />
+          <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin" />
+          <div className="absolute inset-2 rounded-full bg-blue-50 flex items-center justify-center">
+            <RefreshCw className="h-7 w-7 text-blue-600" aria-hidden />
+          </div>
+        </div>
+
+        <div>
+          <h3 className="font-semibold text-gray-900 text-lg">
+            {messages[messageIdx]}
+          </h3>
+          <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+            Si no completaste el flujo en la ventana de Floid, vuelve a ella para
+            ingresar tus credenciales. Esta pantalla se actualiza automáticamente.
+          </p>
+        </div>
+
+        <div className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
+          <Clock className="w-3 h-3" aria-hidden />
+          <span>Iniciada hace {formatElapsed(elapsedSec)}</span>
+        </div>
+
+        {showStuckHint && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-left text-sm text-amber-900 space-y-2">
+            <p>
+              <span className="font-semibold">¿Cerraste la ventana de Floid?</span>{" "}
+              Si nunca llegó a enviarse el reporte, cancela esta evaluación para
+              volver a iniciar el flujo desde cero.
+            </p>
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={cancelling}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-900 bg-amber-100 border border-amber-300 rounded-lg hover:bg-amber-200 transition-colors disabled:opacity-50"
+            >
+              {cancelling ? "Cancelando…" : "Cancelar y reintentar"}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function formatElapsed(sec: number): string {
+  if (sec < 60) return `${sec}s`;
+  const min = Math.floor(sec / 60);
+  const restSec = sec % 60;
+  return `${min}m ${restSec}s`;
+}
+
+/**
+ * Bloque de "gate del staff": muestra a qué paso le toca al equipo (revisión)
+ * con timeline visual, tiempo estimado y dónde le va a llegar la notificación.
+ */
+function StaffGateBlock({
+  approved,
+  approvedAt,
+  userEmail,
+}: {
+  approved: boolean;
+  approvedAt: string | null | undefined;
+  userEmail: string | null | undefined;
+}) {
+  if (approved) {
+    return (
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 space-y-3 shadow-sm">
+        <div className="flex items-start gap-3">
+          <span className="shrink-0 rounded-lg bg-emerald-100 text-emerald-700 p-2">
+            <CheckCircle className="h-5 w-5" aria-hidden />
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-base font-semibold text-emerald-900">
+              Reservas habilitadas
+            </p>
+            <p className="text-sm text-emerald-800 mt-1">
+              El equipo revisó tu reporte y te habilitó las reservas
+              {approvedAt
+                ? ` el ${new Date(approvedAt).toLocaleDateString("es-CL", {
+                    day: "numeric",
+                    month: "long",
+                  })}`
+                : ""}
+              . Ya puedes elegir propiedad en el catálogo.
+            </p>
+          </div>
+        </div>
+        <a
+          href="/oportunidades"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg transition-colors"
+        >
+          Ir a Oportunidades de inversión
+          <ArrowRight className="h-4 w-4" aria-hidden />
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-5 space-y-4 shadow-sm">
+      <div className="flex items-start gap-3">
+        <span className="shrink-0 rounded-lg bg-blue-100 text-blue-700 p-2">
+          <CheckCircle className="h-5 w-5" aria-hidden />
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className="text-base font-semibold text-blue-900">
+            Reporte recibido — en revisión del equipo
+          </p>
+          <p className="text-sm text-blue-800 mt-1 leading-relaxed">
+            Tu información fue compartida exitosamente. Nuestro equipo revisará
+            el reporte y habilitará el botón «Reservar» en el catálogo en menos
+            de <strong>24 horas hábiles</strong>.
+          </p>
+          {userEmail && (
+            <p className="text-xs text-blue-700 mt-2">
+              Te avisaremos por correo a{" "}
+              <span className="font-mono">{userEmail}</span> cuando esté listo.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Mini-timeline de los 3 sub-pasos de la revisión */}
+      <div className="grid grid-cols-3 gap-2 rounded-xl bg-white/70 border border-blue-100 p-3">
+        <TimelineMini
+          n={1}
+          label="Reporte recibido"
+          state="done"
+        />
+        <TimelineMini
+          n={2}
+          label="Revisión del equipo"
+          state="active"
+        />
+        <TimelineMini
+          n={3}
+          label="Habilitación"
+          state="todo"
+        />
+      </div>
+
+      <a
+        href="/oportunidades"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-700 hover:text-blue-900 underline underline-offset-2"
+      >
+        Ver catálogo (solo lectura hasta la habilitación)
+        <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+      </a>
+    </div>
+  );
+}
+
+function TimelineMini({
+  n,
+  label,
+  state,
+}: {
+  n: number;
+  label: string;
+  state: "done" | "active" | "todo";
+}) {
+  const circle =
+    state === "done"
+      ? "bg-blue-600 text-white"
+      : state === "active"
+        ? "bg-amber-100 text-amber-900 ring-2 ring-amber-300"
+        : "bg-gray-100 text-gray-400";
+  const text =
+    state === "done"
+      ? "text-blue-900"
+      : state === "active"
+        ? "text-amber-900 font-medium"
+        : "text-gray-500";
+  return (
+    <div className="flex flex-col items-center gap-1 text-center">
+      <span
+        className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${circle}`}
+      >
+        {state === "done" ? "✓" : n}
+      </span>
+      <span className={`text-[10px] sm:text-xs leading-tight ${text}`}>
+        {label}
+      </span>
     </div>
   );
 }

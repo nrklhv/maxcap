@@ -80,108 +80,53 @@ export default async function DashboardPage() {
     );
   }
 
+  // El stepper + next-action card ya viene del layout `/(portal)/layout.tsx`
+  // (componente InvestorJourneyStrip). Acá solo agregamos contenido específico
+  // del dashboard: saludo, atajos contextuales y referidos.
+  const firstName = session.user.name?.split(" ")[0] || "ahí";
+
   return (
     <div className="space-y-8">
-      {/* Header */}
+      {/* Saludo */}
       <div>
         <h1 className="font-serif text-2xl tracking-tight text-dark">
-          Hola, {session.user.name?.split(" ")[0] || "ahí"} 👋
+          Hola, {firstName} 👋
         </h1>
-        <p className="mt-1 text-gray-600">
-          Aquí puedes ver el estado de tu proceso de compra.
+        <p className="mt-1 text-gray-600 text-sm">
+          Tu proceso de compra en MaxRent.
         </p>
       </div>
 
-      {/* Status Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Perfil */}
-        <StatusCard
+      {/* Resumen condensado del estado actual */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <StatusBadge
           title="Perfil"
-          status={perfilListo ? "completed" : "pending"}
-          statusLabel={perfilListo ? "Completo" : "Pendiente"}
-          href="/perfil"
-          description={
+          state={perfilListo ? "done" : "todo"}
+          detail={
             perfilListo
-              ? `RUT: ${profile?.rut ?? "—"}`
-              : "Completa tus datos personales y laborales para continuar"
+              ? profile?.rut
+                ? `RUT ${profile.rut}`
+                : "Completo"
+              : "Pendiente"
           }
+          href="/perfil"
         />
-
-        {/* Evaluación */}
-        <StatusCard
-          title="Evaluación crediticia"
-          status={
-            !latestEvaluation
-              ? "pending"
-              : latestEvaluation.status === "COMPLETED" &&
-                  latestEvaluation.staffReservationApprovedAt
-                ? "completed"
-                : latestEvaluation.status === "COMPLETED"
-                  ? "processing"
-              : latestEvaluation.status === "FAILED"
-              ? "error"
-              : "processing"
-          }
-          statusLabel={
-            !latestEvaluation
-              ? "No solicitada"
-              : latestEvaluation.status === "COMPLETED" &&
-                  !latestEvaluation.staffReservationApprovedAt
-                ? "Habilitación pendiente"
-              : latestEvaluation.status === "COMPLETED"
-              ? `Score: ${latestEvaluation.score}`
-              : latestEvaluation.status === "FAILED"
-              ? "Error"
-              : "En proceso"
-          }
+        <StatusBadge
+          title="Evaluación"
+          state={evaluationBadgeState(latestEvaluation)}
+          detail={evaluationBadgeDetail(latestEvaluation)}
           href="/evaluacion"
-          description={
-            !latestEvaluation
-              ? "Evalúa tu capacidad de compra"
-              : latestEvaluation.summary || "Ver detalles"
-          }
         />
-
-        {/* Reservas */}
-        <StatusCard
+        <StatusBadge
           title="Reservas"
-          status={reservations.length > 0 ? "completed" : "pending"}
-          statusLabel={
+          state={reservations.length > 0 ? "done" : "todo"}
+          detail={
             reservations.length > 0
-              ? `${reservations.length} reserva(s)`
+              ? `${reservations.length} activa${reservations.length > 1 ? "s" : ""}`
               : "Sin reservas"
           }
-          href="/reserva"
-          description={
-            reservations.length > 0
-              ? `Última: ${reservations[0].propertyName || reservations[0].propertyId}`
-              : "Reserva tu propiedad ideal"
-          }
+          href="/oportunidades"
         />
-      </div>
-
-      {/* Timeline / Próximos pasos */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Tu proceso de compra
-        </h2>
-        <div className="space-y-4">
-          <TimelineStep
-            step={1}
-            title="Completa tu perfil"
-            done={perfilListo}
-          />
-          <TimelineStep
-            step={2}
-            title="Evaluación crediticia"
-            done={latestEvaluation?.status === "COMPLETED"}
-          />
-          <TimelineStep
-            step={3}
-            title="Reserva tu propiedad"
-            done={reservations.some((r) => r.status === "PAID" || r.status === "CONFIRMED")}
-          />
-        </div>
       </div>
 
       {/* Referidos — solo si el usuario es inversionista (canInvest) y tiene code */}
@@ -196,73 +141,74 @@ export default async function DashboardPage() {
   );
 }
 
+// ─── Helpers de estado para los badges ─────────────────────────────────────
+
+type BadgeState = "done" | "todo" | "active" | "warn";
+
+function evaluationBadgeState(
+  evaluation: { status: string; staffReservationApprovedAt: Date | null } | null
+): BadgeState {
+  if (!evaluation) return "todo";
+  if (evaluation.status === "FAILED" || evaluation.status === "EXPIRED") return "warn";
+  if (evaluation.status === "PENDING" || evaluation.status === "PROCESSING") return "active";
+  if (evaluation.status === "COMPLETED") {
+    return evaluation.staffReservationApprovedAt ? "done" : "active";
+  }
+  return "todo";
+}
+
+function evaluationBadgeDetail(
+  evaluation: { status: string; staffReservationApprovedAt: Date | null } | null
+): string {
+  if (!evaluation) return "No solicitada";
+  if (evaluation.status === "FAILED") return "Reintentar";
+  if (evaluation.status === "EXPIRED") return "Expiró";
+  if (evaluation.status === "PENDING" || evaluation.status === "PROCESSING") return "En proceso";
+  if (evaluation.status === "COMPLETED") {
+    return evaluation.staffReservationApprovedAt
+      ? "Habilitada"
+      : "En revisión";
+  }
+  return "—";
+}
+
 // --- Componentes auxiliares ---
 
-function StatusCard({
+/**
+ * Badge compacto con título, estado y un detalle corto.
+ * No duplica el stepper del layout — solo da acceso rápido a cada sección.
+ */
+function StatusBadge({
   title,
-  status,
-  statusLabel,
+  state,
+  detail,
   href,
-  description,
 }: {
   title: string;
-  status: "pending" | "completed" | "processing" | "error";
-  statusLabel: string;
+  state: BadgeState;
+  detail: string;
   href: string;
-  description: string;
 }) {
-  const statusColors = {
-    pending: "bg-gray-100 text-gray-600",
-    completed: "bg-green-100 text-green-700",
-    processing: "bg-blue-100 text-blue-700",
-    error: "bg-red-100 text-red-700",
+  const stateColors: Record<BadgeState, { dot: string; label: string }> = {
+    todo: { dot: "bg-gray-300", label: "text-gray-600" },
+    active: { dot: "bg-amber-400", label: "text-amber-700" },
+    done: { dot: "bg-emerald-500", label: "text-emerald-700" },
+    warn: { dot: "bg-red-400", label: "text-red-700" },
   };
+  const colors = stateColors[state];
 
   return (
     <Link
       href={href}
-      className="block bg-white rounded-xl border border-gray-200 p-5 hover:border-blue-300 hover:shadow-sm transition-all"
+      className="block bg-white rounded-xl border border-gray-200 px-4 py-3 hover:border-blue-300 hover:shadow-sm transition-all"
     >
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-        <span
-          className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${statusColors[status]}`}
-        >
-          {statusLabel}
-        </span>
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          {title}
+        </h3>
+        <span className={`flex h-2 w-2 rounded-full ${colors.dot}`} aria-hidden />
       </div>
-      <p className="text-sm text-gray-500 line-clamp-2">{description}</p>
+      <p className={`text-sm font-medium ${colors.label} truncate`}>{detail}</p>
     </Link>
-  );
-}
-
-function TimelineStep({
-  step,
-  title,
-  done,
-}: {
-  step: number;
-  title: string;
-  done: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-3">
-      <div
-        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-          done
-            ? "bg-green-100 text-green-700"
-            : "bg-gray-100 text-gray-400"
-        }`}
-      >
-        {done ? "✓" : step}
-      </div>
-      <span
-        className={`text-sm ${
-          done ? "text-gray-900 font-medium" : "text-gray-500"
-        }`}
-      >
-        {title}
-      </span>
-    </div>
   );
 }
