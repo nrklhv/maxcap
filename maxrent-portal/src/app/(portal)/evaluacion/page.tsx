@@ -16,7 +16,8 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   CheckCircle,
@@ -89,6 +90,7 @@ function StepsTimeline() {
 }
 
 export default function EvaluacionPage() {
+  const router = useRouter();
   const { data: session } = useSession();
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [loading, setLoading] = useState(true);
@@ -99,20 +101,34 @@ export default function EvaluacionPage() {
   const [profileRut, setProfileRut] = useState<string | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
+  // Track del último estado conocido para gatillar router.refresh() en transiciones.
+  // El stepper del layout (Server Component) consulta BD: si no lo refrescamos,
+  // queda desactualizado hasta que el usuario navegue.
+  const lastJourneyKeyRef = useRef<string | null>(null);
 
   const loadEvaluation = useCallback(async () => {
     try {
       const res = await fetch("/api/floid/evaluations");
       if (res.ok) {
         const data = await res.json();
-        setEvaluation(data.evaluations?.[0] ?? null);
+        const next = (data.evaluations?.[0] ?? null) as Evaluation | null;
+        setEvaluation(next);
+        // Clave compuesta del estado relevante para el stepper. Si cambia,
+        // refrescamos los Server Components (layout) para que el stepper se actualice.
+        const newKey = next
+          ? `${next.status}|${next.staffReservationApprovedAt ?? ""}`
+          : "none";
+        if (lastJourneyKeyRef.current !== null && lastJourneyKeyRef.current !== newKey) {
+          router.refresh();
+        }
+        lastJourneyKeyRef.current = newKey;
       }
     } catch {
       // ignore
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     loadEvaluation();
@@ -190,8 +206,9 @@ export default function EvaluacionPage() {
       }
       setPreviewChecked(false);
       setConsentChecked(false);
-      // Refrescamos para que el polling tome el nuevo estado.
+      // Refrescamos para que el polling tome el nuevo estado + actualiza el stepper.
       await loadEvaluation();
+      router.refresh();
     } catch {
       setError("Error de conexión");
     } finally {
@@ -221,6 +238,9 @@ export default function EvaluacionPage() {
       setEvaluation(null);
       setPreviewChecked(false);
       setConsentChecked(false);
+      // Refresh del layout para actualizar el stepper (volvió al paso de Evaluación).
+      lastJourneyKeyRef.current = "none";
+      router.refresh();
     } catch {
       setError("Error de conexión.");
     } finally {
