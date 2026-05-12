@@ -241,6 +241,11 @@ export default function PerfilPage() {
         // session refresh best-effort
       }
 
+      // Re-render del layout (Server Component) para actualizar el stepper
+      // del journey + next-action card. Sin esto, el layout queda con la
+      // snapshot vieja hasta que el usuario navegue manualmente.
+      router.refresh();
+
       if (nowComplete && !session?.user?.onboardingCompleted) {
         setTimeout(() => router.push("/dashboard"), 1000);
       }
