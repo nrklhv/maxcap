@@ -94,6 +94,18 @@ Sin `RESEND_API_KEY` el adapter falla y la notificación queda en `Notification`
 2. Copiar variables a `.env.local` según [docs/FLOID_SETUP.md](./docs/FLOID_SETUP.md) y [`.env.example`](./.env.example) (`FLOID_API_KEY`, `FLOID_SERVICE_PATH`, `FLOID_USE_STUB=false`, etc.).
 3. Probar el flujo en **`/evaluacion`** con un usuario que tenga RUT y perfil completo; revisar `CreditEvaluation` en la base.
 
+### Backup diario offsite (Vercel Blob)
+
+Backup automatizado de la DB a Vercel Blob — corre todos los días a las 06:30 UTC vía Vercel Cron.
+
+1. En Vercel → proyecto **maxrent-portal** → **Storage** → **Create Database** → **Blob**.
+2. Nombre sugerido: `maxrent-portal-backups`.
+3. Linkear al proyecto en Production + Preview + Development. Vercel inyecta automáticamente `BLOB_READ_WRITE_TOKEN`.
+4. Sin Blob activado, el endpoint `/api/cron/db-backup` devuelve 503 (no rompe nada, solo no genera backup).
+5. Cron secret: la env var `CRON_SECRET` debe estar configurada (la usa también `/api/cron/referrals/expire`).
+
+Para restaurar un backup ver [docs/BACKUP_RESTORE.md](./docs/BACKUP_RESTORE.md) — incluye procedimiento paso a paso y el script `scripts/restore-from-backup.ts`.
+
 ### Rate limiting (Vercel KV / Upstash Redis)
 
 Webhooks de proveedores, endpoints públicos del landing y operaciones caras (Floid, crear reserva) están protegidos con sliding window contra Upstash Redis. 4 buckets predefinidos.
