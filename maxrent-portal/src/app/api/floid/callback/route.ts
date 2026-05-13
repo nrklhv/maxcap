@@ -15,6 +15,7 @@
 
 import { NextResponse } from "next/server";
 import { completeFloidEvaluationFromWidget } from "@/lib/services/floid.service";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 function getBearerToken(request: Request): string | null {
   const h = request.headers.get("authorization");
@@ -30,6 +31,12 @@ function cropToken(t: string | null): string {
 }
 
 export async function POST(request: Request) {
+  // Rate limit bucket "webhook" (60/min por IP). Floid manda 1 callback por evaluación;
+  // 60/min ampliamente cubre cualquier burst legítimo y corta abuso si alguien
+  // descubre el secret.
+  const limited = await applyRateLimit(request, RATE_LIMITS.webhook, { route: "floid-callback" });
+  if (limited) return limited;
+
   const secret = process.env.FLOID_WEBHOOK_SECRET?.trim();
   const receivedToken = getBearerToken(request);
   const authHeaderRaw = request.headers.get("authorization");

@@ -7,12 +7,18 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { paymentService } from "@/lib/services/payment.service";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
+
+  // Bucket "expensive" (5/min por usuario). Abrir checkout crea una preferencia
+  // en la pasarela; limitarlo evita gasto de quota por abuso o bug del cliente.
+  const limited = await applyRateLimit(req, RATE_LIMITS.expensive, { route: "payment-checkout" });
+  if (limited) return limited;
 
   const { reservationId } = await req.json();
 

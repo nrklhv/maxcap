@@ -34,6 +34,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { RATE_LIMITS, checkRateLimit } from "@/lib/rate-limit";
 import { notifyTemplate } from "@/lib/services/notifications";
 import {
   createBrokerLeadForLead,
@@ -88,12 +89,13 @@ function corsHeadersFor(req: NextRequest): HeadersInit {
 
 function jsonWithCors(
   body: unknown,
-  init: { status?: number } = {},
+  init: { status?: number; headers?: Record<string, string> } = {},
   req: NextRequest
 ) {
+  const headers = { ...corsHeadersFor(req), ...(init.headers ?? {}) };
   return NextResponse.json(body, {
     status: init.status ?? 200,
-    headers: corsHeadersFor(req),
+    headers,
   });
 }
 
@@ -163,6 +165,26 @@ export async function OPTIONS(req: NextRequest) {
 // -----------------------------------------------------------------------------
 
 export async function POST(req: NextRequest) {
+  // Rate limit ANTES de leer el body — defensa contra spam masivo de leads
+  // desde el landing. 10/min por IP (bucket "public").
+  const rl = await checkRateLimit(req, RATE_LIMITS.public, { route: "leads" });
+  if (!rl.success && !rl.skipped) {
+    const retryAfter = Math.max(1, Math.ceil((rl.reset - Date.now()) / 1000));
+    return jsonWithCors(
+      { error: "Demasiadas solicitudes. Intenta de nuevo en unos minutos." },
+      {
+        status: 429,
+        headers: {
+          "X-RateLimit-Limit": String(RATE_LIMITS.public.limit),
+          "X-RateLimit-Remaining": "0",
+          "X-RateLimit-Reset": String(Math.ceil(rl.reset / 1000)),
+          "Retry-After": String(retryAfter),
+        },
+      },
+      req
+    );
+  }
+
   let payload: unknown;
   try {
     payload = await req.json();

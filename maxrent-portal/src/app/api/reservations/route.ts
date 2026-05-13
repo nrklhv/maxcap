@@ -12,6 +12,7 @@ import { getInvestorReserveGatePayload } from "@/lib/portal/investor-reservation
 import { reservationSchema } from "@/lib/validations";
 import * as propertyService from "@/lib/services/property.service";
 import * as poolService from "@/lib/services/pool.service";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export async function GET() {
   const session = await auth();
@@ -57,6 +58,11 @@ export async function POST(req: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
+
+  // Bucket "expensive" (5/min por usuario). Crear reserva toma inventario y
+  // marca Property/PoolUnit; un usuario malicioso no debería poder spammearlas.
+  const limited = await applyRateLimit(req, RATE_LIMITS.expensive, { route: "create-reservation" });
+  if (limited) return limited;
 
   const body = await req.json();
   const parsed = reservationSchema.safeParse(body);

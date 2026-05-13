@@ -13,12 +13,16 @@ import { prisma } from "@/lib/prisma";
 import { INVESTOR_ACTIVE_RESERVATION_STATUSES } from "@/lib/portal/investor-active-reservation-statuses";
 import { getInvestorReserveGatePayload } from "@/lib/portal/investor-reservation-gate";
 import * as propertyService from "@/lib/services/property.service";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
+
+  const limited = await applyRateLimit(req, RATE_LIMITS.authenticated, { route: "catalog" });
+  if (limited) return limited;
 
   const [gate, properties, activeReservationRows] = await Promise.all([
     getInvestorReserveGatePayload(session.user.id),
