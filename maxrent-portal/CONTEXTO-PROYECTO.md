@@ -358,16 +358,35 @@ CORS: orígenes permitidos vía `LEADS_ALLOWED_ORIGINS` (CSV). Por defecto: `htt
 ### Reservas
 | Método | Ruta | Auth | Descripción |
 |---|---|---|---|
-| GET | `/api/reservations` | Sí | Listar reservas del usuario |
-| POST | `/api/reservations` | Sí | Crear nueva reserva |
+| GET | `/api/reservations` | Sí | Listar reservas del usuario (Producto 1 + Producto 2 unificadas con `poolUnit` populated cuando aplica). |
+| POST | `/api/reservations` | Sí | Crear nueva reserva. Acepta **XOR** `propertyId` (Producto 1) o `poolUnitId` (Producto 2). El refine de Zod rechaza body con ambos o con ninguno. Rate limit bucket «expensive» (5/min por usuario). |
 
 ### Pagos
 | Método | Ruta | Auth | Descripción |
 |---|---|---|---|
-| POST | `/api/payments/checkout` | Sí | Generar URL de checkout |
-| POST | `/api/payments/webhook` | No* | Webhook de confirmación de pago |
+| POST | `/api/payments/checkout` | Sí | Generar URL de checkout. Rate limit «expensive». Reconcilia ambos lados (Property + PoolUnit) al actualizar la reserva. |
+| POST | `/api/payments/webhook` | No* | Webhook de confirmación de pago. Rate limit «webhook» (60/min por IP). |
 
 *El webhook no usa auth de usuario pero debe validar firma de la pasarela.
+
+### Pools (Producto 2 — Portafolios de propiedades)
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| GET | `/api/portal/pools` | Sí | Listado de pools publicados (`OPEN`/`CLOSED`). Devuelve métricas agregadas + gate de reserva (`canReserve`, `reserveBlockReason`). |
+| GET | `/api/portal/pools/[slug]` | Sí | Detalle del pool + unidades **públicas** (sin `internalData`). Marca por unidad si el inversionista ya tiene reserva activa. |
+| GET | `/api/portal/pool-units/[id]` | Sí | Detalle de una unidad + summary del pool para la página de checkout `/reserva/pool-unit/[id]`. |
+| GET | `/api/staff/pools` | Staff | Listado para `/staff/pools` con métricas. |
+| GET | `/api/staff/pools/[slug]` | Staff | Detalle con `internalData` (dirección exacta, depto) y reserva activa por unidad. |
+| PATCH | `/api/staff/pools/[slug]` | Staff | Actualiza `description`, `status` (`DRAFT/OPEN/CLOSED`) y/o `acceptingReservations`. |
+
+**Aislamiento de datos sensibles**: el campo `PoolUnit.internalData` (dirección, depto, raw del Excel) NO se expone nunca en endpoints de inversionista. Cada select público va por `POOL_UNIT_PUBLIC_SELECT` en `src/lib/services/pool.service.ts`. Si agregas un campo público nuevo, agregalo ahí explícitamente.
+
+**Import**: el alta de un pool **no** se hace desde la UI — se corre `scripts/import-lab-pool.ts` (idempotente). Detalle en [`docs/POOL_PRODUCTO.md`](./docs/POOL_PRODUCTO.md).
+
+### Endpoints reusados extendidos para Producto 2
+
+- `POST /api/staff/reservations/[id]/cancel` — además de reconciliar `Property`, reconcilia `PoolUnit` si la reserva era pool (vuelve a `AVAILABLE` salvo `SOLD`).
+- `POST /api/staff/reservations/[id]/escriturar` — además de transicionar la reserva a `CONFIRMED` y disparar payouts, si la reserva tiene `poolUnitId` pasa el unit a `SOLD` (terminal).
 
 ### Broker (autenticado, flujo `/broker/*`)
 APIs bajo `/api/broker/*` para postulación, perfil, oportunidades visibles, invites a inversionistas, etc.
@@ -534,22 +553,54 @@ Lazy-fix análogo: si el broker no tiene `brokerReferralCode`, la page llama a `
 6. Si score es LOW/MEDIUM risk → CTA para reservar propiedad
 ```
 
-### 6.3 Reserva + Pago
+### 6.3 Reserva + Pago (Producto 1 — Property)
 ```
-1. Usuario en /reserva, selecciona propiedad
-2. POST /api/reservations → crea Reservation con status=PENDING_PAYMENT, expiresAt=48h
-3. Usuario clickea "Pagar" → POST /api/payments/checkout con reservationId
-4. paymentService.createCheckout():
+1. Usuario en /oportunidades, selecciona propiedad → /reserva/propiedad/[id]
+2. POST /api/reservations { propertyId } → crea Reservation con
+   status=PENDING_PAYMENT, expiresAt=48h, propertyId=<id>, poolUnitId=null
+3. markPropertyReservedForInvestorSync(tx, propertyId) marca Property como
+   RESERVED + metadata.investorReservationId.
+4. Usuario clickea "Pagar" → POST /api/payments/checkout con reservationId
+5. paymentService.createCheckout():
    a. Crea preferencia de pago en Mercado Pago
    b. Guarda paymentExternalId y paymentUrl en la reserva
    c. Actualiza status a PAYMENT_PROCESSING
    d. Retorna checkoutUrl
-5. Frontend redirige al checkout de Mercado Pago
-6. Usuario paga en MP
-7. MP envía webhook → POST /api/payments/webhook
-8. Verificar firma → obtener detalle del pago → paymentService.handleWebhook()
-9. Si aprobado: status=PAID, guardar paymentMethod y paidAt
-10. (Futuro) Enviar email de confirmación
+6. Frontend redirige al checkout de Mercado Pago
+7. Usuario paga en MP
+8. MP envía webhook → POST /api/payments/webhook (rate limit "webhook" 60/min)
+9. Verificar firma → obtener detalle del pago → paymentService.handleWebhook()
+10. Si aprobado: status=PAID, guardar paymentMethod y paidAt; reconciliar
+    Property + PoolUnit (el lado XOR que no aplica es no-op porque recibe null).
+11. (Futuro) Enviar email de confirmación
+```
+
+### 6.3b Reserva + Pago (Producto 2 — PoolUnit)
+```
+1. Usuario en /oportunidades/pools/[slug], elige unidad AVAILABLE en la grilla
+2. Click "Reservar" → /reserva/pool-unit/[id]?from=...
+3. Página de checkout (GET /api/portal/pool-units/[id]) muestra resumen de la
+   unidad + monto de reserva del pool.
+4. Click "Confirmar y pagar" → POST /api/reservations { poolUnitId } (rate
+   limit "expensive" 5/min por usuario).
+5. Transacción Prisma:
+   a. Valida pool.status === "OPEN", acceptingReservations, unit.saleStatus
+      === "AVAILABLE", no haya otra reserva activa, no haya duplicado del
+      propio usuario.
+   b. Crea Reservation con propertyId=null, poolUnitId=<id>,
+      amount=pool.reservationFeeClp, status=PENDING_PAYMENT, expiresAt=48h.
+   c. markPoolUnitReservedSync(tx, poolUnitId) marca PoolUnit.saleStatus =
+      RESERVED.
+6. CHECK constraint XOR de Postgres garantiza propertyId IS NULL XOR
+   poolUnitId IS NULL.
+7. Frontend dispara POST /api/payments/checkout → mismo flujo que Producto 1.
+8. Webhook MP → handleWebhook → reconcile de ambos lados (Property y PoolUnit).
+   En este caso el reconcile de Property es no-op (propertyId=null);
+   reconcilePoolUnitAfterReservationChange mantiene saleStatus=RESERVED
+   mientras la reserva está activa.
+9. Si reserva CANCELLED/EXPIRED → reconcile devuelve unit a AVAILABLE (salvo
+   que ya esté SOLD, que es terminal).
+10. Staff escritura (ver 6.4) → unit pasa a SOLD (terminal por esa vía).
 ```
 
 ### 6.4 Escrituración + Trigger de payouts de atribución
@@ -561,7 +612,11 @@ Lazy-fix análogo: si el broker no tiene `brokerReferralCode`, la page llama a `
 3. Endpoint:
    a. Verifica session staff SUPER_ADMIN.
    b. Marca Reservation.status = CONFIRMED (si no estaba ya).
-   c. Llama triggerEscrituraPayouts(reservation.userId):
+   c. Si reservation.poolUnitId !== null → marca PoolUnit.saleStatus = SOLD
+      (terminal; no se revierte por canc/expiry posterior). Producto 1 no
+      requiere paso adicional — Property.status sigue siendo RESERVED hasta
+      que staff la mueva manualmente.
+   d. Llama triggerEscrituraPayouts(reservation.userId):
       • Busca Referral con referredUserId = userId; si está en PENDING /
         SIGNED_UP / QUALIFIED → transiciona a SIGNED, signedAt = now,
         payoutStatus = PENDING. Idempotente.
@@ -682,6 +737,57 @@ Helper: `brokerSwitchHrefFor()` en `components/portal/sidebar.tsx`.
 - **Una sola DB**: leads viven en la misma Neon del portal. El modelo `Lead` se extendió para recibir todos los datos del form (firstName, lastName, phone, kind, marketingAttribution, campos vendedor).
 - **Vinculación con User**: por `User.leadId` cuando el evento `createUser` matchea por email; o por email match en el GET de `/api/users/profile` para cuentas pre-existentes al lead.
 - **Welcome email**: tras crear Lead nuevo INVESTOR, se dispara automáticamente vía la capa de notifications.
+
+### 8.5 Vercel KV (Upstash Redis) — OPERATIVO
+- **Estado**: integración Upstash activa en Vercel desde 2026-05-13. DB Redis en región **iad1** (Washington, us-east-1), plan Free, linkeada a `maxrent-portal` en Production + Preview + Development.
+- **Propósito**: storage compartido para rate limiting entre instancias serverless. Sliding window contra Redis con latencia ~5ms.
+- **Variables inyectadas automáticamente por Vercel** (custom prefix `KV`):
+  - `KV_REST_API_URL`
+  - `KV_REST_API_TOKEN`
+  - `KV_REST_API_READ_ONLY_TOKEN`
+  - `KV_URL`
+  - `KV_REDIS_URL`
+- **Usado por**: `src/lib/rate-limit-core.ts` (cliente Upstash + 4 buckets) y `src/lib/rate-limit.ts` (wrapper con NextAuth para route handlers).
+- **Modo dev local sin KV**: fail-open silencioso (no bloquea, loguea un warn al primer hit). Si querés testear el comportamiento real en local, copia las dos env vars a `.env.local`.
+- **Detalle**: ver sección «Rate limiting» más abajo y [`docs/RATE_LIMIT.md`](./docs/RATE_LIMIT.md).
+
+---
+
+## 8.6 Rate limiting (seguridad transversal)
+
+Capa de defensa en profundidad contra abuso. **No reemplaza** otras protecciones (firma de webhooks, auth, gates de negocio): se suma en cada endpoint sensible.
+
+**Storage**: Vercel KV (ver § 8.5).
+
+**4 buckets nombrados** definidos en `src/lib/rate-limit-core.ts → RATE_LIMITS`:
+
+| Bucket | Límite | Identificación | Endpoints |
+|---|---|---|---|
+| `webhook` | 60/min por IP | IP del cliente | `/api/payments/webhook`, `/api/floid/callback`, `/api/notifications/webhook/resend` |
+| `public` | 10/min por IP | IP del cliente | `/api/public/leads` |
+| `authenticated` | 60/min por usuario | userId si hay sesión, sino IP | `/api/portal/pools` + `[slug]`, `/api/portal/pool-units/[id]`, `/api/portal/catalog-properties` |
+| `expensive` | 5/min por usuario | userId si hay sesión, sino IP | `/api/floid/evaluate`, `POST /api/reservations`, `POST /api/payments/checkout` |
+
+**Respuesta cuando se excede**: `HTTP 429` con headers `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` + body `{ error, retryAfter }`. CORS preservado donde aplica.
+
+**Arquitectura del módulo** (2 archivos):
+- `rate-limit-core.ts`: lógica pura sin Next/NextAuth (testeable con vitest).
+- `rate-limit.ts`: wrapper con `auth()` + `NextResponse`. Importa NextAuth solo aquí.
+
+**Cómo aplicar a un endpoint nuevo**:
+```ts
+import { applyRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+
+export async function POST(req: Request) {
+  const limited = await applyRateLimit(req, RATE_LIMITS.public, { route: "mi-endpoint" });
+  if (limited) return limited;
+  // … resto del handler
+}
+```
+
+Tests: `src/lib/rate-limit.test.ts` cubre extracción de IP, fail-open sin KV, configuración de buckets (12 cases).
+
+Detalle completo + verificación con curl: [`docs/RATE_LIMIT.md`](./docs/RATE_LIMIT.md).
 
 ---
 
