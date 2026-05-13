@@ -128,6 +128,10 @@ Lead
 
 Property
  └── 1:1 PropertyCatalogDraft (staging Houm/CSV antes de publicar)
+
+Pool (Producto 2 — portafolio de propiedades arrendadas)
+ └── 1:N PoolUnit
+      └── 1:N Reservation (via Reservation.poolUnitId; XOR con propertyId)
 ```
 
 > Diagrama ER completo en formato Mermaid: [`docs/DATABASE.md`](./docs/DATABASE.md). Mantener actualizado al modificar `prisma/schema.prisma`.
@@ -213,6 +217,13 @@ Property
 - `Property`: `inventoryCode` y `houmPropertyId` como business keys únicas; `status` (AVAILABLE / RESERVED / SOLD / ARCHIVED), `visibleToBrokers`, `metadata` Json.
 - `PropertyCatalogDraft`: filas de staging (CSV o sync Houm) hasta que staff aprueba la publicación. Ver `docs/HOUM_CATALOG_METADATA.md` y `docs/PROPERTY_INVENTORY_IMPORT.md`.
 
+**Pool + PoolUnit** (Producto 2 — portafolio de propiedades arrendadas)
+- Tablas independientes de `Property` para evitar bugs por queries cruzadas. Detalle full en `docs/POOL_PRODUCTO.md`.
+- `Pool`: `slug` único, `capRateBruto` común a todas las unidades, `reservationFeeClp` (Mercado Pago), métricas agregadas cacheadas (`totalUnits`, `totalValueUf`, `totalMonthlyRentClp`, `occupancyPct`) recalculadas en cada import.
+- `PoolUnit`: 1:N desde `Pool`, `externalId` = `Id` del Excel (único por pool para upsert idempotente). Precio se **deriva** (`monthlyRent × 12 / capRate`); `internalData` JSONB guarda dirección/depto/estado raw — sensible, no exponer al inversionista. `saleStatus` (AVAILABLE / RESERVED / SOLD).
+- **`Reservation` soporta ambos productos**: `propertyId` ahora nullable + nuevo `poolUnitId`. CHECK constraint `reservations_target_xor_check` garantiza XOR (exactamente uno de los dos seteado).
+- Import: `scripts/import-lab-pool.ts` con parser puro testeado en `src/lib/pool/lab-excel-parser.ts`. Soporta `--dry-run`; idempotente al re-correr.
+
 ### 3.3 Enums
 ```typescript
 enum StaffRole                  { NONE, SUPER_ADMIN }
@@ -231,6 +242,9 @@ enum NotificationStatus         { QUEUED, SENT, DELIVERED, OPENED, BOUNCED, COMP
 enum ReferralStatus             { PENDING, SIGNED_UP, QUALIFIED, SIGNED, EXPIRED }
 enum BrokerLeadStatus           { NEW, SIGNED_UP, QUALIFIED, CONTRACT_SIGNED, LOST }
 enum PayoutStatus               { PENDING, PAID }
+enum PoolStatus                 { DRAFT, OPEN, CLOSED }
+enum PoolUnitOcupacion          { ARRENDADO, VACANTE, POR_DESOCUPARSE, AVISO_SALIDA, AVISADO_PARA_DESOCUPAR, PUBLICADA }
+enum PoolUnitSaleStatus         { AVAILABLE, RESERVED, SOLD }
 ```
 
 ---

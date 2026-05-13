@@ -84,11 +84,17 @@ export type PropertyWithStaffReservationSummary = Property & {
  * Run before staff inventory so listings match the inversionista portal (`Reservation` is source of truth for holds).
  */
 export async function syncActiveInvestorReservationHoldsToPropertyRows(): Promise<void> {
+  // Solo Producto 1: filtramos reservas con propertyId no nulo (excluye Producto 2 / Pool).
   const active = await prisma.reservation.findMany({
-    where: { status: { in: [...INVESTOR_ACTIVE_RESERVATION_STATUSES] } },
+    where: {
+      status: { in: [...INVESTOR_ACTIVE_RESERVATION_STATUSES] },
+      propertyId: { not: null },
+    },
     select: { propertyId: true },
   });
-  const ids = Array.from(new Set(active.map((r) => r.propertyId)));
+  const ids = Array.from(
+    new Set(active.map((r) => r.propertyId).filter((id): id is string => id !== null))
+  );
   for (const propertyId of ids) {
     await reconcilePropertyAfterInvestorReservationChange(propertyId);
   }
@@ -182,13 +188,19 @@ export type StaffUnifiedReservationRow = {
 export async function listUnifiedStaffReservationsForStaff(): Promise<
   StaffUnifiedReservationRow[]
 > {
+  // Staff /reservas (Producto 1): solo reservas con propertyId. Las del pool tendrán su propia vista en Fase 4.
   const invReservations = await prisma.reservation.findMany({
-    where: { status: { in: [...INVESTOR_ACTIVE_RESERVATION_STATUSES] } },
+    where: {
+      status: { in: [...INVESTOR_ACTIVE_RESERVATION_STATUSES] },
+      propertyId: { not: null },
+    },
     orderBy: { createdAt: "desc" },
     include: { user: { select: { id: true, email: true, name: true } } },
   });
 
-  const propertyIds = Array.from(new Set(invReservations.map((r) => r.propertyId)));
+  const propertyIds = Array.from(
+    new Set(invReservations.map((r) => r.propertyId).filter((id): id is string => id !== null))
+  );
   const properties =
     propertyIds.length === 0
       ? []
@@ -202,10 +214,12 @@ export async function listUnifiedStaffReservationsForStaff(): Promise<
   const merged: WithSort[] = [];
 
   for (const r of invReservations) {
-    const prop = propById.get(r.propertyId);
+    // Garantizado por el WHERE de arriba; lo asertamos para TS.
+    const pid = r.propertyId!;
+    const prop = propById.get(pid);
     merged.push({
-      propertyId: r.propertyId,
-      propertyTitle: prop?.title ?? r.propertyName ?? r.propertyId,
+      propertyId: pid,
+      propertyTitle: prop?.title ?? r.propertyName ?? pid,
       inventoryCode: prop?.inventoryCode ?? null,
       visibleToBrokers: prop?.visibleToBrokers ?? false,
       reservationId: r.id,
@@ -245,11 +259,17 @@ export async function listAvailablePropertiesForBrokers() {
 async function getPropertyIdsWithActiveInvestorReservations(
   client: Pick<typeof prisma, "reservation"> = prisma
 ): Promise<string[]> {
+  // Solo Producto 1: ignoramos reservas del pool (propertyId === null).
   const rows = await client.reservation.findMany({
-    where: { status: { in: [...INVESTOR_ACTIVE_RESERVATION_STATUSES] } },
+    where: {
+      status: { in: [...INVESTOR_ACTIVE_RESERVATION_STATUSES] },
+      propertyId: { not: null },
+    },
     select: { propertyId: true },
   });
-  return Array.from(new Set(rows.map((r) => r.propertyId)));
+  return Array.from(
+    new Set(rows.map((r) => r.propertyId).filter((id): id is string => id !== null))
+  );
 }
 
 /**
@@ -281,10 +301,13 @@ export async function listInvestorCatalogProperties(userId: string): Promise<Pro
     where: {
       userId,
       status: { in: [...INVESTOR_ACTIVE_RESERVATION_STATUSES] },
+      propertyId: { not: null },
     },
     select: { propertyId: true },
   });
-  const heldIds = new Set(activeRows.map((r) => r.propertyId));
+  const heldIds = new Set(
+    activeRows.map((r) => r.propertyId).filter((id): id is string => id !== null)
+  );
   const inBase = new Set(base.map((p) => p.id));
   const missing = Array.from(heldIds).filter((id) => !inBase.has(id));
   if (missing.length === 0) {
@@ -350,9 +373,11 @@ export async function markPropertyReservedForInvestorSync(
  * Without an active investor reservation, inventory returns to `AVAILABLE` and legacy broker hold keys are cleared.
  */
 export async function reconcilePropertyAfterInvestorReservationChange(
-  propertyId: string,
+  propertyId: string | null,
   db: Pick<typeof prisma, "property" | "reservation"> = prisma
 ): Promise<void> {
+  // Reservas de Producto 2 (Pool) tienen propertyId=null y no afectan al inventario `Property`.
+  if (!propertyId) return;
   const prop = await db.property.findUnique({ where: { id: propertyId } });
   if (!prop) return;
   if (prop.status !== "RESERVED" && prop.status !== "AVAILABLE") {
