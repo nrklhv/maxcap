@@ -94,6 +94,16 @@ Sin `RESEND_API_KEY` el adapter falla y la notificación queda en `Notification`
 2. Copiar variables a `.env.local` según [docs/FLOID_SETUP.md](./docs/FLOID_SETUP.md) y [`.env.example`](./.env.example) (`FLOID_API_KEY`, `FLOID_SERVICE_PATH`, `FLOID_USE_STUB=false`, etc.).
 3. Probar el flujo en **`/evaluacion`** con un usuario que tenga RUT y perfil completo; revisar `CreditEvaluation` en la base.
 
+### Rate limiting (Vercel KV / Upstash Redis)
+
+Webhooks de proveedores, endpoints públicos del landing y operaciones caras (Floid, crear reserva) están protegidos con sliding window contra Upstash Redis. 4 buckets predefinidos.
+
+1. En Vercel → proyecto **maxrent-portal** → **Storage** (o **Marketplace** > **Upstash for Redis**) → crear DB Redis, región **iad1**, plan Free.
+2. Linkear al proyecto en environments Production + Preview + Development. Vercel inyecta automáticamente `KV_REST_API_URL` y `KV_REST_API_TOKEN`.
+3. En dev local sin Vercel KV el rate limiter entra en modo **fail-open silencioso** (no bloquea, loguea un warn al primer hit). Si quieres testear el comportamiento real en local, pega manualmente las dos env vars en `.env.local`.
+
+Detalle de buckets, números, cómo aplicarlos a un nuevo endpoint y verificación en prod: [docs/RATE_LIMIT.md](./docs/RATE_LIMIT.md).
+
 ## 3. Inicializar base de datos
 
 Los comandos `db:push`, `db:migrate`, `db:studio` y **`db:seed`** fusionan **`maxrent-portal/.env`** y **`maxrent-portal/.env.local`** para `DATABASE_URL` (igual que en desarrollo con Next). El CLI crudo **`npx prisma db push`** solo lee `.env`, por eso puede fallar con `P1010` si `DATABASE_URL` está solo en `.env.local` — usá siempre **`npm run db:push`**.

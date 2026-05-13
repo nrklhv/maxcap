@@ -20,12 +20,16 @@ import {
   getPublicPoolBySlug,
   listPublicPoolUnits,
 } from "@/lib/services/pool.service";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
-export async function GET(_: Request, { params }: { params: { slug: string } }) {
+export async function GET(req: Request, { params }: { params: { slug: string } }) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
+
+  const limited = await applyRateLimit(req, RATE_LIMITS.authenticated, { route: "pool-detail" });
+  if (limited) return limited;
 
   const pool = await getPublicPoolBySlug(params.slug);
   if (!pool) {

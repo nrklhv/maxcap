@@ -13,12 +13,16 @@ import { prisma } from "@/lib/prisma";
 import { INVESTOR_ACTIVE_RESERVATION_STATUSES } from "@/lib/portal/investor-active-reservation-statuses";
 import { getInvestorReserveGatePayload } from "@/lib/portal/investor-reservation-gate";
 import { getPublicPoolUnitWithPool } from "@/lib/services/pool.service";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: { id: string } }) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
+
+  const limited = await applyRateLimit(req, RATE_LIMITS.authenticated, { route: "pool-unit" });
+  if (limited) return limited;
 
   const data = await getPublicPoolUnitWithPool(params.id);
   if (!data) {

@@ -13,12 +13,16 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getInvestorReserveGatePayload } from "@/lib/portal/investor-reservation-gate";
 import { listPublicPools } from "@/lib/services/pool.service";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
+
+  const limited = await applyRateLimit(req, RATE_LIMITS.authenticated, { route: "pools-list" });
+  if (limited) return limited;
 
   const [gate, pools] = await Promise.all([
     getInvestorReserveGatePayload(session.user.id),

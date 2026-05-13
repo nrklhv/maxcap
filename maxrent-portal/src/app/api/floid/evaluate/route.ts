@@ -20,12 +20,18 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { floidEvaluateRequestSchema } from "@/lib/floid/evaluate-body.schema";
 import { createWidgetEvaluation } from "@/lib/services/floid.service";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
+
+  // Bucket "expensive" (5/min por usuario). Cada evaluación cuesta cuota Floid;
+  // este límite previene loop accidental del frontend o abuso del usuario.
+  const limited = await applyRateLimit(request, RATE_LIMITS.expensive, { route: "floid-evaluate" });
+  if (limited) return limited;
 
   let json: unknown;
   try {

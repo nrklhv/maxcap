@@ -8,9 +8,15 @@
 // =============================================================================
 
 import { NextResponse } from "next/server";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 // import { paymentService } from "@/lib/services/payment.service"; // al integrar MP/Stripe
 
 export async function POST(req: Request) {
+  // Bucket "webhook" (60/min por IP). MP envía bursts legítimos: este límite es
+  // amplio para no perder eventos, pero corta abuso desde IPs anónimas.
+  const limited = await applyRateLimit(req, RATE_LIMITS.webhook, { route: "payments" });
+  if (limited) return limited;
+
   try {
     const body = await req.json();
 

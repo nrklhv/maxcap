@@ -23,6 +23,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { Webhook } from "svix";
 import { applyDeliveryEvent, type DeliveryEvent } from "@/lib/services/notifications/delivery-tracker";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -82,6 +83,11 @@ function toDeliveryEvent(
 }
 
 export async function POST(req: NextRequest) {
+  // Bucket "webhook" (60/min por IP). Resend manda eventos en bursts (sent →
+  // delivered → opened para muchos correos a la vez); 60/min cubre con margen.
+  const limited = await applyRateLimit(req, RATE_LIMITS.webhook, { route: "resend" });
+  if (limited) return limited;
+
   const secret = process.env.RESEND_WEBHOOK_SECRET?.trim();
   if (!secret) {
     // Sin secret no validamos firma — rechazamos siempre por seguridad.
