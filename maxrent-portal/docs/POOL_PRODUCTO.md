@@ -161,7 +161,33 @@ Probado contra DB local con la importación real del Excel:
 - Crear reserva con `poolUnitId` → `PoolUnit.saleStatus = RESERVED`.
 - Reconciliar idempotente → sigue `RESERVED`.
 - Cancelar reserva + reconciliar → vuelve a `AVAILABLE`.
+- Escriturar reserva → `Reservation.status=CONFIRMED` + `PoolUnit.saleStatus=SOLD`.
 - El CHECK constraint `reservations_target_xor_check` rechaza filas con ambos targets.
+
+## Panel staff (Fase 4)
+
+`/staff/pools` — listado de portafolios con métricas y badges de estado (`DRAFT` / `OPEN` / `CLOSED` / `En pausa`). El alta de un pool **no se hace desde la UI**: se corre el script CLI con un `slug` nuevo. La UI se ocupa de gestión y supervisión.
+
+`/staff/pools/[slug]` — detalle interno. A diferencia del view inversionista:
+
+- **Muestra `internalData`** (dirección exacta, depto) en la tabla de unidades.
+- Muestra reserva activa por unidad con email del inversionista y montos.
+- Permite cambiar `status` (DRAFT/OPEN/CLOSED) y `acceptingReservations` (pausa rápida) sin tocar BD.
+- Permite editar la `description` pública (es la que se muestra arriba del pool en `/oportunidades/pools/[slug]`).
+- Por unidad con reserva activa: **Cancelar** (reusa `POST /api/staff/reservations/[id]/cancel`) y **Escriturar (SOLD)** (reusa `POST /api/staff/reservations/[id]/escriturar`).
+
+### Endpoints staff
+
+- `GET   /api/staff/pools` — listado para la tabla.
+- `GET   /api/staff/pools/[slug]` — detalle + unidades con `internalData` y reserva activa.
+- `PATCH /api/staff/pools/[slug]` — actualiza `description`, `status` y/o `acceptingReservations` (validación zod).
+
+### Endpoints reusados con extensión
+
+Los endpoints staff de reservas existentes se extendieron para soportar Producto 2 sin duplicar lógica:
+
+- `POST /api/staff/reservations/[id]/cancel` — ahora llama también a `reconcilePoolUnitAfterReservationChange`. Si la reserva era pool, libera la unidad (vuelve a `AVAILABLE` salvo `SOLD`).
+- `POST /api/staff/reservations/[id]/escriturar` — además de transicionar a `CONFIRMED` y disparar payouts, si la reserva tiene `poolUnitId` pasa el unit a `SOLD` (estado terminal).
 
 ## Qué NO hace este producto (aún)
 

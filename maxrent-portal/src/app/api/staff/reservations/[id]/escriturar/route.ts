@@ -35,7 +35,7 @@ export async function POST(
 
   const reservation = await prisma.reservation.findUnique({
     where: { id: id.trim() },
-    select: { id: true, userId: true, status: true },
+    select: { id: true, userId: true, status: true, poolUnitId: true },
   });
 
   if (!reservation) {
@@ -64,6 +64,15 @@ export async function POST(
     await prisma.reservation.update({
       where: { id: reservation.id },
       data: { status: "CONFIRMED" },
+    });
+  }
+
+  // Producto 2: una escrituración pasa la PoolUnit a SOLD (estado terminal).
+  // Idempotente: si ya está SOLD, no-op.
+  if (reservation.poolUnitId) {
+    await prisma.poolUnit.update({
+      where: { id: reservation.poolUnitId },
+      data: { saleStatus: "SOLD" },
     });
   }
 

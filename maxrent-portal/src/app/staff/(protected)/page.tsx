@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, ClipboardList, Clock, UserRound, Users, UserCheck } from "lucide-react";
+import { Building2, ClipboardList, Clock, Layers, UserRound, Users, UserCheck } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 
 const ACTIVE_INVESTOR_RESERVATION_STATUSES = [
@@ -10,16 +10,23 @@ const ACTIVE_INVESTOR_RESERVATION_STATUSES = [
 ] as const;
 
 export default async function StaffHomePage() {
-  const [propertyTotal, visibleToBrokers, brokerPending, brokerApproved, activeInvestorReservations] =
-    await Promise.all([
-      prisma.property.count(),
-      prisma.property.count({ where: { visibleToBrokers: true } }),
-      prisma.user.count({ where: { brokerAccessStatus: "PENDING" } }),
-      prisma.user.count({ where: { brokerAccessStatus: "APPROVED" } }),
-      prisma.reservation.count({
-        where: { status: { in: [...ACTIVE_INVESTOR_RESERVATION_STATUSES] } },
-      }),
-    ]);
+  const [
+    propertyTotal,
+    visibleToBrokers,
+    brokerPending,
+    brokerApproved,
+    activeInvestorReservations,
+    poolTotal,
+  ] = await Promise.all([
+    prisma.property.count(),
+    prisma.property.count({ where: { visibleToBrokers: true } }),
+    prisma.user.count({ where: { brokerAccessStatus: "PENDING" } }),
+    prisma.user.count({ where: { brokerAccessStatus: "APPROVED" } }),
+    prisma.reservation.count({
+      where: { status: { in: [...ACTIVE_INVESTOR_RESERVATION_STATUSES] } },
+    }),
+    prisma.pool.count({ where: { status: { in: ["OPEN", "CLOSED"] } } }),
+  ]);
 
   return (
     <div className="space-y-8">
@@ -129,6 +136,24 @@ export default async function StaffHomePage() {
             </h2>
             <p className="mt-1 text-sm text-gray-500 leading-snug">
               Alta, edición y visibilidad para el canal broker.
+            </p>
+          </div>
+        </Link>
+        <Link
+          href="/staff/pools"
+          className="group flex gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm ring-1 ring-gray-100 hover:border-blue-200 hover:ring-blue-100 hover:shadow-md transition-all"
+        >
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700">
+            <Layers className="h-5 w-5" aria-hidden />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-gray-900 group-hover:text-blue-800">
+              Pools
+            </h2>
+            <p className="mt-1 text-sm text-gray-500 leading-snug">
+              Portafolios arrendados (Producto 2).{" "}
+              <span className="font-medium text-gray-700 tabular-nums">{poolTotal}</span>{" "}
+              {poolTotal === 1 ? "publicado" : "publicados"}.
             </p>
           </div>
         </Link>

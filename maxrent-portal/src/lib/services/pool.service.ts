@@ -150,6 +150,54 @@ export async function listPublicPoolUnits(poolId: string): Promise<PublicPoolUni
 }
 
 // ============================================================================
+// Vistas STAFF — incluyen `internalData` y reservas activas. NO usar para
+// inversionista (esos consumen las funciones `Public*` de arriba).
+// ============================================================================
+
+/** Listado para staff: todos los pools (incluido DRAFT) con sus métricas. */
+export async function listStaffPools() {
+  return prisma.pool.findMany({
+    select: POOL_PUBLIC_SELECT,
+    orderBy: [{ createdAt: "desc" }],
+  });
+}
+
+/**
+ * Detalle staff de un pool: incluye todas las unidades con `internalData` y,
+ * para las unidades con reserva activa, los datos básicos del inversionista que
+ * la tomó. Pensado para `/staff/pools/[slug]`.
+ */
+export async function getStaffPoolDetail(slug: string) {
+  const pool = await prisma.pool.findUnique({
+    where: { slug },
+    select: POOL_PUBLIC_SELECT,
+  });
+  if (!pool) return null;
+  const units = await prisma.poolUnit.findMany({
+    where: { poolId: pool.id },
+    orderBy: [{ saleStatus: "asc" }, { priceUf: "asc" }],
+    // No usamos POOL_UNIT_PUBLIC_SELECT acá: staff necesita ver internalData.
+    include: {
+      reservations: {
+        where: { status: { in: [...INVESTOR_ACTIVE_RESERVATION_STATUSES] } },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: {
+          id: true,
+          status: true,
+          amount: true,
+          createdAt: true,
+          expiresAt: true,
+          paidAt: true,
+          user: { select: { id: true, email: true, name: true } },
+        },
+      },
+    },
+  });
+  return { pool, units };
+}
+
+// ============================================================================
 // Reservación de unidades del pool — helpers usados por POST /api/reservations
 // y por el webhook de pago. Análogos a los de Property:
 //   - markPoolUnitReservedSync ←→ markPropertyReservedForInvestorSync
