@@ -110,9 +110,61 @@ npx tsx scripts/import-lab-pool.ts \
 4. Corre sin flag para persistir.
 5. Pool queda disponible en `/oportunidades/pools/<slug>` (cuando se implemente Fase 2 UI).
 
+## Flujo de reserva (Fase 3)
+
+El flujo de reserva del pool **comparte infraestructura** con Producto 1 (Mercado Pago, gate de evaluación, webhook de pago).
+
+### Contrato HTTP
+
+`POST /api/reservations` ahora acepta XOR:
+
+```jsonc
+// Producto 1
+{ "propertyId": "p_..." }
+// Producto 2
+{ "poolUnitId": "u_..." }
+```
+
+Validado por `reservationSchema` ([`src/lib/validations.ts`](../src/lib/validations.ts), tests en `validations.test.ts`). Mandar ambos o ninguno devuelve `400`.
+
+`GET /api/reservations` ahora incluye `poolUnitId` + `poolUnit { externalId, label, pool { slug, name } }` para que `/reserva` pinte las reservas del pool con identidad propia (icono distinto, link al portafolio).
+
+### Endpoints nuevos
+
+- `GET /api/portal/pool-units/[id]` — detalle público de una unidad para la página de checkout. Devuelve `unit + pool + canReserve + investorActiveReservation`.
+
+### Helpers de inventario (`src/lib/services/pool.service.ts`)
+
+Análogos a los que tiene Property:
+
+- **`markPoolUnitReservedSync(tx, poolUnitId)`** — dentro de la transacción del POST: marca el unit como `RESERVED`. Lanza si está `SOLD`.
+- **`reconcilePoolUnitAfterReservationChange(poolUnitId)`** — idempotente, llamado desde el webhook de pago:
+  - Hay reserva activa (`PENDING_PAYMENT`/`PAYMENT_PROCESSING`/`PAID`/`CONFIRMED`) → `RESERVED`.
+  - No hay → `AVAILABLE`.
+  - `SOLD` nunca se revierte por esta vía (la transición a `SOLD` la hace staff al escriturar).
+
+### Páginas inversionista
+
+- `/oportunidades/pools` — listado de portafolios.
+- `/oportunidades/pools/[slug]` — detalle + grilla. Click en "Reservar" → siguiente página.
+- `/reserva/pool-unit/[id]?from=...` — checkout: resumen de la unidad + monto de reserva + botón "Confirmar y pagar". Crea la `Reservation` y redirige a la pasarela de pago. Si el usuario ya tiene reserva activa de esa unidad, muestra estado y link a `/reserva`.
+- `/reserva` — lista todas las reservas (Producto 1 + Producto 2) con identidad visual distinta.
+
+### Pago
+
+El `paymentService` (`createCheckout` + `handleWebhook`) ahora reconcilia **ambos** lados después de actualizar la `Reservation`: llama tanto a `reconcilePropertyAfterInvestorReservationChange(propertyId)` como a `reconcilePoolUnitAfterReservationChange(poolUnitId)`. El que no aplique recibe `null` y es no-op. Cero ramificación condicional en el caller.
+
+### Validación E2E
+
+Probado contra DB local con la importación real del Excel:
+
+- Crear reserva con `poolUnitId` → `PoolUnit.saleStatus = RESERVED`.
+- Reconciliar idempotente → sigue `RESERVED`.
+- Cancelar reserva + reconciliar → vuelve a `AVAILABLE`.
+- El CHECK constraint `reservations_target_xor_check` rechaza filas con ambos targets.
+
 ## Qué NO hace este producto (aún)
 
-- No publica el pool en `/oportunidades` (Fase 2 implementa `/oportunidades/pools` y `/oportunidades/pools/[slug]`).
 - No tiene panel de staff para crear/cerrar pools (Fase 4).
-- No valida que el flujo de pago de reserva acepte `poolUnitId` (Fase 3 — verificar e integrar).
-- No expone `internalData` por API: el endpoint público debe seleccionar explícitamente solo campos seguros.
+- Mercado Pago sigue siendo stub (igual que Producto 1): la integración real va con el SDK de MP — el contrato de `paymentService` ya está listo para ambos productos.
+- No expone `internalData` por API: el endpoint público selecciona explícitamente campos seguros vía `POOL_UNIT_PUBLIC_SELECT`.

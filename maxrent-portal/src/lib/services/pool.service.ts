@@ -16,6 +16,7 @@ import type {
   PublicPoolListItem,
   PublicPoolUnit,
 } from "@/lib/pool/public-types";
+import { INVESTOR_ACTIVE_RESERVATION_STATUSES } from "@/lib/portal/investor-active-reservation-statuses";
 
 // Re-export para conveniencia de los callers internos. Los Client Components
 // deben importar directamente desde `@/lib/pool/public-types` para no arrastrar Prisma.
@@ -113,6 +114,31 @@ export async function getPublicPoolBySlug(slug: string): Promise<PublicPoolDetai
   return poolToPublic(row);
 }
 
+/**
+ * Detalle público de una unidad **junto con** un resumen mínimo del pool al que
+ * pertenece. Usado por la página de checkout `/reserva/pool-unit/[id]` para
+ * mostrar la info de la unidad y el monto de reserva sin requerir un round-trip
+ * adicional al detalle del pool.
+ */
+export async function getPublicPoolUnitWithPool(
+  unitId: string
+): Promise<{ unit: PublicPoolUnit; pool: PublicPoolDetail } | null> {
+  const row = await prisma.poolUnit.findUnique({
+    where: { id: unitId },
+    select: {
+      ...POOL_UNIT_PUBLIC_SELECT,
+      pool: { select: POOL_PUBLIC_SELECT },
+    },
+  });
+  if (!row) return null;
+  if (row.pool.status === "DRAFT") return null;
+  const { pool, ...unitFields } = row;
+  return {
+    unit: unitToPublic(unitFields),
+    pool: poolToPublic(pool),
+  };
+}
+
 /** Unidades públicas del pool (sin `internalData`), ordenadas por estado de venta y precio. */
 export async function listPublicPoolUnits(poolId: string): Promise<PublicPoolUnit[]> {
   const rows = await prisma.poolUnit.findMany({
@@ -121,4 +147,61 @@ export async function listPublicPoolUnits(poolId: string): Promise<PublicPoolUni
     orderBy: [{ saleStatus: "asc" }, { priceUf: "asc" }],
   });
   return rows.map(unitToPublic);
+}
+
+// ============================================================================
+// Reservación de unidades del pool — helpers usados por POST /api/reservations
+// y por el webhook de pago. Análogos a los de Property:
+//   - markPoolUnitReservedSync ←→ markPropertyReservedForInvestorSync
+//   - reconcilePoolUnitAfterReservationChange ←→ reconcilePropertyAfterInvestorReservationChange
+// ============================================================================
+
+/**
+ * Marca un `PoolUnit` como `RESERVED` dentro de una transacción. Se llama justo
+ * después de crear la `Reservation` con `poolUnitId`.
+ */
+export async function markPoolUnitReservedSync(
+  tx: Prisma.TransactionClient,
+  poolUnitId: string
+): Promise<void> {
+  const unit = await tx.poolUnit.findUnique({ where: { id: poolUnitId } });
+  if (!unit) throw new Error("PoolUnit not found for reservation sync");
+  if (unit.saleStatus === "SOLD") throw new Error("UNIT_SOLD");
+  await tx.poolUnit.update({
+    where: { id: poolUnitId },
+    data: { saleStatus: "RESERVED" },
+  });
+}
+
+/**
+ * Reconcilia el `saleStatus` de un `PoolUnit` después de un cambio en sus
+ * `Reservation`s (webhook de pago, cancelación, etc.):
+ *   - Si hay reserva activa → `RESERVED`.
+ *   - Si no hay reserva activa y el unit no está `SOLD` → `AVAILABLE`.
+ *   - `SOLD` nunca se revierte por este path (eso lo hace staff al escriturar).
+ *
+ * Idempotente. Acepta `null` (no-op) para callers que no saben si la reserva
+ * era de pool o de property.
+ */
+export async function reconcilePoolUnitAfterReservationChange(
+  poolUnitId: string | null,
+  db: Pick<typeof prisma, "poolUnit" | "reservation"> = prisma
+): Promise<void> {
+  if (!poolUnitId) return;
+  const unit = await db.poolUnit.findUnique({ where: { id: poolUnitId } });
+  if (!unit) return;
+  if (unit.saleStatus === "SOLD") return; // terminal
+
+  const active = await db.reservation.findFirst({
+    where: {
+      poolUnitId,
+      status: { in: [...INVESTOR_ACTIVE_RESERVATION_STATUSES] },
+    },
+  });
+  const target: "RESERVED" | "AVAILABLE" = active ? "RESERVED" : "AVAILABLE";
+  if (unit.saleStatus === target) return;
+  await db.poolUnit.update({
+    where: { id: poolUnitId },
+    data: { saleStatus: target },
+  });
 }

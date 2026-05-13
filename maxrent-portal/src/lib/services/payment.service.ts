@@ -10,6 +10,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { reconcilePropertyAfterInvestorReservationChange } from "@/lib/services/property.service";
+import { reconcilePoolUnitAfterReservationChange } from "@/lib/services/pool.service";
 
 export interface CheckoutResult {
   checkoutUrl: string;       // URL donde redirigir al usuario para pagar
@@ -59,7 +60,11 @@ export class PaymentService {
         status: "PAYMENT_PROCESSING",
       },
     });
+    // Una reserva referencia o `propertyId` (Producto 1) o `poolUnitId` (Producto 2)
+    // pero nunca ambos (CHECK XOR). Llamamos los dos reconciliadores; el del lado
+    // que no aplica es un no-op porque recibe null.
     await reconcilePropertyAfterInvestorReservationChange(updated.propertyId);
+    await reconcilePoolUnitAfterReservationChange(updated.poolUnitId);
 
     return result;
   }
@@ -88,6 +93,7 @@ export class PaymentService {
         },
       });
       await reconcilePropertyAfterInvestorReservationChange(after.propertyId);
+      await reconcilePoolUnitAfterReservationChange(after.poolUnitId);
 
       // TODO: Enviar email de confirmación
       // await notificationService.sendReservationConfirmation(reservation.id);
@@ -98,6 +104,7 @@ export class PaymentService {
         data: { status: "PENDING_PAYMENT" },
       });
       await reconcilePropertyAfterInvestorReservationChange(after.propertyId);
+      await reconcilePoolUnitAfterReservationChange(after.poolUnitId);
     }
   }
 
