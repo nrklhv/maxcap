@@ -1,19 +1,29 @@
 // =============================================================================
-// Reservas — Lista de reservas del usuario
+// Reservas — Lista de reservas del usuario (Producto 1 + Producto 2)
 // =============================================================================
-// El catálogo de oportunidades vive en /oportunidades.
+// El catálogo de oportunidades vive en /oportunidades. Las reservas del pool
+// llevan `poolUnit` populated; las de propiedades llevan `propertyName`.
 // =============================================================================
 
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Home, CheckCircle, AlertCircle } from "lucide-react";
+import { Home, CheckCircle, AlertCircle, Layers } from "lucide-react";
+
+type PoolUnitSummary = {
+  id: string;
+  externalId: string;
+  label: string;
+  pool: { slug: string; name: string };
+};
 
 type Reservation = {
   id: string;
-  propertyId: string;
+  propertyId: string | null;
   propertyName: string | null;
+  poolUnitId: string | null;
+  poolUnit: PoolUnitSummary | null;
   status: string;
   amount: string;
   currency: string;
@@ -61,7 +71,7 @@ export default function ReservaPage() {
         <h1 className="font-serif text-2xl tracking-tight text-dark">Mis Reservas</h1>
         <p className="mt-1 text-gray-600">
           Incluye reservas pendientes de pago y las ya pagadas o confirmadas (desde «Reservar» en
-          Oportunidades de inversión).
+          Oportunidades de inversión o en un portafolio del pool).
         </p>
       </div>
 
@@ -72,7 +82,7 @@ export default function ReservaPage() {
           </div>
           <h3 className="font-semibold text-gray-900">Sin reservas aún</h3>
           <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto">
-            Explorá el catálogo en{" "}
+            Explora el catálogo en{" "}
             <Link href="/oportunidades" className="font-medium text-blue-600 hover:text-blue-700">
               Oportunidades de inversión
             </Link>
@@ -107,19 +117,48 @@ function ReservationCard({ reservation: r }: { reservation: Reservation }) {
   };
   const StatusIcon = status.icon;
 
+  // Identidad visual depende del tipo: pool unit vs property.
+  const isPool = Boolean(r.poolUnit);
+  const title = isPool && r.poolUnit
+    ? `${r.poolUnit.pool.name} · Unidad #${r.poolUnit.externalId}`
+    : r.propertyName || `Propiedad ${r.propertyId ?? ""}`.trim();
+  const subtitle = isPool && r.poolUnit
+    ? r.poolUnit.label
+    : null;
+  const detailLink = isPool && r.poolUnit
+    ? `/oportunidades/pools/${r.poolUnit.pool.slug}`
+    : r.propertyId
+    ? `/reserva/propiedad/${r.propertyId}`
+    : null;
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-            <Home className="w-5 h-5 text-blue-600" />
+          <div
+            className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+              isPool ? "bg-indigo-50" : "bg-blue-50"
+            }`}
+          >
+            {isPool ? (
+              <Layers className="w-5 h-5 text-indigo-600" />
+            ) : (
+              <Home className="w-5 h-5 text-blue-600" />
+            )}
           </div>
           <div>
-            <p className="text-sm font-semibold text-gray-900">
-              {r.propertyName || `Propiedad ${r.propertyId}`}
-            </p>
+            <p className="text-sm font-semibold text-gray-900">{title}</p>
+            {subtitle ? <p className="text-xs text-gray-500">{subtitle}</p> : null}
             <p className="text-xs text-gray-500">
               {new Date(r.createdAt).toLocaleDateString("es-CL")}
+              {detailLink ? (
+                <>
+                  {" · "}
+                  <Link href={detailLink} className="font-medium text-blue-600 hover:underline">
+                    Ver detalle
+                  </Link>
+                </>
+              ) : null}
             </p>
           </div>
         </div>

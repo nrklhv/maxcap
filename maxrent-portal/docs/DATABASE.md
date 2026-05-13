@@ -440,3 +440,15 @@ Adicionalmente, en el paso 5 `linkUserToPendingAttribution` setea `User.sponsorB
 | `ReferralStatus` | PENDING, SIGNED_UP, QUALIFIED, SIGNED, EXPIRED |
 | `BrokerLeadStatus` | NEW, SIGNED_UP, QUALIFIED, CONTRACT_SIGNED, LOST |
 | `PayoutStatus` | PENDING, PAID |
+| `PoolStatus` | DRAFT, OPEN, CLOSED |
+| `PoolUnitOcupacion` | ARRENDADO, VACANTE, POR_DESOCUPARSE, AVISO_SALIDA, AVISADO_PARA_DESOCUPAR, PUBLICADA |
+| `PoolUnitSaleStatus` | AVAILABLE, RESERVED, SOLD |
+
+## Producto 2 — Pools de propiedades
+
+Tablas `pools` + `pool_units` separadas de `properties` (no comparten catálogo). Detalle completo en [`POOL_PRODUCTO.md`](./POOL_PRODUCTO.md).
+
+- **`Pool`**: agrupa N `PoolUnit` con un `capRateBruto` común y `reservationFeeClp` (Mercado Pago). Cachea métricas agregadas (`totalUnits`, `totalValueUf`, `totalMonthlyRentClp`, `occupancyPct`) recalculadas en cada import del Excel.
+- **`PoolUnit`**: una fila por unidad. `externalId` = `Id` del Excel; `@@unique([poolId, externalId])` para upsert idempotente. Precio se **deriva** (`monthlyRent × 12 / capRate`), no es columna manual. `internalData` (JSONB) guarda dirección exacta, depto y estado raw — **no exponer al inversionista**.
+- **`Reservation` ahora soporta ambos productos**: `propertyId` es nullable y se sumó `poolUnitId`. CHECK constraint `reservations_target_xor_check` garantiza que exactamente uno de los dos esté seteado (XOR). Las reservas legacy cumplen sin cambios.
+- Import: [`scripts/import-lab-pool.ts`](../scripts/import-lab-pool.ts) usa parser puro testeado ([`src/lib/pool/lab-excel-parser.ts`](../src/lib/pool/lab-excel-parser.ts) + tests). `--dry-run` para previsualizar; idempotente al re-correr.

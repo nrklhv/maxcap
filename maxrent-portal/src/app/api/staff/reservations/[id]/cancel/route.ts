@@ -11,6 +11,7 @@ import { requireStaffSuperAdmin } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { INVESTOR_ACTIVE_RESERVATION_STATUSES } from "@/lib/portal/investor-active-reservation-statuses";
 import { reconcilePropertyAfterInvestorReservationChange } from "@/lib/services/property.service";
+import { reconcilePoolUnitAfterReservationChange } from "@/lib/services/pool.service";
 
 export async function POST(
   _req: Request,
@@ -47,7 +48,9 @@ export async function POST(
     data: { status: "CANCELLED" },
   });
 
+  // Una reserva apunta a Property o PoolUnit (XOR); el lado que no aplica es no-op.
   await reconcilePropertyAfterInvestorReservationChange(reservation.propertyId);
+  await reconcilePoolUnitAfterReservationChange(reservation.poolUnitId);
 
   return NextResponse.json({ ok: true });
 }

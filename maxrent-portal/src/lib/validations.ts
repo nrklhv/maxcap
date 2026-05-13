@@ -140,10 +140,24 @@ export const profilePutSchema = profileSchema.merge(
 export type LaborProfileInput = z.infer<typeof laborProfileSchema>;
 export type ProfilePutInput = z.infer<typeof profilePutSchema>;
 
-export const reservationSchema = z.object({
-  propertyId: z.string().min(1, "La propiedad es requerida"),
-  evaluationId: z.string().optional(),
-});
+/**
+ * Una reserva apunta a Producto 1 (`propertyId`) o Producto 2 (`poolUnitId`),
+ * **nunca a ambos a la vez** (mismo XOR que el CHECK constraint de Postgres).
+ */
+export const reservationSchema = z
+  .object({
+    propertyId: z.string().min(1).optional(),
+    poolUnitId: z.string().min(1).optional(),
+    evaluationId: z.string().optional(),
+  })
+  .refine(
+    (v) => Boolean(v.propertyId) !== Boolean(v.poolUnitId),
+    {
+      message:
+        "Debes indicar exactamente uno de propertyId (Producto 1) o poolUnitId (Producto 2)",
+      path: ["propertyId"],
+    }
+  );
 
 export type ProfileInput = z.infer<typeof profileSchema>;
 export type ReservationInput = z.infer<typeof reservationSchema>;

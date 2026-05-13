@@ -215,8 +215,13 @@ model Reservation {
   id           String            @id @default(cuid())
   userId       String
   evaluationId String?
-  propertyId   String // ID de la propiedad (puede venir de otro sistema)
-  propertyName String? // Nombre/dirección para mostrar
+  /// Producto 1 (legacy): ID de la propiedad suelta (puede venir de otro sistema).
+  /// Nullable porque las reservas del Producto 2 (pool) usan `poolUnitId` en su lugar.
+  /// Constraint en BD: exactamente uno de {propertyId, poolUnitId} debe ser no-null.
+  propertyId   String?
+  propertyName String? // Nombre/dirección para mostrar (denormalizado)
+  /// Producto 2 (pool): FK a PoolUnit. Nullable; ver constraint de exclusión.
+  poolUnitId   String?
   status       ReservationStatus @default(PENDING_PAYMENT)
   amount       Decimal           @db.Decimal(12, 2)
   currency     String            @default("CLP")
@@ -236,10 +241,88 @@ model Reservation {
 
   user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   evaluation CreditEvaluation? @relation(fields: [evaluationId], references: [id])
+  poolUnit   PoolUnit?         @relation(fields: [poolUnitId], references: [id])
 
   @@index([userId, status])
   @@index([paymentExternalId])
+  @@index([poolUnitId])
   @@map("reservations")
+}
+
+// =============================================================================
+// POOL — Producto 2: portafolio de unidades arrendadas
+// =============================================================================
+//
+// Un Pool agrupa N unidades inmobiliarias bajo un mismo cap rate y reglas de
+// reserva compartidas. El inversionista compra 1 (o más) PoolUnit específica
+// pero recibe rentabilidad asociada al cap rate del Pool entero.
+//
+// Decisión de arquitectura: PoolUnit es una tabla independiente de Property
+// (no comparte schema con producto 1) para evitar bugs por queries sin filtrar
+// y desacoplar la semántica de los dos productos.
+// =============================================================================
+
+model Pool {
+  id                    String     @id @default(cuid())
+  /// URL-friendly identifier (ej. "propiedades-san-miguel").
+  slug                  String     @unique
+  name                  String
+  description           String?    @db.Text
+  status                PoolStatus @default(OPEN)
+  /// Toggle manual del staff para abrir/cerrar nuevas reservas sin tocar status.
+  acceptingReservations Boolean    @default(true)
+  /// Cap rate común a todas las unidades del pool. Ej: 0.0580 = 5.80% bruto anual.
+  capRateBruto          Decimal    @db.Decimal(5, 4)
+  /// Monto fijo cobrado al inversionista al reservar (Mercado Pago). Ej: 100000 CLP.
+  reservationFeeClp     Decimal    @db.Decimal(12, 2)
+  /// Métricas cacheadas para mostrar al inversionista sin recalcular en cada request.
+  /// Se actualizan cuando se importa o se modifica una PoolUnit.
+  totalUnits            Int        @default(0)
+  totalValueUf          Decimal?   @db.Decimal(14, 2)
+  totalMonthlyRentClp   Decimal?   @db.Decimal(14, 2)
+  occupancyPct          Float?
+  /// Banner image, comuna predominante, colores de marca, etc.
+  metadata              Json?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  units PoolUnit[]
+
+  @@map("pools")
+}
+
+model PoolUnit {
+  id                  String             @id @default(cuid())
+  poolId              String
+  /// Identificador del archivo origen (ej. "Id" del Excel). Para idempotencia de re-imports.
+  externalId          String
+  /// Etiqueta pública mostrada al inversionista (ej. "Unidad #1", "Departamento A-401").
+  label               String
+  priceUf             Decimal            @db.Decimal(10, 2)
+  /// Snapshot del precio en CLP al momento del import (priceUf × UF al día). Solo referencia.
+  priceClp            Decimal            @db.Decimal(14, 2)
+  monthlyRentClp      Decimal            @db.Decimal(12, 2)
+  /// Estado de arrendamiento de la unidad (cómo está hoy con su inquilino).
+  ocupacion           PoolUnitOcupacion  @default(VACANTE)
+  comuna              String?
+  dormitorios         Int?
+  banos               Int?
+  superficieUtilM2    Float?
+  superficieTerrazaM2 Float?
+  /// Datos sensibles (dirección exacta, número de depto, datos crudos del archivo origen).
+  /// Solo visibles para staff vía APIs internas — nunca expuestos al inversionista.
+  internalData        Json?
+  /// Estado de venta de la unidad dentro del pool. SOLD bloquea reservas nuevas.
+  saleStatus          PoolUnitSaleStatus @default(AVAILABLE)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  pool         Pool          @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+
+  @@unique([poolId, externalId])
+  @@index([poolId, saleStatus])
+  @@map("pool_units")
 }
 
 // =============================================================================
@@ -614,6 +697,35 @@ enum ReservationStatus {
   CANCELLED
   EXPIRED
   REFUNDED
+}
+
+enum PoolStatus {
+  /// El pool está en preparación, no visible al inversionista.
+  DRAFT
+  /// Visible y aceptando reservas (sujeto al toggle `acceptingReservations`).
+  OPEN
+  /// Cerrado: no se aceptan reservas nuevas pero el pool sigue visible (histórico).
+  CLOSED
+}
+
+/// Estado de arrendamiento actual de una unidad. Refleja la columna "Estado" del Excel origen.
+enum PoolUnitOcupacion {
+  ARRENDADO
+  VACANTE
+  POR_DESOCUPARSE
+  AVISO_SALIDA
+  AVISADO_PARA_DESOCUPAR
+  PUBLICADA
+}
+
+/// Estado de venta de la unidad dentro del pool (no confundir con `Property.status`).
+enum PoolUnitSaleStatus {
+  /// Disponible para reserva.
+  AVAILABLE
+  /// Reservada por un inversionista (Reservation en PENDING_PAYMENT/PAYMENT_PROCESSING).
+  RESERVED
+  /// Vendida y escriturada — fuera del pool comercial.
+  SOLD
 }
 
 enum LeadKind {
