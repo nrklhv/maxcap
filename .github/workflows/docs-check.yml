@@ -1,0 +1,123 @@
+name: Docs check
+
+# Falla el CI cuando un PR toca código de maxrent-portal pero no actualiza
+# documentación. Defensa estructural contra el anti-pattern de mergear features
+# sin docs (que pasó con el Pool y con el backup antes de poner este enforcement).
+#
+# Cómo se relaja:
+#   - Si tu cambio realmente NO requiere docs (typo en comentario, refactor puro,
+#     bump de dependency menor) agregá el flag `[skip docs]` en el body del PR.
+#   - El flag se considera explícito y honesto — el reviewer puede validar que
+#     efectivamente no aplica.
+#
+# Archivos considerados "código que debería traer docs":
+#   - maxrent-portal/src/**
+#   - maxrent-portal/prisma/**
+#   - maxrent-portal/scripts/**
+#   - maxrent-portal/vercel.json
+#   - maxrent-portal/package.json (deps añadidas / quitadas)
+#
+# Archivos que cuentan como documentación válida en el mismo PR:
+#   - maxrent-portal/docs/**
+#   - maxrent-portal/CONTEXTO-PROYECTO.md
+#   - maxrent-portal/SETUP.md
+#   - maxrent-portal/README.md
+#   - maxrent-portal/.env.example
+#   - cualquier *.md dentro de maxrent-portal/src/lib/services/*/README.md
+#
+# Cambios SOLO en tests/ no requieren docs (los tests son docs ejecutables).
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'maxrent-portal/src/**'
+      - 'maxrent-portal/prisma/**'
+      - 'maxrent-portal/scripts/**'
+      - 'maxrent-portal/vercel.json'
+      - 'maxrent-portal/package.json'
+
+jobs:
+  docs-check:
+    name: Documentation updated
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for [skip docs] escape hatch
+        id: skip
+        run: |
+          BODY="${{ github.event.pull_request.body }}"
+          TITLE="${{ github.event.pull_request.title }}"
+          if echo "$BODY $TITLE" | grep -qiE '\[skip[- ]docs\]'; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "✓ [skip docs] flag encontrado — saltando check."
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Categorize changed files
+        if: steps.skip.outputs.found != 'true'
+        id: diff
+        run: |
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          git diff --name-only "$BASE" "$HEAD" > /tmp/changed.txt
+
+          # Código que dispara el requirement de docs.
+          # Excluimos archivos *.test.* (tests no requieren docs externas).
+          grep -E '^maxrent-portal/(src|prisma|scripts)/' /tmp/changed.txt \
+            | grep -vE '\.(test|spec)\.(ts|tsx|js|jsx)$' \
+            > /tmp/code.txt || true
+          grep -E '^maxrent-portal/(vercel|package)\.json$' /tmp/changed.txt \
+            >> /tmp/code.txt || true
+
+          # Docs aceptadas como compensación.
+          grep -E '^maxrent-portal/.*\.md$' /tmp/changed.txt > /tmp/docs.txt || true
+          grep -E '^maxrent-portal/\.env\.example$' /tmp/changed.txt \
+            >> /tmp/docs.txt || true
+
+          CODE_COUNT=$(wc -l < /tmp/code.txt | tr -d ' ')
+          DOCS_COUNT=$(wc -l < /tmp/docs.txt | tr -d ' ')
+          echo "code_count=$CODE_COUNT" >> "$GITHUB_OUTPUT"
+          echo "docs_count=$DOCS_COUNT" >> "$GITHUB_OUTPUT"
+
+          echo "📁 Archivos de código (no-test) modificados: $CODE_COUNT"
+          if [ "$CODE_COUNT" -gt 0 ]; then
+            echo "----"
+            cat /tmp/code.txt
+            echo "----"
+          fi
+          echo "📁 Archivos de docs modificados: $DOCS_COUNT"
+          if [ "$DOCS_COUNT" -gt 0 ]; then
+            echo "----"
+            cat /tmp/docs.txt
+            echo "----"
+          fi
+
+      - name: Enforce docs updated
+        if: steps.skip.outputs.found != 'true'
+        run: |
+          CODE_COUNT="${{ steps.diff.outputs.code_count }}"
+          DOCS_COUNT="${{ steps.diff.outputs.docs_count }}"
+
+          if [ "$CODE_COUNT" -gt 0 ] && [ "$DOCS_COUNT" -eq 0 ]; then
+            echo ""
+            echo "❌ FAIL: este PR toca código pero no actualiza documentación."
+            echo ""
+            echo "Si el cambio realmente NO requiere docs, agregá '[skip docs]' al body o título del PR."
+            echo "Si SÍ requiere docs, actualizá una o varias de:"
+            echo "  • maxrent-portal/docs/<TEMA>.md (RATE_LIMIT, BACKUP_RESTORE, POOL_PRODUCTO, etc.)"
+            echo "  • maxrent-portal/CONTEXTO-PROYECTO.md (§§ 5/6/8 para endpoints/flujos/integraciones)"
+            echo "  • maxrent-portal/SETUP.md (si cambia setup local)"
+            echo "  • maxrent-portal/.env.example (si agregaste env vars)"
+            echo ""
+            echo "Para más detalle: docs/process_documentar_siempre.md (memoria del proyecto)"
+            exit 1
+          fi
+
+          echo ""
+          echo "✓ OK: docs actualizadas (o no se requieren)."
