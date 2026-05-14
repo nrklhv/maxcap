@@ -13,9 +13,9 @@
  * Auth & seguridad:
  *   - Sin `CRON_SECRET` configurado → 503 (defensivo).
  *   - Sin `BLOB_READ_WRITE_TOKEN` configurado → 503 (Vercel Blob no activado).
- *   - El blob queda en modo **público con URL aleatoria** (`addRandomSuffix=true`)
- *     porque Vercel Blob hoy solo permite "public con URL no enumerable" —
- *     equivalente práctico a privado: la URL es secreta y no se publica.
+ *   - El blob queda en modo **privado** (`access: "private"`) — Vercel Blob
+ *     soporta stores privados desde 2025. Solo accesibles con el SDK + token,
+ *     no via URL pública.
  *
  * Vercel Cron emite GET; aceptamos POST también para invocación manual de
  * staff (con el mismo header de auth, sin UI pública).
@@ -87,12 +87,13 @@ async function handle(req: NextRequest) {
     // 1. Armar el dump
     const { tarGz, metadata } = await buildDatabaseDump({ now });
 
-    // 2. Subir
+    // 2. Subir al store privado de Vercel Blob.
+    // Sin random suffix: el path es estable (1 backup por día), facilita
+    // que el restore script encuentre el archivo del día específico.
     const uploaded = await put(blobPath, tarGz, {
-      access: "public", // único modo soportado hoy; URL es secreta vía random suffix
-      addRandomSuffix: true,
+      access: "private",
       contentType: "application/gzip",
-      cacheControlMaxAge: 0,
+      allowOverwrite: true,
     });
 
     // 3. Cleanup de backups antiguos (> RETENTION_DAYS)
