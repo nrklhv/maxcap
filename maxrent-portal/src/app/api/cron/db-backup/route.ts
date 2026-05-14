@@ -51,13 +51,26 @@ function isAuthorized(req: NextRequest): boolean {
 }
 
 async function handle(req: NextRequest) {
-  if (!process.env.CRON_SECRET?.trim()) {
+  // Loguear estado de env vars al inicio (útil cuando devolvemos 503 para
+  // saber exactamente qué falta sin tener que pegar la respuesta).
+  const envStatus = {
+    cronSecret: Boolean(process.env.CRON_SECRET?.trim()),
+    blobToken: Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim()),
+    databaseUrl: Boolean(process.env.DATABASE_URL?.trim()),
+  };
+  console.log("[cron/db-backup] env status:", JSON.stringify(envStatus));
+
+  if (!envStatus.cronSecret) {
+    console.error("[cron/db-backup] CRON_SECRET ausente — 503");
     return NextResponse.json(
       { error: "CRON_SECRET no configurado" },
       { status: 503 }
     );
   }
-  if (!process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
+  if (!envStatus.blobToken) {
+    console.error(
+      "[cron/db-backup] BLOB_READ_WRITE_TOKEN ausente — 503. Activá la integración Blob en Vercel Storage y redeployá."
+    );
     return NextResponse.json(
       { error: "BLOB_READ_WRITE_TOKEN no configurado (¿Vercel Blob activado?)" },
       { status: 503 }
