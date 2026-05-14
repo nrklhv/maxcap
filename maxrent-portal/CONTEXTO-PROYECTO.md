@@ -405,7 +405,10 @@ APIs bajo `/api/staff/*` para inventario, aprobación de brokers, gestión de in
 
 | Método | Ruta | Auth | Descripción |
 |---|---|---|---|
-| GET/POST | `/api/cron/referrals/expire` | `Bearer <CRON_SECRET>` | Recorre `Referral` y `BrokerLead` con `expiresAt < now` y status no terminal, marca como `EXPIRED` / `LOST`. Configurado en `vercel.json` para correr diariamente a las 06:00 UTC (≈02:00–03:00 Chile según horario de verano). Si `CRON_SECRET` no está seteado en el server → responde 503. |
+| GET/POST | `/api/cron/referrals/expire` | `Bearer <CRON_SECRET>` | Recorre `Referral` y `BrokerLead` con `expiresAt < now` y status no terminal, marca como `EXPIRED` / `LOST`. Configurado en `vercel.json` para correr diariamente a las 06:00 UTC. Si `CRON_SECRET` no está seteado → 503. |
+| GET/POST | `/api/cron/db-backup` | `Bearer <CRON_SECRET>` | Backup diario de la DB a Vercel Blob (data-only en `.tar.gz` con un JSONL por tabla). Schedule `30 6 * * *` (06:30 UTC = 03:30 Chile). Retención 30 días con cleanup integrado en el mismo cron. Si `CRON_SECRET` o `BLOB_READ_WRITE_TOKEN` no están seteados → 503 defensivo. Detalle: `docs/BACKUP_RESTORE.md`. |
+
+**Importante para crons nuevos**: el middleware de NextAuth ahora **exime explícitamente `/api/cron/*`** del check de auth (igual que webhooks). Sin esa exención, Vercel Cron recibe 401 antes de llegar al handler que valida el Bearer. Si agregás un cron nuevo, ya está cubierto por el patrón existente — no requiere cambios al middleware.
 
 ---
 
@@ -658,6 +661,42 @@ Vercel Cron (config en maxrent-portal/vercel.json):
 Idempotente: las filas ya en estado terminal están excluidas del WHERE.
 ```
 
+### 6.6 Job nocturno: backup de la DB a Vercel Blob
+```
+Vercel Cron (config en maxrent-portal/vercel.json):
+  schedule: "30 6 * * *"  (06:30 UTC = ~03:30 Chile)
+  path: /api/cron/db-backup
+
+1. Vercel envía request con header Authorization: Bearer <CRON_SECRET>.
+2. Endpoint defensivo: si falta CRON_SECRET o BLOB_READ_WRITE_TOKEN → 503.
+3. buildDatabaseDump() arma el dump en memoria:
+   a. Lista tablas user-owned via pg_catalog, excluye _prisma_migrations
+      (se reconstruye con `prisma migrate deploy` al restaurar).
+   b. Por cada tabla: SELECT * → JSONL (1 fila = 1 línea JSON). BigInt
+      serializado como string para evitar pérdida.
+   c. Empaqueta en .tar.gz USTAR con metadata.json (startedAt,
+      schemaVersion = última migration aplicada, totalRows, tables).
+4. put() a Vercel Blob privado:
+   - path: db-backups/YYYY-MM-DD.tar.gz
+   - access: "private" (solo SDK + token, no URL pública)
+   - allowOverwrite: true (re-corridas manuales del mismo día sobrescriben)
+5. Cleanup integrado: list() blobs con prefijo db-backups/ y borra los que
+   tienen uploadedAt > 30 días.
+6. Devuelve métricas: blobUrl, sizeBytes, totalRows, tables[], deleted[].
+
+Restore (NUNCA contra prod directo):
+  • Crear Neon branch desde un momento antes del incidente.
+  • prisma migrate deploy contra el branch.
+  • scripts/restore-from-backup.ts --tarball X --target-url <branch> [--block-prod-host Y]
+  • Confirmar visualmente con Prisma Studio.
+  • Promover branch a primary o copiar selectivamente (ver docs/BACKUP_RESTORE.md).
+
+Defensa en profundidad:
+  • Neon PITR (24h en plan Free).
+  • Vercel Blob (30 días, este job).
+  • Git + prisma migrations (schema histórico).
+```
+
 ---
 
 ## 7. PROTECCIÓN DE RUTAS (Middleware)
@@ -751,6 +790,15 @@ Helper: `brokerSwitchHrefFor()` en `components/portal/sidebar.tsx`.
 - **Modo dev local sin KV**: fail-open silencioso (no bloquea, loguea un warn al primer hit). Si querés testear el comportamiento real en local, copia las dos env vars a `.env.local`.
 - **Detalle**: ver sección «Rate limiting» más abajo y [`docs/RATE_LIMIT.md`](./docs/RATE_LIMIT.md).
 
+### 8.7 Vercel Blob — OPERATIVO
+- **Estado**: integración Upstash-like activa en Vercel desde 2026-05-14 (parte del marketplace Vercel Storage). Store `maxrent-portal-backups` en región **iad1**, plan Free, modo **Private** (no público).
+- **Propósito**: storage offsite para backups diarios de la DB. Defensa contra el límite de PITR de Neon Free (24h) y contra compromiso del propio Neon.
+- **Variable inyectada automáticamente por Vercel**: `BLOB_READ_WRITE_TOKEN` (custom prefix `BLOB`).
+- **Usado por**: `/api/cron/db-backup` con `@vercel/blob` SDK. Calls clave: `put()` (subir con `access: "private"`), `list()` (paginar blobs para cleanup), `del()` (borrar blobs antiguos).
+- **Sobre `access: "private"`**: feature de Vercel Blob 2025+. Stores privados solo son accesibles con SDK + token; NO via URL pública. Si el código pide `access: "public"` contra un store privado, Vercel devuelve error de runtime — patrón importante para futuros usos del Blob.
+- **Modo dev local sin Blob**: el endpoint `/api/cron/db-backup` devuelve 503 defensivo (`BLOB_READ_WRITE_TOKEN no configurado`). No rompe nada.
+- **Detalle**: ver sección «Backup + Restore» más abajo y [`docs/BACKUP_RESTORE.md`](./docs/BACKUP_RESTORE.md).
+
 ---
 
 ## 8.6 Rate limiting (seguridad transversal)
@@ -788,6 +836,37 @@ export async function POST(req: Request) {
 Tests: `src/lib/rate-limit.test.ts` cubre extracción de IP, fail-open sin KV, configuración de buckets (12 cases).
 
 Detalle completo + verificación con curl: [`docs/RATE_LIMIT.md`](./docs/RATE_LIMIT.md).
+
+---
+
+## 8.8 Backup + Restore (defensa en profundidad de datos)
+
+Tres capas independientes para garantizar recuperación de datos ante distintos tipos de incidente:
+
+| Capa | Cobertura | Granularidad | Provee |
+|---|---|---|---|
+| **Neon PITR** (Free) | últimas 24h | segundo | restore via Neon Console (1 click) |
+| **Vercel Blob `db-backups/`** | últimos 30 días | día (UTC) | restore via `scripts/restore-from-backup.ts` |
+| **Git + Prisma migrations** | siempre | commit | schema histórico completo |
+
+Por qué tres capas:
+- **PITR 24h** cubre la mayoría de incidentes (descubiertos rápido).
+- **Blob 30 días** cierra el gap entre día 2 y día 30 que PITR Free no cubre.
+- **Git** garantiza que el schema se puede reconstruir incluso si se pierden las 2 capas anteriores.
+
+### Backup automático
+Cron diario a 06:30 UTC (`/api/cron/db-backup`) genera `.tar.gz` con:
+- Un `.jsonl` por tabla user-owned (data only — schema viene de Prisma migrations).
+- `metadata.json` con `schemaVersion` (última migration aplicada) para sanity check al restaurar.
+
+Detalle del flujo: § 6.6. Detalle del runbook de restore: [`docs/BACKUP_RESTORE.md`](./docs/BACKUP_RESTORE.md).
+
+### Patrones aprendidos durante la implementación
+Cicatrices que dejaron lecciones para futuros endpoints similares:
+
+1. **Webhooks/crons necesitan exención explícita en el middleware** (mismo patrón que `/api/payments/webhook`, `/api/floid/callback`, `/api/notifications/webhook/*`). Sin esa exención el middleware de NextAuth corta con 401 antes de llegar al handler.
+2. **Logging defensivo de env vars** al inicio de endpoints que dependen de integraciones (`console.log({cronSecret, blobToken, databaseUrl})` con booleanos true/false). Vercel runtime logs muestran solo status codes, no bodies — sin esto el diagnóstico se vuelve adivinanza.
+3. **Vercel Blob ahora soporta stores privados** (`access: "private"`). Pedir `public` contra un store privado falla con error de runtime claro. Default sugerido: `private` salvo que sea contenido para servir vía URL pública.
 
 ---
 

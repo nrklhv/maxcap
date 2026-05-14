@@ -169,6 +169,52 @@ Cuando se acerque al límite, subir a Vercel Blob Pro o migrar a R2 (10 GB free)
 - **Bug en el dump que serializa mal un tipo nuevo** → si Prisma agrega un tipo exótico que `JSON.stringify` no maneja bien, una columna podría quedar mal. Test de restore mensual lo detectaría.
 - **Schema cambia entre dump y restore** → el script de restore valida que el JSONL tenga las columnas esperadas, pero si una columna se renombró entre el dump y el restore, hay que mappear manualmente.
 
+## Lecciones aprendidas durante la implementación
+
+Tres bugs / fricciones encontrados al traer este sistema a producción, que vale la pena documentar para futuros endpoints similares.
+
+### 1 · Middleware de NextAuth corta `/api/cron/*` con 401
+
+**Síntoma**: Vercel Cron presiona "Run" → response 401 desde el middleware **antes** de llegar al handler que valida el Bearer del `CRON_SECRET`.
+
+**Causa**: el middleware de NextAuth (`src/middleware.ts`) por default rechaza con 401 cualquier request a `/api/*` sin sesión válida. El header `Authorization: Bearer <CRON_SECRET>` que manda Vercel Cron **no es** una sesión de NextAuth — es auth interna que el handler valida después.
+
+**Fix** (PR #59): agregar `isCron = pathname.startsWith("/api/cron/")` a la lista de paths exentos en el middleware, junto a los webhooks ya existentes (`isPaymentWebhook`, `isFloidWebhook`, `isNotificationsWebhook`).
+
+**Heredado**: el cron `/api/cron/referrals/expire` **también** estaba 401-eado silenciosamente desde su introducción. Solo se descubrió cuando agregamos el de backup y le dimos Run manual. Si en el futuro un cron parece no correr, mirá primero si está exento del middleware.
+
+### 2 · Vercel logs no muestran el body — usar `console.log` desde el handler
+
+**Síntoma**: el cron devuelve 503 pero los runtime logs de Vercel solo muestran el status code, no el mensaje del error. ¿Qué env var falta? Misterio.
+
+**Fix** (PR #60): loguear estado de env vars al inicio de cada cron / endpoint sensible:
+
+```ts
+const envStatus = {
+  cronSecret: Boolean(process.env.CRON_SECRET?.trim()),
+  blobToken: Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim()),
+  databaseUrl: Boolean(process.env.DATABASE_URL?.trim()),
+};
+console.log("[cron/db-backup] env status:", JSON.stringify(envStatus));
+```
+
+**Importante**: log de **booleanos** (`true` / `false`), nunca el valor del secret. Si el log fuera del valor, quedaría expuesto en runtime logs.
+
+Aplicar el mismo patrón a futuros endpoints que dependan de varias env vars.
+
+### 3 · Vercel Blob requiere `access: "private"` para stores privados
+
+**Síntoma**: el handler corre, llama `put()` y falla con:
+```
+Vercel Blob: Cannot use public access on a private store. The store is configured with private access.
+```
+
+**Causa**: Vercel Blob soporta dos modos de access desde 2025+: `public` (URL pública accesible) y `private` (solo via SDK + token). El store que activamos era Private (default actual de Vercel) pero el código pedía `access: "public"`.
+
+**Fix** (PR #61): cambiar a `access: "private"`. Quitar también `addRandomSuffix: true` (ya no necesario para seguridad porque el store es privado) y agregar `allowOverwrite: true` (para que re-corridas manuales del mismo día sobrescriban).
+
+**Para futuro**: si creás un store nuevo de Vercel Blob para algo que NO se sirve via URL pública, dejá `access: "private"`. Si necesitás servir contenido vía URL pública (imágenes de avatars, etc.), creá un store separado en modo Public.
+
 ## Roadmap
 
 - [ ] Test de restore automatizado en CI (semanal): baja el último backup → restaura a branch test → corre query smoke test → borra branch.
