@@ -46,6 +46,11 @@ export default auth((req) => {
   const isNotificationsWebhook = pathname.startsWith(
     "/api/notifications/webhook/"
   );
+  // Vercel Cron llega con header `Authorization: Bearer <CRON_SECRET>` que cada
+  // endpoint /api/cron/* valida en su handler. El middleware de NextAuth debe
+  // dejarlos pasar — sino corta el cron con 401 antes de llegar a la lógica
+  // de auth interna del endpoint.
+  const isCron = pathname.startsWith("/api/cron/");
   const isApi = pathname.startsWith("/api");
 
   if (pathname.startsWith("/admin")) {
@@ -59,7 +64,8 @@ export default auth((req) => {
     isApiAuth ||
     isPaymentWebhook ||
     isFloidWebhook ||
-    isNotificationsWebhook
+    isNotificationsWebhook ||
+    isCron
   ) {
     return NextResponse.next();
   }
