@@ -20,6 +20,17 @@ export type StaffInvestorListRow = {
     staffReservationApprovedAt: Date | null;
   } | null;
   sponsorBroker: { id: string; email: string; name: string | null } | null;
+  /** Último check de "preaprobado AVLA" disparado manualmente por staff. */
+  avlaCheck: {
+    id: string;
+    preapproved: boolean | null;
+    state: string | null;
+    stateTags: string[];
+    errorMessage: string | null;
+    createdAt: Date;
+  } | null;
+  /** True si el perfil del usuario tiene RUT + nombre cargados (precondición para disparar AVLA). */
+  hasProfileForAvla: boolean;
 };
 
 /**
@@ -39,6 +50,7 @@ export async function listInvestorsForStaff(): Promise<StaffInvestorListRow[]> {
       sponsorBroker: {
         select: { id: true, email: true, name: true },
       },
+      profile: { select: { rut: true } },
       creditEvaluations: {
         orderBy: { requestedAt: "desc" },
         take: 1,
@@ -48,6 +60,18 @@ export async function listInvestorsForStaff(): Promise<StaffInvestorListRow[]> {
           requestedAt: true,
           completedAt: true,
           staffReservationApprovedAt: true,
+        },
+      },
+      avlaChecks: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: {
+          id: true,
+          preapproved: true,
+          state: true,
+          stateTags: true,
+          errorMessage: true,
+          createdAt: true,
         },
       },
     },
@@ -60,6 +84,8 @@ export async function listInvestorsForStaff(): Promise<StaffInvestorListRow[]> {
     createdAt: u.createdAt,
     evaluation: u.creditEvaluations[0] ?? null,
     sponsorBroker: u.sponsorBroker,
+    avlaCheck: u.avlaChecks[0] ?? null,
+    hasProfileForAvla: Boolean(u.profile?.rut && u.name?.trim()),
   }));
 }
 

@@ -391,6 +391,13 @@ CORS: orígenes permitidos vía `LEADS_ALLOWED_ORIGINS` (CSV). Por defecto: `htt
 ### Broker (autenticado, flujo `/broker/*`)
 APIs bajo `/api/broker/*` para postulación, perfil, oportunidades visibles, invites a inversionistas, etc.
 
+### AVLA — Verificación DICOM manual (Producto 3, interno staff)
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| POST | `/api/staff/users/[userId]/avla-check` | Staff | Dispara un check de "preaprobación AVLA": login + buscar/crear deudor + solicitar línea de 1 UF + polling rápido + persiste fila en `AvlaCheck`. Requiere `Profile.rut` + `User.name`. Si AVLA env vars faltan → 503. Detalle: [`docs/AVLA.md`](./docs/AVLA.md). |
+
+`GET /api/staff/investors` (ya existe) ahora incluye `avlaCheck` (último check, con `preapproved`, `state`, `stateTags`, `errorMessage`) y `hasProfileForAvla` (boolean) por cada inversionista.
+
 ### Staff (`SUPER_ADMIN` only)
 APIs bajo `/api/staff/*` para inventario, aprobación de brokers, gestión de inversionistas, notas de evaluaciones, etc.
 
@@ -748,6 +755,15 @@ Helper: `brokerSwitchHrefFor()` en `components/portal/sidebar.tsx`.
 - **Qué falta**: Contactar Floid, obtener documentación API, reemplazar `callFloidApi()`
 - **Variables**: `FLOID_API_KEY`, `FLOID_API_URL`
 - **El stub simula**: score entre 300-850, risk level basado en score, monto aprobado proporcional
+
+### 8.1b AVLA — Preaprobación DICOM (manual desde staff) — OPERATIVO
+- **Estado**: integración viva en producción desde 2026-05-15. NO es el mismo producto que Floid — AVLA es "seguro de crédito" y MaxRent piggyback sobre la **póliza de Houm** para usar la decisión automática de AVLA como proxy de capacidad/riesgo.
+- **Caso de uso**: staff aprieta botón "Verificar DICOM" en `/staff/inversionistas`. NO se le muestra al inversionista. NO se dispara automáticamente.
+- **Definición "preaprobado"**: AVLA no devolvió `rejectedState`/`automaticallyRejectedState` en los `stateTags`. Cualquier otro estado (reestudio, activa, en evaluación) cuenta como preaprobado para MaxRent.
+- **Latencia**: ~10-15s end-to-end (login + listar póliza + buscar/crear deudor + solicitar línea de 1 UF + 2 polls de 5s + logout).
+- **Archivo**: `src/lib/services/avla.service.ts` (logic) + `POST /api/staff/users/[id]/avla-check` (endpoint) + columna en `staff-investors.tsx` (UI).
+- **Variables**: `AVLA_BASE_URL`, `AVLA_COMPANY`, `AVLA_USER` (base64), `AVLA_PASSWORD` (base64), `AVLA_APP_NAME` — credenciales son **de Houm**, no de MaxRent.
+- **Solo prod**: AVLA no nos dio sandbox. Cada check crea una línea real (de 1 UF) en los libros de Houm. Detalle full: [`docs/AVLA.md`](./docs/AVLA.md).
 
 ### 8.2 Mercado Pago (pasarela de pago) — PENDIENTE
 - **Estado**: Stub

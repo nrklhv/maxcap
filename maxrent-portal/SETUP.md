@@ -100,6 +100,14 @@ Sin `RESEND_API_KEY` el adapter falla y la notificación queda en `Notification`
 2. Copiar variables a `.env.local` según [docs/FLOID_SETUP.md](./docs/FLOID_SETUP.md) y [`.env.example`](./.env.example) (`FLOID_API_KEY`, `FLOID_SERVICE_PATH`, `FLOID_USE_STUB=false`, etc.).
 3. Probar el flujo en **`/evaluacion`** con un usuario que tenga RUT y perfil completo; revisar `CreditEvaluation` en la base.
 
+### AVLA (preaprobación DICOM manual desde staff)
+
+Las 5 env vars `AVLA_*` (base URL, organizationUnitName, user en base64, password en base64, appName) son **credenciales de Houm**, no de MaxRent. Pedirlas al dev de Houm que maneja la integración.
+
+- Sin estas env vars, el endpoint `/api/staff/users/[id]/avla-check` devuelve 503 y el botón "Verificar DICOM" en staff queda inactivo.
+- No hay ambiente sandbox — cada verificación crea una línea real en los libros de Houm (con monto 1 UF para minimizar impacto).
+- Detalle del flujo, semántica de "preaprobado" y bugs aprendidos: [docs/AVLA.md](./docs/AVLA.md).
+
 ### Backup diario offsite (Vercel Blob)
 
 Backup automatizado de la DB a Vercel Blob — corre todos los días a las 06:30 UTC vía Vercel Cron.

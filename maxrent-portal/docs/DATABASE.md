@@ -444,6 +444,17 @@ Adicionalmente, en el paso 5 `linkUserToPendingAttribution` setea `User.sponsorB
 | `PoolUnitOcupacion` | ARRENDADO, VACANTE, POR_DESOCUPARSE, AVISO_SALIDA, AVISADO_PARA_DESOCUPAR, PUBLICADA |
 | `PoolUnitSaleStatus` | AVAILABLE, RESERVED, SOLD |
 
+## Preaprobación AVLA (verificación DICOM manual)
+
+Tabla `avla_checks` — historial de cada disparo manual desde staff. Cada "Verificar DICOM" en `/staff/inversionistas` crea una fila nueva (no sobreescribe). Detalle completo en [`AVLA.md`](./AVLA.md).
+
+- **`User → AvlaCheck[]`**: 1:N. Permite ver el historial completo de re-verificaciones de un usuario.
+- **`preapproved`** (`Boolean?`): `true` si AVLA no rechazó automáticamente; `false` si tags incluyen `rejectedState`; `null` si el check falló por red u otro motivo (queda log para debug).
+- **`stateTags`** (`String[]`): array de tags como `["waitingForResolution", "activeLineState", "rejectedState"]`. Es la métrica binaria — el `state` textual es solo para staff.
+- **`avlaLineId`** (`BigInt?`): id de la línea creada en AVLA. Sirve para auditar manualmente en el portal AVLA si hace falta.
+- **`triggeredByStaffEmail`**: audit trail de quién disparó.
+- **`rawResponse`** (JSON): respuesta cruda de AVLA para debug.
+
 ## Producto 2 — Pools de propiedades
 
 Tablas `pools` + `pool_units` separadas de `properties` (no comparten catálogo). Detalle completo en [`POOL_PRODUCTO.md`](./POOL_PRODUCTO.md).
