@@ -20,6 +20,7 @@ import { requireStaffSuperAdmin } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { checkPreapproval, isAvlaConfigured } from "@/lib/services/avla.service";
+import { applyRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,13 +28,22 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: { userId: string } }
 ) {
   const session = await requireStaffSuperAdmin();
   if (!session) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
+
+  // Bucket "expensive" (5/min por usuario). Cada check crea una línea real
+  // en los libros de Houm + consume cuota AVLA. Aunque solo staff puede
+  // llamar, defensa contra abuso accidental (multi-click) y cuentas
+  // comprometidas. Mismo bucket que /api/floid/evaluate y POST /api/reservations.
+  const limited = await applyRateLimit(req, RATE_LIMITS.expensive, {
+    route: "avla-check",
+  });
+  if (limited) return limited;
 
   if (!isAvlaConfigured()) {
     return NextResponse.json(

@@ -87,6 +87,7 @@ Lecciones aprendidas que dejan cicatriz:
 - Backup + restore: `docs/BACKUP_RESTORE.md`
 - Pool (Producto 2): `docs/POOL_PRODUCTO.md`
 - Floid (eval crediticia): `docs/FLOID_SETUP.md` + `docs/FLOID_API_REFERENCE.md`
+- AVLA (preaprobación DICOM manual desde staff): `docs/AVLA.md`
 - Inventario de propiedades (CSV import): `docs/PROPERTY_INVENTORY_IMPORT.md`
 - Migración del repo a Houm (bus factor): `docs/MIGRATION_TO_HOUM.md`
 - Contribuir: `docs/CONTRIBUTING.md`
@@ -102,4 +103,5 @@ Lecciones aprendidas que dejan cicatriz:
 | Resend | Emails transaccionales | `src/lib/services/notifications/README.md` |
 | Google OAuth | Login | `SETUP.md` § Google OAuth |
 | Floid Widget | Evaluación crediticia | `docs/FLOID_SETUP.md` |
+| AVLA "seguro de crédito" | Preaprobación DICOM manual desde staff (piggyback póliza Houm) | `docs/AVLA.md` |
 | Mercado Pago | Pagos (stub, pendiente integración real) | `src/lib/services/payment.service.ts` |

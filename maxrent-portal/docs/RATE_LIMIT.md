@@ -35,7 +35,7 @@ Definidos en [`src/lib/rate-limit-core.ts`](../src/lib/rate-limit-core.ts) como 
 | **A · `webhook`** | 60/min por IP | IP del cliente | `/api/payments/webhook`, `/api/floid/callback`, `/api/notifications/webhook/resend` |
 | **B · `public`** | 10/min por IP | IP del cliente | `/api/public/leads` |
 | **C · `authenticated`** | 60/min por userId (o IP) | userId si hay sesión, sino IP | `/api/portal/pools`, `/api/portal/pools/[slug]`, `/api/portal/pool-units/[id]`, `/api/portal/catalog-properties` |
-| **D · `expensive`** | 5/min por userId (o IP) | userId si hay sesión, sino IP | `/api/floid/evaluate`, `POST /api/reservations`, `POST /api/payments/checkout` |
+| **D · `expensive`** | 5/min por userId (o IP) | userId si hay sesión, sino IP | `/api/floid/evaluate`, `POST /api/reservations`, `POST /api/payments/checkout`, `POST /api/staff/users/[id]/avla-check` |
 
 Ajustar números: editar `RATE_LIMITS` y deployar. No requiere migración.
 

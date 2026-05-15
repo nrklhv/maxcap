@@ -81,5 +81,6 @@ Mapa rápido de docs del proyecto. Ver [`docs/README.md`](./README.md) para índ
 - [`docs/BACKUP_RESTORE.md`](./BACKUP_RESTORE.md) — backup diario a Vercel Blob + procedimiento de restore.
 - [`docs/MIGRATION_TO_HOUM.md`](./MIGRATION_TO_HOUM.md) — runbook de migración del repo a la org de Houm (bus factor).
 - [`docs/FLOID_SETUP.md`](./FLOID_SETUP.md) + [`docs/FLOID_API_REFERENCE.md`](./FLOID_API_REFERENCE.md) — integración Floid.
+- [`docs/AVLA.md`](./AVLA.md) — preaprobación DICOM manual desde staff via API "seguro de crédito" de AVLA.
 - [`docs/PROPERTY_INVENTORY_IMPORT.md`](./PROPERTY_INVENTORY_IMPORT.md) — import CSV de propiedades.
 - [`docs/HOUM_CATALOG_METADATA.md`](./HOUM_CATALOG_METADATA.md) — sync con Houm.
