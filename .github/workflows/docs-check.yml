@@ -49,10 +49,15 @@ jobs:
 
       - name: Check for [skip docs] escape hatch
         id: skip
+        # ⚠️ IMPORTANTE — pasar body/title vía env, NO inline en el script:
+        # ${{ github.event.pull_request.body }} expandido directo en bash permite
+        # command injection (backticks en el body se ejecutan como comandos).
+        # Las env vars de GHA NO interpretan el contenido como código.
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          BODY="${{ github.event.pull_request.body }}"
-          TITLE="${{ github.event.pull_request.title }}"
-          if echo "$BODY $TITLE" | grep -qiE '\[skip[- ]docs\]'; then
+          if printf '%s %s' "$PR_BODY" "$PR_TITLE" | grep -qiE '\[skip[- ]docs\]'; then
             echo "found=true" >> "$GITHUB_OUTPUT"
             echo "✓ [skip docs] flag encontrado — saltando check."
           else
@@ -62,10 +67,14 @@ jobs:
       - name: Categorize changed files
         if: steps.skip.outputs.found != 'true'
         id: diff
+        # Por consistencia, todas las expansiones de github.event van vía env.
+        # Las SHAs son hex controlado por GitHub (no es input de usuario), pero
+        # mantener el patrón uniforme evita olvidos en cambios futuros.
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          BASE="${{ github.event.pull_request.base.sha }}"
-          HEAD="${{ github.event.pull_request.head.sha }}"
-          git diff --name-only "$BASE" "$HEAD" > /tmp/changed.txt
+          git diff --name-only "$BASE_SHA" "$HEAD_SHA" > /tmp/changed.txt
 
           # Código que dispara el requirement de docs.
           # Excluimos archivos *.test.* (tests no requieren docs externas).
