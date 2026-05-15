@@ -42,6 +42,7 @@ model User {
   creditEvaluations CreditEvaluation[]
   reservations      Reservation[]
   notifications     Notification[]
+  avlaChecks        AvlaCheck[]
 
   // Relación con leads existentes (opcional, para vincular)
   leadId String? @unique
@@ -209,6 +210,44 @@ model CreditEvaluation {
   @@index([userId, status])
   @@index([floidCaseId])
   @@map("credit_evaluations")
+}
+
+/// Verificación de "preaprobación AVLA" disparada manualmente por staff
+/// desde /staff/inversionistas. Cada disparo crea una fila nueva (no se
+/// sobreescriben — staff puede ver el historial de re-verificaciones).
+///
+/// "Preaprobado" = AVLA aceptó procesar la línea (no rechazo automático).
+/// El estado final de la línea puede tardar horas/días en resolverse
+/// completamente, pero para MaxRent basta saber que pasó el filtro auto.
+///
+/// Detalle del flujo y semántica: docs/AVLA.md.
+model AvlaCheck {
+  id              String   @id @default(cuid())
+  userId          String
+  /// ID de la línea creada en AVLA. Null si el request falló antes de crear.
+  avlaLineId      BigInt?
+  /// Nombre del estado al momento del check (ej. "Reestudio Recopilación Antecedentes").
+  state           String?
+  /// Array de stateTags (ej. ["waitingForResolution", "activeLineState", "rejectedState"]).
+  stateTags       String[]
+  /// True si AVLA NO devolvió rechazo automático (preaprobado).
+  /// False si tags incluyen "rejectedState" o "automaticallyRejectedState".
+  /// Null si el check falló por otro motivo (red, login, etc.).
+  preapproved     Boolean?
+  /// Monto solicitado a AVLA en la moneda de la póliza (UF). Default 1 UF.
+  requestedAmount Int      @default(1)
+  /// Mensaje de error si el check falló.
+  errorMessage    String?  @db.Text
+  /// Respuesta cruda de AVLA para auditoría (incluye stateDto completo, comments, etc.).
+  rawResponse     Json?
+  /// Email del staff que disparó la verificación (para audit trail).
+  triggeredByStaffEmail String?
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("avla_checks")
 }
 
 model Reservation {

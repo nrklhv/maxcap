@@ -27,6 +27,15 @@ type InvestorEvaluation = {
 
 type SponsorSummary = { id: string; email: string; name: string | null } | null;
 
+type InvestorAvlaCheck = {
+  id: string;
+  preapproved: boolean | null;
+  state: string | null;
+  stateTags: string[];
+  errorMessage: string | null;
+  createdAt: string;
+};
+
 type InvestorRow = {
   id: string;
   name: string | null;
@@ -34,6 +43,8 @@ type InvestorRow = {
   createdAt: string;
   evaluation: InvestorEvaluation | null;
   sponsorBroker: SponsorSummary;
+  avlaCheck: InvestorAvlaCheck | null;
+  hasProfileForAvla: boolean;
 };
 
 type InvestorDetailEvaluation = {
@@ -114,6 +125,10 @@ export function StaffInvestors() {
   const [busyEvaluationId, setBusyEvaluationId] = useState<string | null>(null);
   /** Open confirmation before revoking staff reservation gate */
   const [revokeEvaluationId, setRevokeEvaluationId] = useState<string | null>(null);
+  /** Id de usuario para el que estamos disparando un check AVLA (loading state). */
+  const [busyAvlaUserId, setBusyAvlaUserId] = useState<string | null>(null);
+  /** Error por usuario del último intento de AVLA (transient — se resetea al re-disparar). */
+  const [avlaErrorByUserId, setAvlaErrorByUserId] = useState<Record<string, string>>({});
 
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   /** Bumps after list mutations so the open drawer refetches detail for the same user. */
@@ -246,6 +261,42 @@ export function StaffInvestors() {
       setError("Error de red");
     } finally {
       setBusyEvaluationId(null);
+    }
+  }
+
+  /**
+   * Dispara una verificación AVLA ("preaprobado AVLA") para el user.
+   * El backend hace login en AVLA, busca/crea deudor, solicita línea, poll
+   * rápido y persiste. Tarda ~10-15s. Cuando termina, recargamos el listado.
+   */
+  async function runAvlaCheck(userId: string) {
+    setAvlaErrorByUserId((prev) => {
+      const next = { ...prev };
+      delete next[userId];
+      return next;
+    });
+    setBusyAvlaUserId(userId);
+    try {
+      const res = await fetch(`/api/staff/users/${userId}/avla-check`, {
+        method: "POST",
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        ok?: boolean;
+      };
+      if (!res.ok) {
+        const msg = data.error || `Falló (HTTP ${res.status})`;
+        setAvlaErrorByUserId((prev) => ({ ...prev, [userId]: msg }));
+        return;
+      }
+      // Aunque AVLA responda errorMessage interno, el endpoint guarda igual.
+      // Refrescamos la lista para ver el resultado persistido.
+      await load();
+      if (selectedUserId === userId) setDetailFetchNonce((n) => n + 1);
+    } catch {
+      setAvlaErrorByUserId((prev) => ({ ...prev, [userId]: "Error de red" }));
+    } finally {
+      setBusyAvlaUserId(null);
     }
   }
 
@@ -653,6 +704,12 @@ export function StaffInvestors() {
                   </th>
                   <th
                     className="px-2 py-2.5 text-[10px] font-semibold uppercase tracking-wide whitespace-normal leading-tight"
+                    title="Preaprobado AVLA (verificación DICOM manual desde staff)"
+                  >
+                    DICOM (AVLA)
+                  </th>
+                  <th
+                    className="px-2 py-2.5 text-[10px] font-semibold uppercase tracking-wide whitespace-normal leading-tight"
                     title="Completada (Floid)"
                   >
                     Completada
@@ -716,6 +773,18 @@ export function StaffInvestors() {
                       </td>
                       <td className="px-2 py-2 align-top min-w-0">
                         {ev ? evalStatusBadge(ev.status, true) : <span className="text-gray-400">—</span>}
+                      </td>
+                      <td
+                        className="px-2 py-2 align-top min-w-0"
+                        data-stop-row-click
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <AvlaCheckCell
+                          row={row}
+                          busy={busyAvlaUserId === row.id}
+                          errorMessage={avlaErrorByUserId[row.id]}
+                          onTrigger={() => void runAvlaCheck(row.id)}
+                        />
                       </td>
                       <td className="px-2 py-2 align-top text-gray-500 text-[11px] tabular-nums whitespace-normal leading-tight">
                         {ev?.completedAt ? (
@@ -1018,5 +1087,107 @@ function EvaluationStaffCard({
         </div>
       </div>
     </article>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// AvlaCheckCell — celda con badge del último check + botón verificar/re-verificar
+// ──────────────────────────────────────────────────────────────────────────────
+
+function AvlaCheckCell({
+  row,
+  busy,
+  errorMessage,
+  onTrigger,
+}: {
+  row: InvestorRow;
+  busy: boolean;
+  errorMessage: string | undefined;
+  onTrigger: () => void;
+}) {
+  const c = row.avlaCheck;
+  const tooltipDisabled = !row.hasProfileForAvla
+    ? "Carga primero RUT y nombre en el perfil del usuario"
+    : busy
+      ? "Verificando…"
+      : "";
+
+  return (
+    <div className="flex flex-col gap-1">
+      {/* Badge del último check */}
+      {c ? (
+        <AvlaResultBadge check={c} />
+      ) : (
+        <span className="text-[11px] text-gray-400">Sin verificar</span>
+      )}
+
+      {/* Botón verificar / re-verificar */}
+      <button
+        type="button"
+        disabled={busy || !row.hasProfileForAvla}
+        onClick={onTrigger}
+        title={tooltipDisabled || undefined}
+        className="inline-flex justify-center rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[10px] font-semibold text-indigo-900 hover:bg-indigo-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        {busy ? "Verificando…" : c ? "Re-verificar" : "Verificar DICOM"}
+      </button>
+
+      {/* Error transient del último intento */}
+      {errorMessage ? (
+        <span
+          className="text-[10px] text-red-700 leading-tight"
+          title={errorMessage}
+        >
+          {errorMessage.length > 40 ? `${errorMessage.slice(0, 40)}…` : errorMessage}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function AvlaResultBadge({ check }: { check: InvestorAvlaCheck }) {
+  const fecha = new Date(check.createdAt).toLocaleDateString("es-CL");
+
+  if (check.errorMessage) {
+    return (
+      <span
+        className="inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-medium text-gray-700"
+        title={`${check.errorMessage} · ${new Date(check.createdAt).toLocaleString("es-CL")}`}
+      >
+        Error · {fecha}
+      </span>
+    );
+  }
+
+  if (check.preapproved === true) {
+    return (
+      <span
+        className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-900"
+        title={`Estado AVLA: ${check.state ?? "?"} · ${new Date(check.createdAt).toLocaleString("es-CL")}`}
+      >
+        Preaprobado · {fecha}
+      </span>
+    );
+  }
+
+  if (check.preapproved === false) {
+    return (
+      <span
+        className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-900"
+        title={`Estado AVLA: ${check.state ?? "?"} · ${new Date(check.createdAt).toLocaleString("es-CL")}`}
+      >
+        Rechazado · {fecha}
+      </span>
+    );
+  }
+
+  // preapproved=null sin error → sin tags todavía (raro)
+  return (
+    <span
+      className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-900"
+      title={`Estado AVLA: ${check.state ?? "(sin tags)"} · ${new Date(check.createdAt).toLocaleString("es-CL")}`}
+    >
+      Indeterminado · {fecha}
+    </span>
   );
 }

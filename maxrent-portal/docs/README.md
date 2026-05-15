@@ -31,6 +31,7 @@
 |---|---|
 | [`FLOID_SETUP.md`](./FLOID_SETUP.md) | Configuración de Floid Widget + variables de entorno. |
 | [`FLOID_API_REFERENCE.md`](./FLOID_API_REFERENCE.md) | Referencia de los endpoints contratados con Floid (SP + SII + CMF). |
+| [`AVLA.md`](./AVLA.md) | Preaprobación DICOM manual desde staff vía API "seguro de crédito" de AVLA (piggyback sobre póliza de Houm). |
 
 ### Seguridad / operación
 | Doc | Tema |

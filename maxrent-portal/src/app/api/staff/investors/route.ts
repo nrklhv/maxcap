@@ -36,6 +36,17 @@ export async function GET() {
             staffReservationApprovedAt: r.evaluation.staffReservationApprovedAt?.toISOString() ?? null,
           }
         : null,
+      avlaCheck: r.avlaCheck
+        ? {
+            id: r.avlaCheck.id,
+            preapproved: r.avlaCheck.preapproved,
+            state: r.avlaCheck.state,
+            stateTags: r.avlaCheck.stateTags,
+            errorMessage: r.avlaCheck.errorMessage,
+            createdAt: r.avlaCheck.createdAt.toISOString(),
+          }
+        : null,
+      hasProfileForAvla: r.hasProfileForAvla,
     }));
 
     return NextResponse.json({ investors });
