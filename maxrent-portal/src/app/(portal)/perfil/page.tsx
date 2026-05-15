@@ -280,8 +280,8 @@ export default function PerfilPage() {
         <h1 className="font-serif text-2xl tracking-tight text-dark">Mi perfil</h1>
         <p className="mt-1 text-gray-600">
           {onboardingCompleted
-            ? "Revisa o editá tus datos personales y laborales."
-            : "Completá tus datos personales y laborales: ambos bloques son obligatorios para finalizar el perfil y seguir con la evaluación crediticia."}
+            ? "Revisa o edita tus datos personales y laborales."
+            : "Completa tus datos personales y laborales: ambos bloques son obligatorios para finalizar el perfil y seguir con la evaluación crediticia."}
         </p>
       </div>
 
@@ -296,21 +296,49 @@ export default function PerfilPage() {
       ) : null}
 
       {isView ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-start">
-          <PersonalReadSection
-            form={form}
-            display={display}
-            formatRutForDisplay={formatRutForDisplay}
-            formatPhoneForDisplay={formatPhoneForDisplay}
-            withHeading
-            onEdit={startEditingPersonal}
-          />
-          <LaborReadSection laborForm={laborForm} showEditButton onEditLabor={startEditingLabor} />
+        // Una sola card con dos subsecciones (Datos personales + Datos laborales)
+        // separadas por divider. Mantiene contraste de secciones sin la confusión
+        // visual del layout previo en dos columnas paralelas.
+        <div className="rounded-xl border border-gray-200 bg-white divide-y divide-gray-200">
+          <section className="p-5 space-y-3" aria-labelledby="personal-heading-view">
+            <h2
+              id="personal-heading-view"
+              className="text-sm font-semibold text-gray-900 uppercase tracking-wide"
+            >
+              Datos personales
+            </h2>
+            <PersonalReadSection
+              form={form}
+              display={display}
+              formatRutForDisplay={formatRutForDisplay}
+              formatPhoneForDisplay={formatPhoneForDisplay}
+              withHeading={false}
+              embedded
+              onEdit={startEditingPersonal}
+            />
+          </section>
+          <section className="p-5 space-y-3" aria-labelledby="labor-heading-view">
+            <h2
+              id="labor-heading-view"
+              className="text-sm font-semibold text-gray-900 uppercase tracking-wide"
+            >
+              Datos laborales
+            </h2>
+            <LaborReadSection
+              laborForm={laborForm}
+              showEditButton
+              onEditLabor={startEditingLabor}
+              withHeading={false}
+              embedded
+            />
+          </section>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-start">
-            <section className="space-y-3" aria-labelledby="personal-heading-edit">
+          {/* Una sola card con dos subsecciones (Datos personales + Datos laborales),
+              separadas por divider. Igual layout que modo View para coherencia visual. */}
+          <div className="rounded-xl border border-gray-200 bg-white divide-y divide-gray-200">
+            <section className="p-5 space-y-3" aria-labelledby="personal-heading-edit">
               <h2
                 id="personal-heading-edit"
                 className="text-sm font-semibold text-gray-900 uppercase tracking-wide"
@@ -318,7 +346,7 @@ export default function PerfilPage() {
                 Datos personales
               </h2>
               {showPersonalForm ? (
-                <div className="space-y-5 rounded-xl border border-gray-200 bg-white p-5">
+                <div className="space-y-5">
                   <FormField
                     label="Nombre"
                     name="firstName"
@@ -348,7 +376,7 @@ export default function PerfilPage() {
                     required
                   />
                   <p className="text-xs text-gray-500 -mt-3">
-                    Email de contacto; no modifica el correo con el que iniciás sesión.
+                    Email de contacto; no modifica el correo con el que inicias sesión.
                   </p>
                   <FormField
                     label="RUT"
@@ -406,20 +434,36 @@ export default function PerfilPage() {
                   formatPhoneForDisplay={formatPhoneForDisplay}
                   withHeading={false}
                   showEditButton={false}
+                  embedded
                   onEdit={startEditingPersonal}
                 />
               )}
             </section>
 
-            {showLaborForm ? (
-              <LaborEditSection laborForm={laborForm} setLabor={setLabor} errors={errors} />
-            ) : (
-              <LaborReadSection
-                laborForm={laborForm}
-                showEditButton={false}
-                onEditLabor={startEditingLabor}
-              />
-            )}
+            <section className="p-5 space-y-3" aria-labelledby="labor-heading-edit-wrap">
+              <h2
+                id="labor-heading-edit-wrap"
+                className="text-sm font-semibold text-gray-900 uppercase tracking-wide"
+              >
+                Datos laborales
+              </h2>
+              {showLaborForm ? (
+                <LaborEditSection
+                  laborForm={laborForm}
+                  setLabor={setLabor}
+                  errors={errors}
+                  embedded
+                />
+              ) : (
+                <LaborReadSection
+                  laborForm={laborForm}
+                  showEditButton={false}
+                  onEditLabor={startEditingLabor}
+                  withHeading={false}
+                  embedded
+                />
+              )}
+            </section>
           </div>
 
           <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end pt-2">
@@ -475,6 +519,7 @@ function PersonalReadSection({
   formatPhoneForDisplay: fmtPhone,
   withHeading = true,
   showEditButton = true,
+  embedded = false,
   onEdit,
 }: {
   form: ProfileForm;
@@ -483,10 +528,17 @@ function PersonalReadSection({
   formatPhoneForDisplay: (p: string) => string;
   withHeading?: boolean;
   showEditButton?: boolean;
+  /** Cuando true, omite el `rounded-xl border` propio para integrarse dentro de una card padre. */
+  embedded?: boolean;
   onEdit: () => void;
 }) {
+  // En modo embedded, el wrapper no lleva borde ni rounded — vive dentro de la card padre.
+  const cardClass = embedded
+    ? "divide-y divide-gray-100"
+    : "rounded-xl border border-gray-200 bg-white divide-y divide-gray-100";
+
   const card = (
-    <div className="rounded-xl border border-gray-200 bg-white divide-y divide-gray-100">
+    <div className={cardClass}>
       <ReadRow label="Nombre" value={display(form.firstName)} />
       <ReadRow label="Apellido" value={display(form.lastName)} />
       <ReadRow label="Email" value={display(form.contactEmail)} />
@@ -589,13 +641,22 @@ function LaborReadSection({
   showEditButton = true,
   onEditLabor,
   withHeading = true,
+  embedded = false,
 }: {
   laborForm: LaborFormState;
   showEditButton?: boolean;
   onEditLabor?: () => void;
   withHeading?: boolean;
+  /** Cuando true, omite el `rounded-xl border` propio para integrarse dentro de una card padre. */
+  embedded?: boolean;
 }) {
   const has = laborForm.employmentType !== "";
+  // En modo embedded, los wrappers de body no llevan borde — viven dentro de la card padre.
+  const emptyBodyClass = embedded ? "" : "rounded-xl border border-gray-200 bg-white";
+  const filledBodyClass = embedded
+    ? "divide-y divide-gray-100"
+    : "rounded-xl border border-gray-200 bg-white divide-y divide-gray-100";
+
   const editFooter =
     showEditButton && onEditLabor ? (
       <div className="p-4 border-t border-gray-100">
@@ -610,14 +671,14 @@ function LaborReadSection({
     ) : null;
 
   const body = !has ? (
-    <div className="rounded-xl border border-gray-200 bg-white">
+    <div className={emptyBodyClass}>
       <div className="p-5 text-sm text-gray-500">
-        Aún no cargaste datos laborales. Puedes completarlos con «Editar datos» abajo.
+        Aún no has cargado datos laborales. Puedes completarlos con «Editar datos» abajo.
       </div>
       {editFooter}
     </div>
   ) : (
-    <div className="rounded-xl border border-gray-200 bg-white divide-y divide-gray-100">
+    <div className={filledBodyClass}>
       <ReadRow
         label="Situación laboral"
         value={laborForm.employmentType === "DEPENDENT" ? "Dependiente" : "Independiente"}
@@ -673,19 +734,23 @@ function LaborEditSection({
   laborForm,
   setLabor,
   errors,
+  embedded = false,
 }: {
   laborForm: LaborFormState;
   setLabor: (p: Partial<LaborFormState>) => void;
   errors: Record<string, string>;
+  /** Cuando true, omite el `rounded-xl border` propio y el heading exterior (la card padre los provee). */
+  embedded?: boolean;
 }) {
   const err = (suffix: string) => errors[`labor.${suffix}`];
 
-  return (
-    <section className="space-y-3" aria-labelledby="labor-heading-edit">
-      <h2 id="labor-heading-edit" className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-        Datos laborales
-      </h2>
-      <div className="space-y-5 rounded-xl border border-gray-200 bg-white p-5">
+  // En embedded, el wrapper interno solo lleva spacing; la card padre tiene border.
+  const formWrapperClass = embedded
+    ? "space-y-5"
+    : "space-y-5 rounded-xl border border-gray-200 bg-white p-5";
+
+  const body = (
+    <div className={formWrapperClass}>
         <fieldset>
           <legend className="block text-sm font-medium text-gray-700 mb-2">Situación laboral</legend>
           <div className="flex flex-wrap gap-4">
@@ -904,10 +969,22 @@ function LaborEditSection({
           </>
         ) : (
           <p className="text-xs text-gray-500">
-            Elegí dependiente o independiente para completar capacidad de pago.
+            Elige dependiente o independiente para completar capacidad de pago.
           </p>
         )}
-      </div>
+    </div>
+  );
+
+  if (embedded) {
+    return body;
+  }
+
+  return (
+    <section className="space-y-3" aria-labelledby="labor-heading-edit">
+      <h2 id="labor-heading-edit" className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+        Datos laborales
+      </h2>
+      {body}
     </section>
   );
 }
