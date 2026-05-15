@@ -20,9 +20,9 @@ const INVESTOR_STATUS_LABEL: Record<string, string> = {
 };
 
 type PendingAction = {
-  propertyId: string;
   reservationId: string;
-  propertyTitle: string;
+  /** Texto descriptivo para mostrar en el modal de confirmación. */
+  targetDescription: string;
 };
 
 function formatReservedAt(iso: string | null): string {
@@ -45,7 +45,21 @@ function rowKey(r: StaffUnifiedReservationRow): string {
 
 function isRowPending(r: StaffUnifiedReservationRow, pending: PendingAction | null): boolean {
   if (!pending) return false;
-  return pending.reservationId === r.reservationId && pending.propertyId === r.propertyId;
+  return pending.reservationId === r.reservationId;
+}
+
+/** Texto identificador del target de la reserva, sirve para Property y Pool. */
+function targetTitle(r: StaffUnifiedReservationRow): string {
+  if (r.kind === "pool") {
+    return `${r.poolName} · #${r.unitExternalId}`;
+  }
+  return r.propertyTitle;
+}
+
+/** ID estable para mostrar al staff (inventoryCode para Property, externalId para Pool unit). */
+function targetId(r: StaffUnifiedReservationRow): string | null {
+  if (r.kind === "pool") return `Unit #${r.unitExternalId}`;
+  return r.inventoryCode ?? r.propertyId;
 }
 
 export interface StaffAllReservationsProps {
@@ -127,7 +141,7 @@ export function StaffAllReservations({ onReleased }: StaffAllReservationsProps) 
   }
 
   const confirmSubtitle = pendingAction
-    ? `Se va a cancelar la reserva inversionista sobre «${pendingAction.propertyTitle}» (estado CANCELLED) y se reconciliará el inventario para que la propiedad vuelva a estar disponible si corresponde.`
+    ? `Se va a cancelar la reserva inversionista sobre «${pendingAction.targetDescription}» (estado CANCELLED) y se reconciliará el inventario (Property o PoolUnit según corresponda) para que vuelva a estar disponible si aplica.`
     : "";
 
   return (
@@ -264,16 +278,29 @@ export function StaffAllReservations({ onReleased }: StaffAllReservationsProps) 
                   }
                 >
                   <td className="min-w-0 px-3 py-2 align-top">
-                    <div className="font-medium text-gray-900 truncate" title={r.propertyTitle}>
-                      {r.propertyTitle}
-                    </div>
-                    {r.inventoryCode ? (
-                      <div className="mt-0.5 font-mono text-xs text-gray-500 truncate">
-                        {r.inventoryCode}
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                          r.kind === "pool"
+                            ? "bg-indigo-100 text-indigo-800"
+                            : "bg-blue-100 text-blue-800"
+                        }`}
+                        title={r.kind === "pool" ? "Reserva de unidad de Pool (Producto 2)" : "Reserva de propiedad (Producto 1)"}
+                      >
+                        {r.kind === "pool" ? "Pool" : "Propiedad"}
+                      </span>
+                      <div className="font-medium text-gray-900 truncate" title={targetTitle(r)}>
+                        {targetTitle(r)}
                       </div>
-                    ) : (
-                      <div className="mt-0.5 font-mono text-xs text-gray-400 truncate">{r.propertyId}</div>
-                    )}
+                    </div>
+                    {targetId(r) ? (
+                      <div className="mt-0.5 font-mono text-xs text-gray-500 truncate">
+                        {targetId(r)}
+                      </div>
+                    ) : null}
+                    {r.kind === "pool" && r.unitComuna ? (
+                      <div className="mt-0.5 text-xs text-gray-500 truncate">{r.unitComuna}</div>
+                    ) : null}
                   </td>
                   <td className="min-w-0 px-3 py-2 align-top text-gray-800">
                     <div className="truncate font-medium" title={actorLabel}>
@@ -287,7 +314,7 @@ export function StaffAllReservations({ onReleased }: StaffAllReservationsProps) 
                     {formatReservedAt(r.reservedAt)}
                   </td>
                   <td className="px-3 py-2 align-middle text-center text-xs text-gray-700">
-                    {r.visibleToBrokers ? "Sí" : "No"}
+                    {r.kind === "property" ? (r.visibleToBrokers ? "Sí" : "No") : "—"}
                   </td>
                   <td className="min-w-0 px-3 py-2 align-top text-xs text-gray-800">{statusLabel}</td>
                   <td className="px-3 py-2 align-middle text-right">
@@ -296,9 +323,8 @@ export function StaffAllReservations({ onReleased }: StaffAllReservationsProps) 
                       disabled={executing}
                       onClick={() =>
                         setPendingAction({
-                          propertyId: r.propertyId,
                           reservationId: r.reservationId,
-                          propertyTitle: r.propertyTitle,
+                          targetDescription: targetTitle(r),
                         })
                       }
                       className={`rounded-md border px-2.5 py-1.5 text-xs font-medium ${

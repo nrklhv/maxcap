@@ -166,12 +166,13 @@ export async function listPropertiesForStaffInventory(): Promise<PropertyWithSta
   });
 }
 
-/** Staff «Reservas»: active investor `Reservation` rows only (broker direct property holds removed). */
-export type StaffUnifiedReservationRow = {
-  propertyId: string;
-  propertyTitle: string;
-  inventoryCode: string | null;
-  visibleToBrokers: boolean;
+/**
+ * Staff «Reservas»: discriminated union de reservas activas. `kind` indica si
+ * la reserva apunta a una `Property` (Producto 1) o a una `PoolUnit` (Producto 2).
+ * Ambos casos comparten los campos del actor + montos + status; los específicos
+ * varían según el target.
+ */
+export type StaffUnifiedReservationRowCommon = {
   reservationId: string;
   reservationStatus: string;
   amount: string;
@@ -182,24 +183,60 @@ export type StaffUnifiedReservationRow = {
   reservedAt: string | null;
 };
 
+export type StaffUnifiedReservationRow =
+  | (StaffUnifiedReservationRowCommon & {
+      kind: "property";
+      propertyId: string;
+      propertyTitle: string;
+      inventoryCode: string | null;
+      visibleToBrokers: boolean;
+    })
+  | (StaffUnifiedReservationRowCommon & {
+      kind: "pool";
+      poolUnitId: string;
+      poolSlug: string;
+      poolName: string;
+      unitExternalId: string;
+      unitLabel: string;
+      unitComuna: string | null;
+    });
+
 /**
- * Active investor reservations for Staff «Reservas» (unified list; broker-only `Property` holds no longer exist in product).
+ * Active investor reservations para Staff «Reservas»: incluye **ambos** productos.
+ *
+ * - Producto 1 (Property): rows con `propertyId !== null`.
+ * - Producto 2 (Pool): rows con `poolUnitId !== null` (mutualmente excluyente
+ *   con propertyId vía el CHECK constraint XOR de Postgres).
+ *
+ * Resultado ordenado por fecha de creación DESC.
  */
 export async function listUnifiedStaffReservationsForStaff(): Promise<
   StaffUnifiedReservationRow[]
 > {
-  // Staff /reservas (Producto 1): solo reservas con propertyId. Las del pool tendrán su propia vista en Fase 4.
+  // Traemos las dos clases en una sola query y discriminamos en JS según qué
+  // FK esté seteada (gracias al CHECK XOR sabemos que exactamente una lo está).
   const invReservations = await prisma.reservation.findMany({
-    where: {
-      status: { in: [...INVESTOR_ACTIVE_RESERVATION_STATUSES] },
-      propertyId: { not: null },
-    },
+    where: { status: { in: [...INVESTOR_ACTIVE_RESERVATION_STATUSES] } },
     orderBy: { createdAt: "desc" },
-    include: { user: { select: { id: true, email: true, name: true } } },
+    include: {
+      user: { select: { id: true, email: true, name: true } },
+      poolUnit: {
+        select: {
+          id: true,
+          externalId: true,
+          label: true,
+          comuna: true,
+          pool: { select: { slug: true, name: true } },
+        },
+      },
+    },
   });
 
+  // Hidratamos Property para las del Producto 1 en bulk para no hacer N+1.
   const propertyIds = Array.from(
-    new Set(invReservations.map((r) => r.propertyId).filter((id): id is string => id !== null))
+    new Set(
+      invReservations.map((r) => r.propertyId).filter((id): id is string => id !== null)
+    )
   );
   const properties =
     propertyIds.length === 0
@@ -210,18 +247,10 @@ export async function listUnifiedStaffReservationsForStaff(): Promise<
         });
   const propById = new Map(properties.map((p) => [p.id, p]));
 
-  type WithSort = StaffUnifiedReservationRow & { sortTs: number };
-  const merged: WithSort[] = [];
+  const merged: StaffUnifiedReservationRow[] = [];
 
   for (const r of invReservations) {
-    // Garantizado por el WHERE de arriba; lo asertamos para TS.
-    const pid = r.propertyId!;
-    const prop = propById.get(pid);
-    merged.push({
-      propertyId: pid,
-      propertyTitle: prop?.title ?? r.propertyName ?? pid,
-      inventoryCode: prop?.inventoryCode ?? null,
-      visibleToBrokers: prop?.visibleToBrokers ?? false,
+    const common: StaffUnifiedReservationRowCommon = {
       reservationId: r.id,
       reservationStatus: r.status,
       amount: r.amount.toString(),
@@ -230,16 +259,37 @@ export async function listUnifiedStaffReservationsForStaff(): Promise<
       actorEmail: r.user.email,
       actorName: r.user.name,
       reservedAt: r.createdAt.toISOString(),
-      sortTs: r.createdAt.getTime(),
-    });
+    };
+
+    if (r.poolUnitId && r.poolUnit) {
+      // Producto 2 — Pool
+      merged.push({
+        ...common,
+        kind: "pool",
+        poolUnitId: r.poolUnitId,
+        poolSlug: r.poolUnit.pool.slug,
+        poolName: r.poolUnit.pool.name,
+        unitExternalId: r.poolUnit.externalId,
+        unitLabel: r.poolUnit.label,
+        unitComuna: r.poolUnit.comuna,
+      });
+    } else if (r.propertyId) {
+      // Producto 1 — Property
+      const prop = propById.get(r.propertyId);
+      merged.push({
+        ...common,
+        kind: "property",
+        propertyId: r.propertyId,
+        propertyTitle: prop?.title ?? r.propertyName ?? r.propertyId,
+        inventoryCode: prop?.inventoryCode ?? null,
+        visibleToBrokers: prop?.visibleToBrokers ?? false,
+      });
+    }
+    // Defensivo: si por algún bug ambos son null o ambos no-null, omitimos
+    // (el CHECK XOR de Postgres no debería permitirlo).
   }
 
-  merged.sort((a, b) => b.sortTs - a.sortTs);
-  return merged.map((row) => {
-    const { sortTs, ...rest } = row;
-    void sortTs;
-    return rest;
-  });
+  return merged;
 }
 
 /**
