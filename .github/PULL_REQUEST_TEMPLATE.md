@@ -23,6 +23,7 @@ Borrá las secciones que no apliquen, pero **completá las que sí**.
 - [ ] Verificado en preview de Vercel
 - [ ] (Si toca DB) probado E2E contra DB local con el script de seed
 - [ ] (Si toca payment / cron / webhook) `curl` manual del endpoint
+- [ ] **(Si agrego un endpoint `/api/**/route.ts`)** Aplica `applyRateLimit` con uno de los buckets de `@/lib/rate-limit` (sin excepciones salvo `/api/auth/*`). Detalle: `docs/RATE_LIMIT.md`.
 
 ## Documentación
 

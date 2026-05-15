@@ -67,6 +67,7 @@ No la dejes pasar. Hacé un PR `docs:` específico que la pague antes de avanzar
 - Validación con Zod en cada API route, usar `.safeParse()`.
 - Server Components por defecto; `"use client"` solo cuando sea necesario.
 - TypeScript estricto: nunca `any`, preferir `unknown` + type narrowing.
+- **Todo route handler nuevo en `src/app/api/**/route.ts` lleva `applyRateLimit`** con uno de los 4 buckets de [`docs/RATE_LIMIT.md`](./RATE_LIMIT.md). Sin excepciones salvo `/api/auth/*` (NextAuth interno). Esto es regla obligatoria desde 2026-05-15 — `CLAUDE.md` lo lista en la Definition of Done para que Claude Code lo detecte.
 
 ## Más referencias
 

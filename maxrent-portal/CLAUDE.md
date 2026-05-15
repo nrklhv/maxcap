@@ -13,6 +13,7 @@
 - [ ] `npx eslint <archivos-tocados>` → sin warnings nuevos
 - [ ] Si toca DB → migración Prisma formal en `prisma/migrations/` (no `db push` en prod)
 - [ ] Si toca pago / cron / webhook → probado con `curl` manual contra el endpoint
+- [ ] **Si agregué un endpoint nuevo (`/api/**/route.ts`)** → tiene `applyRateLimit` con uno de los buckets de `RATE_LIMITS` (ver § Rate limiting más abajo). Sin excepciones salvo NextAuth `/api/auth/*` que tiene su propia lógica
 
 ### Documentación (obligatorio — bloquea CI)
 - [ ] `docs/<TEMA>.md` específico del feature actualizado (o creado si es nuevo)
@@ -41,6 +42,35 @@
 - Nunca pegar secrets reales en chat ni en docs — usar placeholders (`<TU_VALOR>`).
 - Cuando un secret se expone accidentalmente → rotarlo en el provider.
 - Datos sensibles (`PoolUnit.internalData` con dirección/depto, RUTs, etc.) **NUNCA** se exponen al cliente. Solo a staff por endpoints dedicados.
+
+### Rate limiting (OBLIGATORIO en cada endpoint nuevo)
+**Todo route handler nuevo en `src/app/api/**/route.ts` debe aplicar `applyRateLimit`** con uno de los 4 buckets de [`src/lib/rate-limit.ts`](./src/lib/rate-limit.ts) (`webhook`, `public`, `authenticated`, `expensive`). Sin excepciones salvo `/api/auth/*` (lo maneja NextAuth internamente).
+
+Cómo elegir el bucket:
+- **`public`** (10/min por IP) → endpoint sin auth llamado desde el landing público (ej. `/api/public/leads`).
+- **`webhook`** (60/min por IP) → recibe llamadas de proveedores externos firmadas (Mercado Pago, Floid, Resend, Vercel Cron).
+- **`authenticated`** (60/min por usuario) → endpoint autenticado de lectura/escritura común.
+- **`expensive`** (5/min por usuario) → operaciones caras (Floid evaluate, AVLA check, crear reserva, crear checkout MP).
+
+Patrón estándar al inicio del handler, ANTES de cualquier lógica:
+
+```ts
+import { applyRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+
+export async function POST(req: Request) {
+  const session = await requireStaffSuperAdmin();
+  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+
+  const limited = await applyRateLimit(req, RATE_LIMITS.expensive, { route: "mi-endpoint" });
+  if (limited) return limited;
+
+  // … resto del handler
+}
+```
+
+El parámetro `route` se incluye en la key de Redis → dos endpoints con el mismo bucket no comparten contador.
+
+**Detalle, buckets, y cómo aplicar a casos especiales (CORS, webhooks firmados, etc.)**: [`docs/RATE_LIMIT.md`](./docs/RATE_LIMIT.md).
 
 ### Datos
 - Migraciones Prisma formales en `prisma/migrations/`, no `db push` contra prod.
@@ -77,6 +107,9 @@ Lecciones aprendidas que dejan cicatriz:
 
 6. **Endpoints públicos sin rate limit**.
    `/api/public/leads` se llena de spam si no tiene bucket. Ver `docs/RATE_LIMIT.md` para los 4 buckets y cómo aplicar a un endpoint nuevo.
+
+7. **Endpoints staff sin rate limit** (descubierto con AVLA).
+   Hasta ahora se asumía que "es staff, no hace falta limitarlo". Falso: cuentas comprometidas + multi-click + bugs del front pueden generar abuso. **Todos los endpoints nuevos llevan rate limit**, sin excepciones salvo `/api/auth/*`. Ver § Rate limiting (regla obligatoria).
 
 ## Referencias rápidas
 
