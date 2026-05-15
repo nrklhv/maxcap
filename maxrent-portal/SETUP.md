@@ -4,6 +4,12 @@
 > - **Landing** (`www.maxrent.cl`): código en la raíz del repo, ver [`README.md`](../README.md).
 > - **Recursos de marca** (`marketing.maxrent.cl`): código en [`maxrent-marketing/`](../maxrent-marketing/), ver [`maxrent-marketing/README.md`](../maxrent-marketing/README.md) para setup, OAuth, deploy y rotación de secrets.
 
+> **Si vas a contribuir código**, leé también:
+> - [`CONTEXTO-PROYECTO.md`](./CONTEXTO-PROYECTO.md) — visión + arquitectura + endpoints + flujos + integraciones.
+> - [`CLAUDE.md`](./CLAUDE.md) — Definition of Done + reglas operacionales + anti-patterns observados.
+> - [`docs/CONTRIBUTING.md`](./docs/CONTRIBUTING.md) — convenciones + regla de docs obligatorias + enforcement.
+> - [`docs/README.md`](./docs/README.md) — índice completo de docs por dominio.
+
 ## Requisitos previos
 
 - Node.js 18+
