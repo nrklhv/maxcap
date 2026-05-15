@@ -14,8 +14,9 @@ export default function StaffReservasPage() {
       <div>
         <h1 className="font-serif text-2xl font-bold tracking-tight text-gray-900">Reservas</h1>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-600">
-          Vista consolidada de holds en inventario y reservas del portal inversionista. La misma
-          tabla está en{" "}
+          Vista consolidada de reservas activas del portal inversionista: incluye Producto 1
+          (propiedades individuales) y Producto 2 (unidades de Pool). El tag al inicio de cada
+          fila indica el producto. La misma tabla está disponible en{" "}
           <Link href="/staff/properties" className="font-semibold text-blue-700 underline">
             Staff → Propiedades
           </Link>{" "}
@@ -27,7 +28,7 @@ export default function StaffReservasPage() {
         <div className="border-b border-gray-100 bg-gray-50/90 px-4 py-3">
           <h2 className="text-base font-semibold text-gray-900">Activas</h2>
           <p className="mt-0.5 text-xs text-gray-600">
-            Elegí la acción en la fila; después «Aprobar cambios» abre el aviso y «Confirmar y
+            Elige la acción en la fila; después «Aprobar cambios» abre el aviso y «Confirmar y
             ejecutar» aplica el cambio.
           </p>
         </div>

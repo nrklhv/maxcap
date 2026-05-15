@@ -191,6 +191,12 @@ Los endpoints staff de reservas existentes se extendieron para soportar Producto
 
 ## Qué NO hace este producto (aún)
 
-- No tiene panel de staff para crear/cerrar pools (Fase 4).
 - Mercado Pago sigue siendo stub (igual que Producto 1): la integración real va con el SDK de MP — el contrato de `paymentService` ya está listo para ambos productos.
 - No expone `internalData` por API: el endpoint público selecciona explícitamente campos seguros vía `POOL_UNIT_PUBLIC_SELECT`.
+- UF dinámica (cron al SII + recálculo de `priceClp` en runtime) pendiente — hoy el `priceUf` queda fijo al momento del import.
+
+## Vistas staff existentes
+
+- **`/staff/pools`** + **`/staff/pools/[slug]`**: listado y detalle con `internalData` visible (dirección, depto), controles de status/pausa, acciones por reserva (cancelar/escriturar).
+- **`/staff/reservas`**: vista unificada con reservas de Producto 1 (Property) **y** Producto 2 (Pool) en la misma tabla. Cada fila lleva un tag "Pool" / "Propiedad" para diferenciar.
+- **`/staff/inversionistas`**: columna "DICOM (AVLA)" — preaprobación crediticia manual con AVLA, independiente del flujo de Pool.
