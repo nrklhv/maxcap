@@ -138,3 +138,18 @@ Si ves todos 400 (ninguno 429), el rate limit no está activo: revisa que `KV_RE
 - Analytics dashboard de Upstash (prender `analytics: true` en el `Ratelimit` constructor para ver bloqueos en el dashboard de Upstash).
 - Rate limit por endpoint individual (más granular que por bucket) para `/api/floid/evaluate` que es especialmente caro.
 - Lista de IPs allowlisteadas para los webhooks de proveedores conocidos (MP, Floid, Resend) para subir el bucket a ellos sin abrir a todo el mundo.
+
+## Patrón aprendido: webhooks/crons necesitan exención del middleware
+
+Cualquier endpoint que reciba auth via `Authorization: Bearer <secret>` (webhooks de proveedores, crons de Vercel) debe estar **exento del middleware de NextAuth** en `src/middleware.ts`. Sin la exención, el middleware corta con 401 antes de llegar al handler donde se valida el Bearer.
+
+Endpoints actualmente exentos:
+- `/api/auth/**` — NextAuth necesita estos paths libres.
+- `/api/payments/webhook` — Mercado Pago.
+- `/api/floid/callback` — Floid (valida con `FLOID_WEBHOOK_SECRET`).
+- `/api/notifications/webhook/**` — Resend / Svix.
+- `/api/cron/**` — Vercel Cron (valida con `CRON_SECRET`).
+
+**No combinar con rate limit por sesión** en estos endpoints. Si necesitas limitarlos, usar bucket `webhook` (por IP) o `expensive` (también IP cuando no hay sesión). Ver § Buckets.
+
+Detalle del descubrimiento en `docs/BACKUP_RESTORE.md` → "Lecciones aprendidas".
