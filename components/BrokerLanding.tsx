@@ -250,7 +250,12 @@ export function BrokerLanding({ ufBadge }: { ufBadge?: ReactNode } = {}) {
         </aside>
       </div>
 
-      <Footer variant="inversionista" />
+      {/* Mismo margin que el wrapping principal para que el form sticky desktop
+          no tape la última columna del footer. Sin esto, el `md:fixed md:right-0`
+          del aside del form queda encima de la columna "Vendedores" del footer. */}
+      <div className="md:mr-[420px] xl:mr-[480px] 2xl:mr-[520px]">
+        <Footer variant="inversionista" />
+      </div>
     </>
   );
 }

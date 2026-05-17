@@ -560,7 +560,13 @@ export function InvestorLanding({ ufBadge }: { ufBadge?: ReactNode } = {}) {
       </div>
 
       <MobileLeadBar variant="inversionista" />
-      <Footer variant="inversionista" />
+      {/* El form sticky desktop (`md:fixed md:right-0` con ancho 420/480/520px)
+          tapaba la última columna del footer. Repetimos acá el margin del wrapper
+          principal para que el Footer respete el mismo "carril" útil que el
+          contenido. En mobile no hay margin (el form no es fixed). */}
+      <div className="md:mr-[420px] xl:mr-[480px] 2xl:mr-[520px]">
+        <Footer variant="inversionista" />
+      </div>
     </>
   );
 }
