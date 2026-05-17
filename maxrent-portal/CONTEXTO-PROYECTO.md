@@ -224,6 +224,13 @@ Pool (Producto 2 — portafolio de propiedades arrendadas)
 - **`Reservation` soporta ambos productos**: `propertyId` ahora nullable + nuevo `poolUnitId`. CHECK constraint `reservations_target_xor_check` garantiza XOR (exactamente uno de los dos seteado).
 - Import: `scripts/import-lab-pool.ts` con parser puro testeado en `src/lib/pool/lab-excel-parser.ts`. Soporta `--dry-run`; idempotente al re-correr.
 
+**UfRate** (UF chilena cacheada por día)
+- `date` (`@db.Date`, UNIQUE), `valueClp` (`Decimal(12,2)`), `source` (default `mindicador.cl`), `createdAt`.
+- Un row por día. Cron diario `/api/cron/refresh-uf` hace upsert idempotente desde mindicador.cl.
+- Los endpoints del portal (`/api/portal/pools`, `/pools/[slug]`, `/pool-units/[id]`) consultan `getLatestUfRate()` y devuelven el valor al cliente para mostrar `"≈ $X CLP"` debajo de los precios en UF.
+- El portal NUNCA pega a mindicador en runtime de una request del usuario.
+- Detalle full: [`docs/UF_RATE.md`](./docs/UF_RATE.md).
+
 ### 3.3 Enums
 ```typescript
 enum StaffRole                  { NONE, SUPER_ADMIN }
@@ -375,6 +382,8 @@ CORS: orígenes permitidos vía `LEADS_ALLOWED_ORIGINS` (CSV). Por defecto: `htt
 | GET | `/api/portal/pools` | Sí | Listado de pools publicados (`OPEN`/`CLOSED`). Devuelve métricas agregadas + gate de reserva (`canReserve`, `reserveBlockReason`). |
 | GET | `/api/portal/pools/[slug]` | Sí | Detalle del pool + unidades **públicas** (sin `internalData`). Marca por unidad si el inversionista ya tiene reserva activa. |
 | GET | `/api/portal/pool-units/[id]` | Sí | Detalle de una unidad + summary del pool para la página de checkout `/reserva/pool-unit/[id]`. |
+
+> **UF dinámica**: los 3 endpoints de pools devuelven además `latestUfRate: { date, valueClp } | null` con la UF más reciente cacheada (vía cron diario que pega a mindicador.cl). El cliente la usa para calcular `"≈ $X CLP"` debajo de los precios en UF. Si todavía no hay UF cacheada (post-deploy fresco), el campo es `null` y la UI omite el hint sin romper. Detalle: [`docs/UF_RATE.md`](./docs/UF_RATE.md).
 | GET | `/api/staff/pools` | Staff | Listado para `/staff/pools` con métricas. |
 | GET | `/api/staff/pools/[slug]` | Staff | Detalle con `internalData` (dirección exacta, depto) y reserva activa por unidad. |
 | PATCH | `/api/staff/pools/[slug]` | Staff | Actualiza `description`, `status` (`DRAFT/OPEN/CLOSED`) y/o `acceptingReservations`. |
@@ -414,6 +423,7 @@ APIs bajo `/api/staff/*` para inventario, aprobación de brokers, gestión de in
 |---|---|---|---|
 | GET/POST | `/api/cron/referrals/expire` | `Bearer <CRON_SECRET>` | Recorre `Referral` y `BrokerLead` con `expiresAt < now` y status no terminal, marca como `EXPIRED` / `LOST`. Configurado en `vercel.json` para correr diariamente a las 06:00 UTC. Si `CRON_SECRET` no está seteado → 503. |
 | GET/POST | `/api/cron/db-backup` | `Bearer <CRON_SECRET>` | Backup diario de la DB a Vercel Blob (data-only en `.tar.gz` con un JSONL por tabla). Schedule `30 6 * * *` (06:30 UTC = 03:30 Chile). Retención 30 días con cleanup integrado en el mismo cron. Si `CRON_SECRET` o `BLOB_READ_WRITE_TOKEN` no están seteados → 503 defensivo. Detalle: `docs/BACKUP_RESTORE.md`. |
+| GET/POST | `/api/cron/refresh-uf` | `Bearer <CRON_SECRET>` | Trae UF chilena desde mindicador.cl y la persiste idempotente en `UfRate` (cache diario). **No está en `vercel.json`** — la cuota Hobby permite 2 crons y ya están ocupados; se dispara manualmente vía `curl` hasta que pasemos a Pro. Detalle: `docs/UF_RATE.md`. |
 
 **Importante para crons nuevos**: el middleware de NextAuth ahora **exime explícitamente `/api/cron/*`** del check de auth (igual que webhooks). Sin esa exención, Vercel Cron recibe 401 antes de llegar al handler que valida el Bearer. Si agregás un cron nuevo, ya está cubierto por el patrón existente — no requiere cambios al middleware.
 
@@ -805,6 +815,14 @@ Helper: `brokerSwitchHrefFor()` en `components/portal/sidebar.tsx`.
 - **Usado por**: `src/lib/rate-limit-core.ts` (cliente Upstash + 4 buckets) y `src/lib/rate-limit.ts` (wrapper con NextAuth para route handlers).
 - **Modo dev local sin KV**: fail-open silencioso (no bloquea, loguea un warn al primer hit). Si querés testear el comportamiento real en local, copia las dos env vars a `.env.local`.
 - **Detalle**: ver sección «Rate limiting» más abajo y [`docs/RATE_LIMIT.md`](./docs/RATE_LIMIT.md).
+
+### 8.7b mindicador.cl (UF chilena) — OPERATIVO
+- **Estado**: integración via cron diario que pega a `https://mindicador.cl/api/uf`. Activa desde 2026-05-15.
+- **Propósito**: cachear el valor de la UF en la tabla `uf_rates` (un row por día). El portal usa el último valor cacheado para mostrar `"≈ $X CLP"` debajo de los precios en UF de los pools (Producto 2). **El portal nunca pega a mindicador en runtime de una request del usuario.**
+- **Sin API key**: mindicador.cl es público y sin auth.
+- **Endpoint cron**: `/api/cron/refresh-uf` (manual por ahora, ver Cron jobs en § 5).
+- **Modo dev local sin UF cacheada**: los endpoints del portal devuelven `latestUfRate: null` y la UI omite el hint en CLP silenciosamente. Para tener data en local: correr el cron manual contra local o copiar un row a mano.
+- **Detalle**: [`docs/UF_RATE.md`](./docs/UF_RATE.md).
 
 ### 8.7 Vercel Blob — OPERATIVO
 - **Estado**: integración Upstash-like activa en Vercel desde 2026-05-14 (parte del marketplace Vercel Storage). Store `maxrent-portal-backups` en región **iad1**, plan Free, modo **Private** (no público).

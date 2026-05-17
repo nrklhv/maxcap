@@ -33,8 +33,10 @@ import type {
   PublicPoolUnit,
 } from "@/lib/pool/public-types";
 import type { ReserveBlockReason } from "@/lib/portal/investor-reservation-gate";
+import { formatUfClpHint, formatUfRateAsOf } from "@/lib/uf/format";
 
 type UnitWithFlag = PublicPoolUnit & { investorHasActiveReservation: boolean };
+type LatestUfRate = { date: string; valueClp: number } | null;
 
 function formatPct(v: number | null): string {
   if (v === null) return "—";
@@ -91,6 +93,7 @@ export function PoolDetailFromApi({ slug }: { slug: string }) {
   const [canReserve, setCanReserve] = useState(false);
   const [reserveBlockReason, setReserveBlockReason] =
     useState<ReserveBlockReason | null>(null);
+  const [latestUfRate, setLatestUfRate] = useState<LatestUfRate>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -103,6 +106,7 @@ export function PoolDetailFromApi({ slug }: { slug: string }) {
         units?: UnitWithFlag[];
         canReserve?: boolean;
         reserveBlockReason?: ReserveBlockReason | null;
+        latestUfRate?: LatestUfRate;
       };
       if (!res.ok || !data.pool) {
         setError(data.error || "No se pudo cargar el portafolio");
@@ -118,6 +122,7 @@ export function PoolDetailFromApi({ slug }: { slug: string }) {
           ? data.reserveBlockReason
           : null
       );
+      setLatestUfRate(data.latestUfRate ?? null);
     } catch {
       setError("Error de red");
     } finally {
@@ -153,6 +158,8 @@ export function PoolDetailFromApi({ slug }: { slug: string }) {
 
   const poolClosed = pool.status === "CLOSED" || !pool.acceptingReservations;
   const availableUnits = units.filter((u) => u.saleStatus === "AVAILABLE").length;
+  const ufValueClp = latestUfRate?.valueClp ?? null;
+  const ufAsOf = latestUfRate ? formatUfRateAsOf(latestUfRate.date) : null;
 
   return (
     <div className="space-y-6">
@@ -176,8 +183,18 @@ export function PoolDetailFromApi({ slug }: { slug: string }) {
         <SummaryCard label="Unidades">{pool.totalUnits}</SummaryCard>
         <SummaryCard label="Cap rate bruto">{formatCapRate(pool.capRateBruto)}</SummaryCard>
         <SummaryCard label="Ocupación">{formatPct(pool.occupancyPct)}</SummaryCard>
-        <SummaryCard label="Valor total (UF)">{formatUf(pool.totalValueUf)}</SummaryCard>
+        <SummaryCard
+          label="Valor total (UF)"
+          hint={formatUfClpHint(pool.totalValueUf, ufValueClp)}
+        >
+          {formatUf(pool.totalValueUf)}
+        </SummaryCard>
       </div>
+      {ufAsOf ? (
+        <p className="-mt-3 text-xs text-gray-500">
+          Conversiones aproximadas a CLP usando la {ufAsOf}.
+        </p>
+      ) : null}
 
       {/* Bloqueos */}
       {poolClosed ? (
@@ -250,6 +267,7 @@ export function PoolDetailFromApi({ slug }: { slug: string }) {
                     unit={u}
                     poolSlug={pool.slug}
                     canReserve={canReserve && !poolClosed}
+                    ufValueClp={ufValueClp}
                   />
                 ))
               )}
@@ -261,11 +279,20 @@ export function PoolDetailFromApi({ slug }: { slug: string }) {
   );
 }
 
-function SummaryCard({ label, children }: { label: string; children: React.ReactNode }) {
+function SummaryCard({
+  label,
+  children,
+  hint,
+}: {
+  label: string;
+  children: React.ReactNode;
+  hint?: string | null;
+}) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
       <div className="text-xs uppercase tracking-wide text-gray-500">{label}</div>
       <div className="mt-1 text-lg font-semibold text-gray-900">{children}</div>
+      {hint ? <div className="mt-0.5 text-xs text-gray-500">{hint}</div> : null}
     </div>
   );
 }
@@ -274,12 +301,15 @@ function UnitRow({
   unit: u,
   poolSlug,
   canReserve,
+  ufValueClp,
 }: {
   unit: UnitWithFlag;
   poolSlug: string;
   canReserve: boolean;
+  ufValueClp: number | null;
 }) {
   const isAvailable = u.saleStatus === "AVAILABLE";
+  const priceClpHint = formatUfClpHint(u.priceUf, ufValueClp);
 
   return (
     <tr className="hover:bg-gray-50/60">
@@ -318,7 +348,10 @@ function UnitRow({
         </span>
       </td>
       <td className="px-4 py-3 text-right tabular-nums text-gray-900">
-        {formatUfFromString(u.priceUf)}
+        <div>{formatUfFromString(u.priceUf)}</div>
+        {priceClpHint ? (
+          <div className="mt-0.5 text-xs font-normal text-gray-500">{priceClpHint}</div>
+        ) : null}
       </td>
       <td className="px-4 py-3 text-right tabular-nums text-gray-700">
         ${Number(u.monthlyRentClp).toLocaleString("es-CL", { maximumFractionDigits: 0 })}

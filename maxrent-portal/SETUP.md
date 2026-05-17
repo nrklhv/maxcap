@@ -120,6 +120,20 @@ Backup automatizado de la DB a Vercel Blob — corre todos los días a las 06:30
 
 Para restaurar un backup ver [docs/BACKUP_RESTORE.md](./docs/BACKUP_RESTORE.md) — incluye procedimiento paso a paso y el script `scripts/restore-from-backup.ts`.
 
+### UF chilena (cache diario desde mindicador.cl)
+
+Tabla `uf_rates` cachea la UF por día. Sin proveedor externo a configurar — mindicador.cl es público y sin auth. El cron [`/api/cron/refresh-uf`](./src/app/api/cron/refresh-uf/route.ts) hace el upsert idempotente usando el mismo `CRON_SECRET` que los otros crons.
+
+- Por ahora **no está en `vercel.json`** (cuota Hobby permite 2 crons; ya ocupados por `referrals/expire` y `db-backup`). Se dispara manualmente:
+  ```bash
+  curl -X POST \
+    -H "Authorization: Bearer $CRON_SECRET" \
+    https://portal.maxrent.cl/api/cron/refresh-uf
+  ```
+- En dev local sin cron corrido, los endpoints del portal devuelven `latestUfRate: null` y la UI omite el hint `"≈ $X CLP"` silenciosamente. Para tener data en local: correr el cron contra `http://localhost:3002` con el `CRON_SECRET` de `.env.local`, o insertar un row a mano en `uf_rates`.
+
+Detalle: [docs/UF_RATE.md](./docs/UF_RATE.md).
+
 ### Rate limiting (Vercel KV / Upstash Redis)
 
 Webhooks de proveedores, endpoints públicos del landing y operaciones caras (Floid, crear reserva) están protegidos con sliding window contra Upstash Redis. 4 buckets predefinidos.
