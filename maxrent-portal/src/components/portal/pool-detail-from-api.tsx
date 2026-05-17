@@ -146,10 +146,10 @@ export function PoolDetailFromApi({ slug }: { slug: string }) {
     return (
       <div className="space-y-4">
         <Link
-          href="/oportunidades/pools"
+          href="/oportunidades"
           className="inline-flex items-center gap-1 text-sm font-medium text-blue-700 hover:underline"
         >
-          <ArrowLeft className="h-4 w-4" /> Volver a portafolios
+          <ArrowLeft className="h-4 w-4" /> Volver a oportunidades
         </Link>
         <p className="text-sm text-red-600">{error}</p>
       </div>
@@ -165,10 +165,10 @@ export function PoolDetailFromApi({ slug }: { slug: string }) {
     <div className="space-y-6">
       <div>
         <Link
-          href="/oportunidades/pools"
+          href="/oportunidades"
           className="inline-flex items-center gap-1 text-sm font-medium text-blue-700 hover:underline"
         >
-          <ArrowLeft className="h-4 w-4" /> Volver a portafolios
+          <ArrowLeft className="h-4 w-4" /> Volver a oportunidades
         </Link>
         <h1 className="mt-3 font-serif text-2xl tracking-tight text-dark">
           {pool.name}
