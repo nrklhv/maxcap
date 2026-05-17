@@ -247,7 +247,7 @@ export default function PerfilPage() {
       router.refresh();
 
       if (nowComplete && !session?.user?.onboardingCompleted) {
-        setTimeout(() => router.push("/dashboard"), 1000);
+        setTimeout(() => router.push("/oportunidades"), 1000);
       }
     } catch (err) {
       setErrors({

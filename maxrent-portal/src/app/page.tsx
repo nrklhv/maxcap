@@ -57,7 +57,7 @@ export default function HomePage() {
 
         <nav className="flex flex-col gap-3" aria-label="Portales">
           <Link
-            href="/login?callbackUrl=/dashboard"
+            href="/login?callbackUrl=/oportunidades"
             className="group flex items-center gap-4 rounded-xl border border-gray-200 bg-white px-4 py-4 shadow-sm ring-1 ring-gray-100 hover:border-blue-300 hover:ring-blue-100 hover:shadow-md transition-all"
           >
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700 group-hover:bg-blue-100">

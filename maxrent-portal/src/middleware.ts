@@ -111,7 +111,7 @@ export default auth((req) => {
 
     // 2) Default por rol — inversionista primero (el más común).
     if (u?.canInvest) {
-      return NextResponse.redirect(new URL("/dashboard", req.nextUrl.origin));
+      return NextResponse.redirect(new URL("/oportunidades", req.nextUrl.origin));
     }
     if (u?.brokerAccessStatus === "APPROVED") {
       return NextResponse.redirect(
@@ -123,9 +123,9 @@ export default auth((req) => {
     }
 
     // 3) Fallback: cuenta sin canInvest ni broker. Probablemente staff puro
-    // o cuenta nueva que aún no tiene permisos. La mandamos a /dashboard
+    // o cuenta nueva que aún no tiene permisos. La mandamos a /oportunidades
     // (el middleware de onboarding la mantendrá ahí o la mandará a /perfil).
-    return NextResponse.redirect(new URL("/dashboard", req.nextUrl.origin));
+    return NextResponse.redirect(new URL("/oportunidades", req.nextUrl.origin));
   }
 
   if (isLoggedIn && pathname === "/staff/login") {

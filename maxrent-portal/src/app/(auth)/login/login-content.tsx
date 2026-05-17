@@ -46,7 +46,7 @@ function deriveLoginContext(callbackUrl: string): {
 }
 
 export default function LoginContent({
-  defaultCallbackUrl = "/dashboard",
+  defaultCallbackUrl = "/oportunidades",
   heading: headingProp,
   subtitle: subtitleProp,
   serverError = null,

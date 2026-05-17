@@ -80,7 +80,7 @@ export function StaffNav() {
             );
           })}
           <Link
-            href="/dashboard"
+            href="/oportunidades"
             className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 border border-transparent hover:border-blue-100"
           >
             <LayoutDashboard className="w-4 h-4 shrink-0" aria-hidden />

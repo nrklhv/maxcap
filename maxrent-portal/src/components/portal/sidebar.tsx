@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
-  LayoutDashboard,
   User,
   BarChart3,
   Home,
@@ -19,8 +18,11 @@ import {
 import { useState } from "react";
 import { Logo } from "@/components/Logo";
 
+// "Dashboard" se quitó del nav (2026-05-17): el término no era claro para
+// inversionistas y la página solo duplicaba el journey strip que ya está en el
+// layout. La ruta `/dashboard` redirige a `/oportunidades` por compatibilidad
+// con bookmarks antiguos.
 const clientNavItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/perfil", label: "Mi Perfil", icon: User },
   { href: "/evaluacion", label: "Evaluación", icon: BarChart3 },
   { href: "/oportunidades", label: "Oportunidades de inversión", icon: Sparkles },
@@ -86,7 +88,7 @@ export function Sidebar() {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <Link
-            href="/dashboard"
+            href="/oportunidades"
             className="block transition-opacity hover:opacity-80"
             title="MaxRent — Portal Inversionista"
           >
