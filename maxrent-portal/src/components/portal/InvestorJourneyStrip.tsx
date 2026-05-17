@@ -18,7 +18,6 @@ import {
   ClipboardCheck,
   Clock,
   FileSearch,
-  Loader2,
   Sparkles,
   TriangleAlert,
   User,
@@ -133,23 +132,22 @@ function NextToneIcon({ tone }: { tone: InvestorJourneyNext["tone"] }) {
 }
 
 function StepIcon({ step, n }: { step: InvestorJourneyStep; n: number }) {
-  // Si está done, mostramos check ✓. Si está active, mostramos un spinner sutil
-  // (excepto en "perfil" donde no aplica). Si está warn, alerta. Si todo, número.
+  // Si está done, mostramos check ✓. Si está warn, alerta. En el resto (active o
+  // todo) mostramos el icono propio del paso (User/FileSearch/etc.) — el estado
+  // se comunica via color/ring del círculo, no via animación. Antes el state
+  // `active` mostraba un spinner girando que daba impresión de loading aunque
+  // no hubiera nada cargando.
   if (step.state === "done") {
     return <Check className="h-4 w-4" aria-hidden strokeWidth={3} />;
   }
   if (step.state === "warn") {
     return <TriangleAlert className="h-4 w-4" aria-hidden />;
   }
-  if (step.state === "active") {
-    // "Revisión" en active = esperando staff, mostramos icono de llave.
-    // "Evaluación" en active = procesando con Floid, mostramos loader.
-    if (step.id === "revision") {
-      return <KeyRound className="h-4 w-4" aria-hidden />;
-    }
-    return <Loader2 className="h-4 w-4 animate-spin" aria-hidden />;
+  // Caso especial: "Revisión" en active = esperando staff. Usamos llave para
+  // comunicar "te van a habilitar" en lugar del icono genérico del paso.
+  if (step.state === "active" && step.id === "revision") {
+    return <KeyRound className="h-4 w-4" aria-hidden />;
   }
-  // todo → icono del paso o número
   const Icon = STEP_ICONS[step.id];
   if (Icon) return <Icon className="h-4 w-4" aria-hidden />;
   return <span className="text-xs font-bold">{n}</span>;

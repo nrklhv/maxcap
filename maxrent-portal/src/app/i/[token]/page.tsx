@@ -44,7 +44,7 @@ export default function BrokerInviteLandingPage() {
           setMessage("Tu navegador bloqueó el almacenamiento local. Probá en otra ventana o desactivá el modo privado.");
           return;
         }
-        router.replace(`/login?callbackUrl=${encodeURIComponent("/dashboard")}`);
+        router.replace(`/login?callbackUrl=${encodeURIComponent("/oportunidades")}`);
       } catch {
         if (!cancelled) setMessage("No pudimos validar el enlace. Reintenta en unos segundos.");
       }

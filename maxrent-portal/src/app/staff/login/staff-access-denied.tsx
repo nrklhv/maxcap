@@ -56,7 +56,7 @@ export function StaffAccessDenied({
             Cerrar sesión e intentar de nuevo
           </button>
           <Link
-            href="/dashboard"
+            href="/oportunidades"
             className="inline-flex justify-center rounded-lg border border-amber-300 bg-white px-4 py-2.5 text-sm font-medium text-amber-950 hover:bg-amber-100/80"
           >
             Ir al portal inversionista

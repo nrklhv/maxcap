@@ -111,7 +111,7 @@ export function BrokerSidebar({ brokerAccessStatus, canInvest }: BrokerSidebarPr
     return items;
   }, [brokerAccessStatus]);
 
-  const portalHref = canInvest ? "/dashboard" : "/";
+  const portalHref = canInvest ? "/oportunidades" : "/";
   const portalLabel = canInvest ? "Portal inversionista" : "Inicio";
 
   return (
