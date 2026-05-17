@@ -15,6 +15,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Building2, TrendingUp } from "lucide-react";
 import type { PublicPoolListItem } from "@/lib/pool/public-types";
+import { formatUfClpHint, formatUfRateAsOf } from "@/lib/uf/format";
+
+type LatestUfRate = { date: string; valueClp: number } | null;
 
 function formatPct(v: number | null): string {
   if (v === null) return "—";
@@ -43,6 +46,7 @@ function formatClp(s: string | null): string {
 
 export function PoolListFromApi() {
   const [pools, setPools] = useState<PublicPoolListItem[]>([]);
+  const [latestUfRate, setLatestUfRate] = useState<LatestUfRate>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,6 +58,7 @@ export function PoolListFromApi() {
         const data = (await res.json()) as {
           error?: string;
           pools?: PublicPoolListItem[];
+          latestUfRate?: LatestUfRate;
         };
         if (cancelled) return;
         if (!res.ok) {
@@ -61,6 +66,7 @@ export function PoolListFromApi() {
           return;
         }
         setPools(data.pools ?? []);
+        setLatestUfRate(data.latestUfRate ?? null);
       } catch {
         if (!cancelled) setError("Error de red");
       } finally {
@@ -94,8 +100,17 @@ export function PoolListFromApi() {
     );
   }
 
+  const ufValueClp = latestUfRate?.valueClp ?? null;
+  const ufAsOf = latestUfRate ? formatUfRateAsOf(latestUfRate.date) : null;
+
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <div className="space-y-4">
+      {ufAsOf ? (
+        <p className="text-xs text-gray-500">
+          Conversiones aproximadas a CLP usando la {ufAsOf}.
+        </p>
+      ) : null}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       {pools.map((p) => (
         <Link
           key={p.id}
@@ -138,7 +153,10 @@ export function PoolListFromApi() {
             <Metric label="Ocupación">
               {formatPct(p.occupancyPct)}
             </Metric>
-            <Metric label="Valor total (UF)">
+            <Metric
+              label="Valor total (UF)"
+              hint={formatUfClpHint(p.totalValueUf, ufValueClp)}
+            >
               {formatUf(p.totalValueUf)}
             </Metric>
             <Metric label="Renta total mensual">
@@ -150,6 +168,7 @@ export function PoolListFromApi() {
           </div>
         </Link>
       ))}
+      </div>
     </div>
   );
 }
@@ -158,10 +177,12 @@ function Metric({
   icon,
   label,
   children,
+  hint,
 }: {
   icon?: React.ReactNode;
   label: string;
   children: React.ReactNode;
+  hint?: string | null;
 }) {
   return (
     <div>
@@ -170,6 +191,7 @@ function Metric({
         {label}
       </div>
       <div className="mt-1 font-medium text-gray-900">{children}</div>
+      {hint ? <div className="mt-0.5 text-xs text-gray-500">{hint}</div> : null}
     </div>
   );
 }

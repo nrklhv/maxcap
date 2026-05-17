@@ -13,6 +13,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getInvestorReserveGatePayload } from "@/lib/portal/investor-reservation-gate";
 import { listPublicPools } from "@/lib/services/pool.service";
+import { getLatestUfRate } from "@/lib/services/uf.service";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export async function GET(req: Request) {
@@ -24,9 +25,10 @@ export async function GET(req: Request) {
   const limited = await applyRateLimit(req, RATE_LIMITS.authenticated, { route: "pools-list" });
   if (limited) return limited;
 
-  const [gate, pools] = await Promise.all([
+  const [gate, pools, latestUf] = await Promise.all([
     getInvestorReserveGatePayload(session.user.id),
     listPublicPools(),
+    getLatestUfRate(),
   ]);
 
   return NextResponse.json({
@@ -34,5 +36,8 @@ export async function GET(req: Request) {
     canReserve: gate.canReserve,
     evaluationId: gate.evaluationId,
     reserveBlockReason: gate.reserveBlockReason,
+    latestUfRate: latestUf
+      ? { date: latestUf.date.toISOString().slice(0, 10), valueClp: latestUf.valueClp }
+      : null,
   });
 }

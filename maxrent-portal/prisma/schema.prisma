@@ -675,6 +675,27 @@ model PropertyCatalogDraft {
   @@map("property_catalog_drafts")
 }
 
+/// UF (Unidad de Fomento) chilena por día. Cacheada vía cron diario que pega
+/// a mindicador.cl. El portal usa el último valor para convertir UF→CLP en
+/// runtime (mostrar precio referencial en CLP al lado de cada UF).
+///
+/// Una sola fila por día (`@@unique date`). El cron es idempotente (upsert).
+/// Si el cron falla un día, el portal usa el último valor disponible — la UF
+/// se mueve ~0.01%/día así que un día de delay no es crítico.
+model UfRate {
+  id        String   @id @default(cuid())
+  /// Fecha de la cotización (YYYY-MM-DD en UTC). Una fila por día.
+  date      DateTime @unique @db.Date
+  /// Valor de 1 UF en CLP. Decimal porque puede tener decimales (ej. 39458.12).
+  valueClp  Decimal  @db.Decimal(12, 2)
+  /// Fuente del dato (default mindicador.cl). Permite migrar a otra fuente sin perder histórico.
+  source    String   @default("mindicador.cl")
+  createdAt DateTime @default(now())
+
+  @@index([date(sort: Desc)])
+  @@map("uf_rates")
+}
+
 // =============================================================================
 // ENUMS
 // =============================================================================

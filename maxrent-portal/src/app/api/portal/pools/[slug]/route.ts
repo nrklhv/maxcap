@@ -20,6 +20,7 @@ import {
   getPublicPoolBySlug,
   listPublicPoolUnits,
 } from "@/lib/services/pool.service";
+import { getLatestUfRate } from "@/lib/services/uf.service";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export async function GET(req: Request, { params }: { params: { slug: string } }) {
@@ -36,7 +37,7 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
     return NextResponse.json({ error: "Pool no encontrado" }, { status: 404 });
   }
 
-  const [gate, units, activeReservations] = await Promise.all([
+  const [gate, units, activeReservations, latestUf] = await Promise.all([
     getInvestorReserveGatePayload(session.user.id),
     listPublicPoolUnits(pool.id),
     prisma.reservation.findMany({
@@ -47,6 +48,7 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
       },
       select: { poolUnitId: true },
     }),
+    getLatestUfRate(),
   ]);
 
   const userReservedUnitIds = new Set(
@@ -66,5 +68,13 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
     canReserve: gate.canReserve,
     evaluationId: gate.evaluationId,
     reserveBlockReason: gate.reserveBlockReason,
+    // UF actual cacheada — la UI calcula "≈ $X CLP" con esto. Null si todavía
+    // no hubo cron (caso muy temprano post-deploy).
+    latestUfRate: latestUf
+      ? {
+          date: latestUf.date.toISOString().slice(0, 10),
+          valueClp: latestUf.valueClp,
+        }
+      : null,
   });
 }

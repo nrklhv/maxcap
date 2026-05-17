@@ -21,6 +21,9 @@ import { ArrowLeft, BedDouble, Bath, Ruler, ShieldCheck } from "lucide-react";
 import type { PublicPoolDetail, PublicPoolUnit } from "@/lib/pool/public-types";
 import type { ReserveBlockReason } from "@/lib/portal/investor-reservation-gate";
 import { redirectToReservationCheckout } from "@/lib/portal/investor-reservation-checkout";
+import { formatUfClpHint, formatUfRateAsOf } from "@/lib/uf/format";
+
+type LatestUfRate = { date: string; valueClp: number } | null;
 
 function formatUf(s: string): string {
   const n = Number(s);
@@ -54,6 +57,7 @@ export function PoolUnitCheckout({
     useState<ReserveBlockReason | null>(null);
   const [investorActiveReservation, setInvestorActiveReservation] =
     useState<{ id: string; status: string } | null>(null);
+  const [latestUfRate, setLatestUfRate] = useState<LatestUfRate>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +76,7 @@ export function PoolUnitCheckout({
           canReserve?: boolean;
           reserveBlockReason?: ReserveBlockReason | null;
           investorActiveReservation?: { id: string; status: string } | null;
+          latestUfRate?: LatestUfRate;
         };
         if (cancelled) return;
         if (!res.ok || !data.unit || !data.pool) {
@@ -89,6 +94,7 @@ export function PoolUnitCheckout({
             : null
         );
         setInvestorActiveReservation(data.investorActiveReservation ?? null);
+        setLatestUfRate(data.latestUfRate ?? null);
       } catch {
         if (!cancelled) setError("Error de red");
       } finally {
@@ -160,6 +166,9 @@ export function PoolUnitCheckout({
 
   const poolClosed = pool.status === "CLOSED" || !pool.acceptingReservations;
   const alreadyMine = Boolean(investorActiveReservation);
+  const ufValueClp = latestUfRate?.valueClp ?? null;
+  const ufAsOf = latestUfRate ? formatUfRateAsOf(latestUfRate.date) : null;
+  const priceClpHint = formatUfClpHint(unit.priceUf, ufValueClp);
 
   return (
     <div className="space-y-6">
@@ -229,12 +238,19 @@ export function PoolUnitCheckout({
         </div>
         <div className="grid grid-cols-2 gap-4 px-5 py-4 text-sm sm:grid-cols-4">
           <Metric label="Comuna">{unit.comuna ?? "—"}</Metric>
-          <Metric label="Precio (UF)">{formatUf(unit.priceUf)}</Metric>
+          <Metric label="Precio (UF)" hint={priceClpHint}>
+            {formatUf(unit.priceUf)}
+          </Metric>
           <Metric label="Renta/mes">
             ${Number(unit.monthlyRentClp).toLocaleString("es-CL", { maximumFractionDigits: 0 })}
           </Metric>
           <Metric label="Cap rate bruto">{formatCapRate(pool.capRateBruto)}</Metric>
         </div>
+        {ufAsOf && priceClpHint ? (
+          <div className="border-t border-gray-100 bg-gray-50/50 px-5 py-2 text-xs text-gray-500">
+            Conversión aproximada a CLP usando la {ufAsOf}.
+          </div>
+        ) : null}
         <div className="flex flex-wrap items-center gap-4 border-t border-gray-100 bg-gray-50/50 px-5 py-3 text-xs text-gray-600">
           {unit.dormitorios !== null ? (
             <span className="inline-flex items-center gap-1">
@@ -302,11 +318,20 @@ export function PoolUnitCheckout({
   );
 }
 
-function Metric({ label, children }: { label: string; children: React.ReactNode }) {
+function Metric({
+  label,
+  children,
+  hint,
+}: {
+  label: string;
+  children: React.ReactNode;
+  hint?: string | null;
+}) {
   return (
     <div>
       <div className="text-xs uppercase tracking-wide text-gray-500">{label}</div>
       <div className="mt-1 font-medium text-gray-900">{children}</div>
+      {hint ? <div className="mt-0.5 text-xs text-gray-500">{hint}</div> : null}
     </div>
   );
 }

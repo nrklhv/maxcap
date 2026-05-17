@@ -463,3 +463,13 @@ Tablas `pools` + `pool_units` separadas de `properties` (no comparten catálogo)
 - **`PoolUnit`**: una fila por unidad. `externalId` = `Id` del Excel; `@@unique([poolId, externalId])` para upsert idempotente. Precio se **deriva** (`monthlyRent × 12 / capRate`), no es columna manual. `internalData` (JSONB) guarda dirección exacta, depto y estado raw — **no exponer al inversionista**.
 - **`Reservation` ahora soporta ambos productos**: `propertyId` es nullable y se sumó `poolUnitId`. CHECK constraint `reservations_target_xor_check` garantiza que exactamente uno de los dos esté seteado (XOR). Las reservas legacy cumplen sin cambios.
 - Import: [`scripts/import-lab-pool.ts`](../scripts/import-lab-pool.ts) usa parser puro testeado ([`src/lib/pool/lab-excel-parser.ts`](../src/lib/pool/lab-excel-parser.ts) + tests). `--dry-run` para previsualizar; idempotente al re-correr.
+
+## UF dinámica (cache diario)
+
+Tabla `uf_rates` — un row por día con el valor de la UF chilena en CLP. Cron diario [`/api/cron/refresh-uf`](../src/app/api/cron/refresh-uf/route.ts) pega a mindicador.cl y hace upsert idempotente. Detalle: [`UF_RATE.md`](./UF_RATE.md).
+
+- **`date`** (`@db.Date` UNIQUE): un row por día. El UNIQUE permite re-correr el cron el mismo día sin duplicar (actualiza el valor si mindicador corrige).
+- **`valueClp`** (`Decimal(12, 2)`): valor de la UF en pesos (ej. `39458.12`). 12 dígitos / 2 decimales — margen para décadas.
+- **`source`** (`String`, default `mindicador.cl`): permite cambiar de proveedor sin perder trazabilidad histórica.
+- **Sin relaciones**: no FK con otras tablas; los endpoints del portal solo leen el último valor vía `getLatestUfRate()`.
+- **Histórico permanente**: cero política de cleanup. Si en el futuro pedimos revaluaciones, los datos están ahí.

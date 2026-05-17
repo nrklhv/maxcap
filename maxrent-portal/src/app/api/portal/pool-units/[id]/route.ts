@@ -13,6 +13,7 @@ import { prisma } from "@/lib/prisma";
 import { INVESTOR_ACTIVE_RESERVATION_STATUSES } from "@/lib/portal/investor-active-reservation-statuses";
 import { getInvestorReserveGatePayload } from "@/lib/portal/investor-reservation-gate";
 import { getPublicPoolUnitWithPool } from "@/lib/services/pool.service";
+import { getLatestUfRate } from "@/lib/services/uf.service";
 import { applyRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
@@ -29,7 +30,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     return NextResponse.json({ error: "Unidad no encontrada" }, { status: 404 });
   }
 
-  const [gate, investorReservation] = await Promise.all([
+  const [gate, investorReservation, latestUf] = await Promise.all([
     getInvestorReserveGatePayload(session.user.id),
     prisma.reservation.findFirst({
       where: {
@@ -39,6 +40,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       },
       select: { id: true, status: true },
     }),
+    getLatestUfRate(),
   ]);
 
   return NextResponse.json({
@@ -48,5 +50,13 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     evaluationId: gate.evaluationId,
     reserveBlockReason: gate.reserveBlockReason,
     investorActiveReservation: investorReservation, // { id, status } o null
+    // UF actual cacheada — UI calcula "≈ $X CLP" con esto. Null si todavía
+    // no hubo cron (caso muy temprano post-deploy).
+    latestUfRate: latestUf
+      ? {
+          date: latestUf.date.toISOString().slice(0, 10),
+          valueClp: latestUf.valueClp,
+        }
+      : null,
   });
 }
