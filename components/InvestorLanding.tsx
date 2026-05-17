@@ -14,7 +14,7 @@ import { investorFaqItems } from "@/lib/faqInvestor";
 import { CLUB_TOTAL_SLOTS } from "@/lib/site";
 import { getClubPhaseLabel } from "@/lib/clubPhase";
 
-export function InvestorLanding() {
+export function InvestorLanding({ ufBadge }: { ufBadge?: ReactNode } = {}) {
   const cupos = 75;
   const reservados = CLUB_TOTAL_SLOTS - cupos;
   const barPct = Math.min(100, Math.max(0, reservados));
@@ -28,7 +28,7 @@ export function InvestorLanding() {
 
   return (
     <>
-      <Header variant="inversionista" />
+      <Header variant="inversionista" ufBadge={ufBadge} />
       <div className="md:mr-[420px] md:pb-0 xl:mr-[480px] 2xl:mr-[520px] pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]">
         <section
           className="hero-animate relative overflow-hidden bg-dark px-4 pb-10 pt-9 md:px-10 md:pb-10 md:pt-11"

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { BrokerLanding } from "@/components/BrokerLanding";
 import { SeoJsonLd } from "@/components/SeoJsonLd";
+import { UfBadge } from "@/components/UfBadge";
 import { brokerFaqItems } from "@/lib/faqBroker";
 import { faqPageJsonLd } from "@/lib/faqJsonLd";
 import { getSiteUrl } from "@/lib/site";
@@ -29,7 +30,7 @@ export const metadata: Metadata = {
 export default function BrokersPage() {
   return (
     <>
-      <BrokerLanding />
+      <BrokerLanding ufBadge={<UfBadge />} />
       <SeoJsonLd schema={faqPageJsonLd(brokerFaqItems)} />
     </>
   );

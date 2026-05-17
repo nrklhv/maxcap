@@ -1,14 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type MouseEvent } from "react";
+import { useState, type MouseEvent, type ReactNode } from "react";
 import { Logo } from "./Logo";
 import { getPortalUrl } from "@/lib/site";
 import { scrollToForm } from "@/lib/scrollToForm";
 
 export type HeaderVariant = "inversionista" | "vendedor" | "broker";
 
-export function Header({ variant }: { variant: HeaderVariant }) {
+export function Header({
+  variant,
+  ufBadge,
+}: {
+  variant: HeaderVariant;
+  /**
+   * Slot opcional para un Server Component renderizado (típicamente `<UfBadge />`)
+   * que aparece entre el logo y el nav. Aceptamos un `ReactNode` pre-renderizado
+   * para evitar fetching client-side (cache HTTP de Next desde el server-side).
+   */
+  ufBadge?: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
 
   // Si el CTA apunta a `#form` de la página actual y el form sticky ya está
@@ -195,9 +206,12 @@ export function Header({ variant }: { variant: HeaderVariant }) {
   return (
     <>
       <header className="sticky top-0 z-[100] flex h-14 items-center justify-between border-b border-white/10 bg-dark/95 px-4 backdrop-blur-md md:px-10">
-        <Link href={logoHref} className="opacity-85 transition-opacity hover:opacity-100">
-          <Logo size="sm" />
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href={logoHref} className="opacity-85 transition-opacity hover:opacity-100">
+            <Logo size="sm" />
+          </Link>
+          {ufBadge}
+        </div>
         <nav className="hidden items-center gap-0 md:flex">{navLinks}</nav>
         <button
           type="button"

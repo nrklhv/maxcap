@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { VendedorLanding } from "@/components/VendedorLanding";
 import { SeoJsonLd } from "@/components/SeoJsonLd";
+import { UfBadge } from "@/components/UfBadge";
 import { vendedorFaqItems } from "@/lib/faqVendedor";
 import { faqPageJsonLd } from "@/lib/faqJsonLd";
 import { getSiteUrl } from "@/lib/site";
@@ -29,7 +30,7 @@ export const metadata: Metadata = {
 export default function VendedorPage() {
   return (
     <>
-      <VendedorLanding />
+      <VendedorLanding ufBadge={<UfBadge />} />
       <SeoJsonLd schema={faqPageJsonLd(vendedorFaqItems)} />
     </>
   );

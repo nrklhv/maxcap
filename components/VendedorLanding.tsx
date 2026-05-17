@@ -10,10 +10,10 @@ import { Calculadora } from "./Calculadora";
 import { MobileLeadBar } from "./MobileLeadBar";
 import { vendedorFaqItems } from "@/lib/faqVendedor";
 
-export function VendedorLanding() {
+export function VendedorLanding({ ufBadge }: { ufBadge?: ReactNode } = {}) {
   return (
     <>
-      <Header variant="vendedor" />
+      <Header variant="vendedor" ufBadge={ufBadge} />
       <div className="md:mr-[420px] md:pb-0 xl:mr-[480px] 2xl:mr-[520px] pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]">
         <section
           className="hero-animate-vend relative overflow-hidden bg-dark px-4 pb-10 pt-9 md:px-10 md:pb-11 md:pt-12"
