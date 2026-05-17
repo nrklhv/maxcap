@@ -52,13 +52,11 @@ export function Header({
   const investorPortalHref = `${portalUrl}/login?callbackUrl=/dashboard`;
   const brokerPortalHref = `${portalUrl}/login?callbackUrl=/broker/oportunidades`;
 
-  // Nav links "comunes" (navegación dentro de la propia landing): gris neutro,
-  // hover blanco con border-bottom del accent.
-  const navLinkClass =
-    variant === "vendedor"
-      ? "border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-teal-2"
-      : "border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-orange";
-
+  // Nav links "comunes" (navegación dentro de la propia landing) tienen sus
+  // clases hardcodeadas inline en cada `<Link>` más abajo — gris neutro,
+  // hover blanco con border-bottom del accent. No las extraemos a una const
+  // porque el JSX las repite con cada item del nav (legible directo).
+  //
   // Cross-section links a OTRAS landings públicas: pintados con el accent del
   // variant actual para diferenciarlos visualmente de los nav links de la
   // propia página. Marcan "esto te lleva afuera de esta sección".
