@@ -1,16 +1,21 @@
 /**
- * Tarjeta resumen del reporte Floid (SP renta + SII carpeta + CMF deuda).
- * Diseñada para mostrarse al inversionista y al staff por igual.
+ * Tarjeta resumen del reporte Floid — versión minimalista para el inversionista.
  *
- * Reusable: solo recibe el `rawResponse` JSON del callback. Si el shape no
- * matchea con el del widget, muestra un fallback amable.
+ * Muestra **solo la renta estimada por cada método** (SP y SII), sin meta-data
+ * extra (meses cotizados, actividad económica, bienes raíces, etc.) ni la
+ * sección de deuda (CMF). Todo lo demás vive en el modal de "Ver detalle
+ * completo" (`floid-report-detail.tsx`).
+ *
+ * Decisión de UX (2026-05-17): el inversionista necesita saber su capacidad
+ * de compra rápido. SP y SII son dos lecturas independientes de la misma cosa
+ * (renta mensual); el resto es ruido para la mayoría.
  *
  * @domain creditEvaluation
  */
 
 "use client";
 
-import { Briefcase, Building2, CreditCard, FileText, MapPin, Wallet } from "lucide-react";
+import { Briefcase, Building2, FileText, MapPin, Wallet } from "lucide-react";
 import {
   parseFloidWidgetPayload,
   type FloidWidgetReport,
@@ -66,26 +71,17 @@ export function FloidReportSummary({ rawResponse, fallbackSummary }: Props) {
     );
   }
 
-  // Solo renderizamos las secciones que efectivamente vinieron en el reporte.
-  // Si una sección está null (producto no incluido en el widget contratado),
-  // no mostramos placeholder "no incluida" para no saturar la UI.
+  // Solo mostramos cards de renta (SP + SII). CMF (deuda) vive en el modal de
+  // detalle. Si una sección está null o el método no devolvió datos de renta,
+  // se omite (sin placeholder "no disponible").
   const sections: React.ReactNode[] = [];
-  if (report.sp) sections.push(<SectionRenta key="sp" sp={report.sp} />);
-  if (report.sii) sections.push(<SectionTributario key="sii" sii={report.sii} />);
-  if (report.cmf) sections.push(<SectionDeuda key="cmf" cmf={report.cmf} />);
+  if (report.sp) sections.push(<SectionRentaSP key="sp" sp={report.sp} />);
+  if (report.sii && hasSiiRenta(report.sii))
+    sections.push(<SectionRentaSII key="sii" sii={report.sii} />);
 
-  // Grid responsivo según cuántas secciones haya. Hasta 3 columnas en md+.
-  const gridCols =
-    sections.length === 1
-      ? "grid-cols-1"
-      : sections.length === 2
-        ? "grid-cols-1 md:grid-cols-2"
-        : "grid-cols-1 md:grid-cols-3";
-
-  // Banner de errores parciales (sección que Floid no pudo completar).
-  const errorBanners = (
-    ["sp", "sii", "cmf"] as const
-  )
+  // Solo banner para errores de SP/SII (los métodos de renta). El error de CMF
+  // no es relevante en el resumen — el detalle modal lo muestra si hace falta.
+  const errorBanners = (["sp", "sii"] as const)
     .map((key) => {
       const err = report.errors[key];
       if (!err) return null;
@@ -96,8 +92,6 @@ export function FloidReportSummary({ rawResponse, fallbackSummary }: Props) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-gray-700 leading-relaxed">{report.summary}</p>
-
       {errorBanners.length > 0 && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2">
           <p className="text-xs font-semibold text-amber-900 uppercase tracking-wide">
@@ -105,10 +99,7 @@ export function FloidReportSummary({ rawResponse, fallbackSummary }: Props) {
           </p>
           <ul className="space-y-2">
             {errorBanners.map((e) => (
-              <li
-                key={e.key}
-                className="text-sm text-amber-900 leading-snug"
-              >
+              <li key={e.key} className="text-sm text-amber-900 leading-snug">
                 <span className="font-medium">{e.label}:</span> {e.humanized.message}
                 {e.humanized.hint && (
                   <span className="block text-xs text-amber-800 mt-0.5">
@@ -122,138 +113,72 @@ export function FloidReportSummary({ rawResponse, fallbackSummary }: Props) {
       )}
 
       {sections.length > 0 && (
-        <div className={`grid ${gridCols} gap-3`}>{sections}</div>
+        <div
+          className={`grid gap-3 ${
+            sections.length === 1 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"
+          }`}
+        >
+          {sections}
+        </div>
       )}
     </div>
   );
 }
 
-function SectionRenta({ sp }: { sp: NonNullable<FloidWidgetReport["sp"]> }) {
+/** Verifica si el F22 del SII trae algún dato de renta (anual) para derivar mensual. */
+function hasSiiRenta(sii: NonNullable<FloidWidgetReport["sii"]>): boolean {
+  return Boolean(
+    sii.latestF22?.rentaLiquidaImponible || sii.latestF22?.baseImponible
+  );
+}
+
+/**
+ * Renta estimada según cotización previsional (SuperPensiones).
+ * Solo el monto + label. Período + meses cotizados → modal de detalle.
+ */
+function SectionRentaSP({ sp }: { sp: NonNullable<FloidWidgetReport["sp"]> }) {
   return (
-    <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4 space-y-2">
-      <div className="flex items-center gap-2 text-emerald-900">
+    <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-5 text-center">
+      <div className="inline-flex items-center gap-2 text-emerald-900">
         <Wallet className="h-4 w-4 shrink-0" />
-        <h4 className="text-xs font-semibold uppercase tracking-wide">Renta</h4>
+        <h4 className="text-xs font-semibold uppercase tracking-wide">
+          Renta estimada
+        </h4>
       </div>
-      <p className="text-2xl font-bold text-gray-900 tabular-nums">{fmtCLP(sp.remuneracion)}</p>
-      <p className="text-xs text-gray-600">por mes (renta imponible)</p>
-      <dl className="text-xs text-gray-600 space-y-1 pt-2 border-t border-emerald-100">
-        <div className="flex justify-between">
-          <dt>Período:</dt>
-          <dd className="font-medium text-gray-800">{fmtPeriodYYYYMM(sp.period)}</dd>
-        </div>
-        <div className="flex justify-between">
-          <dt>Meses cotizados:</dt>
-          <dd className="font-medium text-gray-800">{sp.mesesCotizados ?? "—"}</dd>
-        </div>
-      </dl>
+      <p className="mt-3 text-3xl font-bold text-gray-900 tabular-nums">
+        {fmtCLP(sp.remuneracion)}
+      </p>
+      <p className="mt-1 text-xs text-gray-600">
+        Según cotización previsional · mensual
+      </p>
     </div>
   );
 }
 
-function SectionTributario({ sii }: { sii: NonNullable<FloidWidgetReport["sii"]> }) {
-  // Renta anual: priorizamos renta líquida imponible (170); si no, base imponible (1098).
+/**
+ * Renta estimada según declaración SII (F22): anual ÷ 12.
+ * Solo el monto mensual + label. Categoría, bienes raíces, sociedades, etc.
+ * → modal de detalle.
+ */
+function SectionRentaSII({ sii }: { sii: NonNullable<FloidWidgetReport["sii"]> }) {
   const rentaAnual =
     sii.latestF22?.rentaLiquidaImponible ?? sii.latestF22?.baseImponible ?? null;
-  const rentaAnualLabel = sii.latestF22?.rentaLiquidaImponible
-    ? "Renta líquida imponible"
-    : "Base imponible";
+  if (rentaAnual === null) return null;
+  const rentaMensual = rentaAnual / 12;
   return (
-    <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-4 space-y-2">
-      <div className="flex items-center gap-2 text-blue-900">
+    <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-5 text-center">
+      <div className="inline-flex items-center gap-2 text-blue-900">
         <Briefcase className="h-4 w-4 shrink-0" />
-        <h4 className="text-xs font-semibold uppercase tracking-wide">Tributario (SII)</h4>
+        <h4 className="text-xs font-semibold uppercase tracking-wide">
+          Renta estimada
+        </h4>
       </div>
-      <p className="text-sm font-semibold text-gray-900 line-clamp-2">
-        {sii.nombreEmisor ?? "—"}
+      <p className="mt-3 text-3xl font-bold text-gray-900 tabular-nums">
+        {fmtCLP(rentaMensual)}
       </p>
-      <p className="text-xs text-gray-600 line-clamp-2">
-        {sii.actividadEconomica ?? "Actividad no informada"}
+      <p className="mt-1 text-xs text-gray-600">
+        Según declaración SII F22 {sii.latestF22?.year} · mensual
       </p>
-      {rentaAnual !== null && (
-        <div className="rounded-lg bg-white border border-blue-200 px-2.5 py-1.5">
-          <p className="text-[10px] uppercase tracking-wide text-blue-700 font-semibold">
-            Renta declarada F22 {sii.latestF22?.year}
-          </p>
-          <p className="text-base font-bold text-gray-900 tabular-nums">{fmtCLP(rentaAnual)}</p>
-          <p className="text-[10px] text-gray-500">{rentaAnualLabel}</p>
-        </div>
-      )}
-      <dl className="text-xs text-gray-600 space-y-1 pt-2 border-t border-blue-100">
-        <div className="flex justify-between gap-2">
-          <dt>Categoría:</dt>
-          <dd className="font-medium text-gray-800 text-right">
-            {sii.categoriaTributaria ?? "—"}
-          </dd>
-        </div>
-        <div className="flex justify-between gap-2">
-          <dt>Bienes raíces:</dt>
-          <dd className="font-medium text-gray-800 text-right">
-            {sii.cantidadBienesRaices > 0
-              ? `${sii.cantidadBienesRaices} · ${fmtCLP(sii.totalAvaluoFiscal)}`
-              : "Ninguno"}
-          </dd>
-        </div>
-        {sii.participacionSociedades.length > 0 && (
-          <div className="flex justify-between gap-2">
-            <dt>Sociedades:</dt>
-            <dd className="font-medium text-gray-800 text-right">
-              {sii.participacionSociedades.length}
-            </dd>
-          </div>
-        )}
-        <div className="flex justify-between gap-2">
-          <dt>Observaciones:</dt>
-          <dd className="font-medium text-gray-800 text-right line-clamp-1">
-            {sii.observacionesTributarias ?? "—"}
-          </dd>
-        </div>
-      </dl>
-    </div>
-  );
-}
-
-function SectionDeuda({ cmf }: { cmf: NonNullable<FloidWidgetReport["cmf"]> }) {
-  const moroso = cmf.totalDebt30To89 + cmf.totalDebt90Plus;
-  const lineasTotal = cmf.totalLinesDirect + cmf.totalLinesIndirect;
-  return (
-    <div className="rounded-xl border border-violet-100 bg-violet-50/40 p-4 space-y-2">
-      <div className="flex items-center gap-2 text-violet-900">
-        <CreditCard className="h-4 w-4 shrink-0" />
-        <h4 className="text-xs font-semibold uppercase tracking-wide">Deuda (CMF)</h4>
-      </div>
-      <p className="text-2xl font-bold text-gray-900 tabular-nums">{fmtCLP(cmf.totalDebt)}</p>
-      <p className="text-xs text-gray-600">
-        Directa {fmtCLP(cmf.totalDirectDebt)} · Indirecta {fmtCLP(cmf.totalIndirectDebt)}
-      </p>
-      <dl className="text-xs text-gray-600 space-y-1 pt-2 border-t border-violet-100">
-        <div className="flex justify-between gap-2">
-          <dt>Mora &gt;30 días:</dt>
-          <dd
-            className={`font-medium tabular-nums text-right ${moroso > 0 ? "text-red-700" : "text-gray-800"}`}
-          >
-            {fmtCLP(moroso)}
-          </dd>
-        </div>
-        <div className="flex justify-between gap-2">
-          <dt>Líneas disponibles:</dt>
-          <dd className="font-medium tabular-nums text-right text-gray-800">
-            {fmtCLP(lineasTotal)}
-          </dd>
-        </div>
-        <div className="flex justify-between gap-2">
-          <dt>Instituciones:</dt>
-          <dd className="font-medium text-gray-800 text-right">
-            {cmf.institutions.length}
-          </dd>
-        </div>
-        {cmf.updated && (
-          <div className="flex justify-between gap-2">
-            <dt>Actualizado:</dt>
-            <dd className="font-medium text-gray-800 text-right">{cmf.updated}</dd>
-          </div>
-        )}
-      </dl>
     </div>
   );
 }
