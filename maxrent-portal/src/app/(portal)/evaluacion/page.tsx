@@ -7,7 +7,7 @@
  *      Backend crea fila PENDING y devuelve `widgetUrl`.
  *   3. Frontend abre el widget en popup (Floid maneja Clave Única + 2FA + SII).
  *   4. Floid POSTea el reporte a /api/floid/callback → fila pasa a COMPLETED.
- *   5. Polling refresca la página y muestra el resumen + botón "Ver detalle".
+ *   5. Polling refresca la página y muestra el resumen (2 cards de renta).
  *
  * @route /evaluacion
  * @domain creditEvaluation
@@ -27,11 +27,9 @@ import {
   Shield,
   FileText,
   ExternalLink,
-  X,
 } from "lucide-react";
 import { FLOID_CONSENT_VERSION } from "@/lib/floid/constants";
 import { FloidReportSummary } from "@/components/floid/floid-report-summary";
-import { FloidReportDetail } from "@/components/floid/floid-report-detail";
 import { parseFloidWidgetPayload } from "@/lib/floid/parse-floid-response";
 
 type Evaluation = {
@@ -73,7 +71,6 @@ export default function EvaluacionPage() {
   const [consentChecked, setConsentChecked] = useState(false);
   const [profileRut, setProfileRut] = useState<string | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
-  const [showDetail, setShowDetail] = useState(false);
   // Track del último estado conocido para gatillar router.refresh() en transiciones.
   // El stepper del layout (Server Component) consulta BD: si no lo refrescamos,
   // queda desactualizado hasta que el usuario navegue.
@@ -475,27 +472,12 @@ export default function EvaluacionPage() {
         fallbackSummary={evaluation.summary}
       />
 
-      <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={() => setShowDetail(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          <FileText className="h-4 w-4" aria-hidden />
-          Ver detalle completo
-        </button>
-        {evaluation.downloadPdfUrl && (
-          <a
-            href={evaluation.downloadPdfUrl}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors"
-          >
-            <ExternalLink className="h-4 w-4" aria-hidden />
-            Descargar PDF (Floid)
-          </a>
-        )}
-        {isPartial && !evaluation.staffReservationApprovedAt && (
+      {/* Botón Reintentar solo aparece si el reporte fue parcial y el staff
+          todavía no habilitó las reservas. "Ver detalle completo" y "Descargar
+          PDF (Floid)" se eliminaron del flujo del inversionista — el detalle
+          completo + PDF siguen disponibles para staff desde /staff/inversionistas. */}
+      {isPartial && !evaluation.staffReservationApprovedAt && (
+        <div>
           <button
             type="button"
             onClick={cancelAndRetry}
@@ -514,8 +496,8 @@ export default function EvaluacionPage() {
               </>
             )}
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
@@ -542,17 +524,6 @@ export default function EvaluacionPage() {
         userEmail={session?.user?.email}
       />
 
-      {/* Modal con detalle completo */}
-      {showDetail && (
-        <DetailModal onClose={() => setShowDetail(false)}>
-          <FloidReportDetail
-            rawResponse={evaluation.rawResponse}
-            downloadPdfUrl={evaluation.downloadPdfUrl}
-            fallbackSummary={evaluation.summary}
-            showRawJson={false}
-          />
-        </DetailModal>
-      )}
     </div>
   );
 }
@@ -791,35 +762,3 @@ function TimelineMini({
   );
 }
 
-function DetailModal({
-  onClose,
-  children,
-}: {
-  onClose: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center p-0 sm:p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white w-full sm:max-w-3xl max-h-[90vh] overflow-auto rounded-t-2xl sm:rounded-2xl shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-5 py-3 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-gray-900">Detalle del reporte</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 p-1 rounded-md hover:bg-gray-100"
-            aria-label="Cerrar"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        <div className="p-5">{children}</div>
-      </div>
-    </div>
-  );
-}
