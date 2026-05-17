@@ -512,3 +512,126 @@ export async function safeRunReferralHook<T>(
     return null;
   }
 }
+
+// -----------------------------------------------------------------------------
+// Signup directo en el portal (sin pasar por el lead form del landing)
+// -----------------------------------------------------------------------------
+
+/**
+ * Caso: alguien clickea el link `?ref=XXX` en el landing, va directo al portal
+ * (sin llenar el lead form) y se registra. La cookie `mxr_ref` cross-subdomain
+ * (o el `?ref=` propagado en la URL) llega al portal, el middleware la persiste
+ * en cookie del portal, y `events.createUser` la lee para vincular la atribución.
+ *
+ * Esta función:
+ *   1. Valida formato del code (`INV-XXXXXX` o `BRK-XXXXXX`).
+ *   2. Resuelve el code contra `User.investorReferralCode` o `brokerReferralCode`.
+ *   3. Rechaza auto-referidos (referrer === self).
+ *   4. Crea un Lead minimal (kind: INVESTOR, status: REGISTERED) con la
+ *      atribución, vinculado al User recién creado.
+ *   5. Crea el `Referral` (peer) o `BrokerLead` (broker) correspondiente.
+ *   6. NO transita a SIGNED_UP — eso lo hace `linkUserToPendingAttribution()`
+ *      llamado inmediatamente después.
+ *
+ * Idempotente: si el User ya tiene Lead asociado o el Lead ya existe con
+ * atribución, no hace nada (first-touch — no sobreescribir atribución previa).
+ *
+ * Silencioso ante errores: si el code no matchea, si la cuenta es el propio
+ * referidor, o si algo falla, devuelve sin acción y sin lanzar — la atribución
+ * se considera perdida pero el alta del User no se rompe.
+ */
+export async function claimAttributionFromCookieCode(input: {
+  userId: string;
+  email: string;
+  code: string;
+}): Promise<void> {
+  const { userId, email } = input;
+  const code = input.code.trim().toUpperCase();
+
+  // 1. Validar formato.
+  if (!/^(INV|BRK)-[A-Z0-9]{6,32}$/.test(code)) return;
+
+  // 0. Si el User ya tiene Lead vinculado, no hacer nada (first-touch).
+  const existingUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { leadId: true },
+  });
+  if (!existingUser || existingUser.leadId) return;
+
+  // 2. Resolver el code → owner del code.
+  const referrer = code.startsWith("INV-")
+    ? await prisma.user.findUnique({
+        where: { investorReferralCode: code },
+        select: { id: true },
+      })
+    : await prisma.user.findUnique({
+        where: { brokerReferralCode: code },
+        select: { id: true },
+      });
+
+  if (!referrer) return; // code no matchea ningún user — atribución silenciosa.
+
+  // 3. Anti auto-referido.
+  if (referrer.id === userId) return;
+
+  // 4. Crear Lead minimal con la atribución + vincular al User.
+  //    Caso edge: si ya existe Lead con ese email (race con otro flujo), lo
+  //    actualizamos solo si NO tenía atribución previa (first-touch).
+  const normalizedEmail = email.toLowerCase();
+  const attribution = {
+    referralCode: code,
+    referralKind: code.startsWith("INV-") ? "INVESTOR" : "BROKER",
+    capturedAt: new Date().toISOString(),
+    source: "portal-direct-signup",
+  } satisfies Prisma.InputJsonObject;
+
+  const lead = await prisma.lead.upsert({
+    where: { email: normalizedEmail },
+    create: {
+      email: normalizedEmail,
+      kind: "INVESTOR",
+      status: "REGISTERED",
+      source: code.startsWith("INV-") ? "investor-referral" : "broker-referral",
+      marketingAttribution: attribution,
+    },
+    update: {
+      // First-touch: solo seteamos atribución si el Lead existente no la tenía.
+      // Si ya tenía, dejamos todo como está (la primera atribución manda).
+    },
+    select: { id: true, marketingAttribution: true },
+  });
+
+  // Si el Lead existía pero sin atribución, ahora la seteamos.
+  if (lead.marketingAttribution == null) {
+    await prisma.lead.update({
+      where: { id: lead.id },
+      data: {
+        marketingAttribution: attribution,
+        source: code.startsWith("INV-") ? "investor-referral" : "broker-referral",
+      },
+    });
+  }
+
+  // Vincular el Lead al User.
+  await prisma.user.update({
+    where: { id: userId },
+    data: { leadId: lead.id },
+  });
+
+  // 5. Crear Referral o BrokerLead. Idempotente vía leadId unique.
+  if (code.startsWith("INV-")) {
+    await createReferralForLead({
+      leadId: lead.id,
+      code,
+      referrerUserId: referrer.id,
+      referredEmail: normalizedEmail,
+    });
+  } else {
+    await createBrokerLeadForLead({
+      leadId: lead.id,
+      code,
+      brokerUserId: referrer.id,
+      prospectEmail: normalizedEmail,
+    });
+  }
+}

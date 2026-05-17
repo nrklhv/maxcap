@@ -6,9 +6,12 @@
 // Prisma y excede el límite de 1 MB del Edge Runtime de Vercel.
 // =============================================================================
 
-import NextAuth from "next-auth";
+import NextAuth, { type Session } from "next-auth";
 import { authConfig } from "@/lib/auth.config";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest, type NextResponse as NextResponseType } from "next/server";
+
+/** Request enriquecido con la sesión, igual al shape que NextAuth v5 pasa al callback. */
+type AuthRequest = NextRequest & { auth: Session | null };
 
 const { auth } = NextAuth(authConfig);
 
@@ -27,7 +30,55 @@ function isSafeInternalCallback(callback: string | null): callback is string {
   return Boolean(callback && callback.startsWith("/") && !callback.startsWith("//"));
 }
 
-export default auth((req) => {
+// ─── Captura de referral via `?ref=` en cualquier URL del portal ─────────────
+// El landing también persiste la cookie cross-subdomain (`Domain=.maxrent.cl`),
+// pero browsers en private mode o con tracking strict pueden no transferirla.
+// Por eso el header de la landing anexa `?ref=INV-XXX` al href de "Portal
+// inversionista" como segundo mecanismo. Acá lo capturamos y lo guardamos en
+// cookie del portal, para que `events.createUser` de NextAuth lo lea al alta.
+
+const REFERRAL_COOKIE_NAME = "mxr_ref";
+const REFERRAL_COOKIE_TTL_SECONDS = 60 * 24 * 60 * 60; // 60 días
+const REFERRAL_CODE_PATTERN = /^(INV|BRK)-[A-Z0-9]{6,32}$/;
+
+function maxrentCookieDomain(req: NextRequest): string | undefined {
+  const host = req.nextUrl.hostname;
+  if (host === "maxrent.cl" || host.endsWith(".maxrent.cl")) return ".maxrent.cl";
+  return undefined; // localhost / vercel.app → cookie host-only
+}
+
+/**
+ * Si la request tiene `?ref=INV-XXX` o `?ref=BRK-XXX` válido y no hay cookie
+ * de referral ya seteada, persiste la cookie en la response para que el
+ * próximo signup la pueda leer. Política first-touch (no sobreescribe).
+ *
+ * Idempotente y seguro de llamar en cualquier response del middleware.
+ */
+function attachReferralCookieIfNeeded(
+  req: NextRequest,
+  res: NextResponseType
+): NextResponseType {
+  const raw = req.nextUrl.searchParams.get("ref");
+  if (!raw) return res;
+  const code = raw.trim().toUpperCase();
+  if (!REFERRAL_CODE_PATTERN.test(code)) return res;
+  // First-touch: si ya hay cookie, no sobreescribimos.
+  if (req.cookies.get(REFERRAL_COOKIE_NAME)) return res;
+  res.cookies.set({
+    name: REFERRAL_COOKIE_NAME,
+    value: code,
+    maxAge: REFERRAL_COOKIE_TTL_SECONDS,
+    path: "/",
+    sameSite: "lax",
+    secure: req.nextUrl.protocol === "https:",
+    domain: maxrentCookieDomain(req),
+  });
+  return res;
+}
+
+export default auth((req) => attachReferralCookieIfNeeded(req, handleRequest(req)));
+
+function handleRequest(req: AuthRequest): NextResponseType {
   const { pathname } = req.nextUrl;
   // Defense-in-depth: never run auth redirects on Next assets / dev tooling (matcher should
   // already skip these; this avoids unstyled HTML if the matcher misses an edge case).
@@ -165,7 +216,7 @@ export default auth((req) => {
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [
