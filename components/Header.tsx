@@ -52,10 +52,24 @@ export function Header({
   const investorPortalHref = `${portalUrl}/login?callbackUrl=/dashboard`;
   const brokerPortalHref = `${portalUrl}/login?callbackUrl=/broker/oportunidades`;
 
-  const portalLinkClass =
+  // Nav links "comunes" (navegación dentro de la propia landing) tienen sus
+  // clases hardcodeadas inline en cada `<Link>` más abajo — gris neutro,
+  // hover blanco con border-bottom del accent. No las extraemos a una const
+  // porque el JSX las repite con cada item del nav (legible directo).
+  //
+  // Cross-section links a OTRAS landings públicas: pintados con el accent del
+  // variant actual para diferenciarlos visualmente de los nav links de la
+  // propia página. Marcan "esto te lleva afuera de esta sección".
+  const crossLinkClass =
     variant === "vendedor"
-      ? "border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-teal-2"
-      : "border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-orange";
+      ? "border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-teal-2 transition-colors h-14 flex items-center hover:text-white hover:border-teal-2"
+      : "border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-orange-2 transition-colors h-14 flex items-center hover:text-white hover:border-orange";
+
+  // Links al **portal** autenticado (no a otro landing). Mismo tratamiento
+  // visual que `crossLinkClass` (color accent) para que se diferencien de los
+  // nav links de la propia landing y comuniquen claramente "esto te lleva al
+  // login / la app del portal".
+  const portalLinkClass = crossLinkClass;
 
   // "Brokers aliados" → link al landing `/brokers` (no al portal). Distinto de
   // "Portal broker" que es el login para brokers ya aprobados. Aparece en
@@ -64,7 +78,7 @@ export function Header({
   const brokersAliadosLink = (
     <Link
       href="/brokers"
-      className={portalLinkClass}
+      className={crossLinkClass}
       onClick={() => setOpen(false)}
     >
       Brokers aliados
@@ -188,6 +202,16 @@ export function Header({
         onClick={() => setOpen(false)}
       >
         FAQ
+      </Link>
+      {/* Volver al landing inversionista (el eje del Club). Antes solo se
+          podía via el logo MAXRENT; agregamos un link explícito porque el logo
+          no comunica claramente "ir al sitio inversionista". */}
+      <Link
+        href="/"
+        className={crossLinkClass}
+        onClick={() => setOpen(false)}
+      >
+        Club inversionista
       </Link>
       <Link
         href={investorPortalHref}
