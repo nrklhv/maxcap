@@ -24,8 +24,6 @@ import {
   Clock,
   RefreshCw,
   ArrowRight,
-  Shield,
-  FileText,
   ExternalLink,
 } from "lucide-react";
 import { FLOID_CONSENT_VERSION } from "@/lib/floid/constants";
@@ -44,22 +42,6 @@ type Evaluation = {
   staffReservationApprovedAt?: string | null;
 };
 
-/** Pretty-print Chile RUT for display (best-effort). */
-function formatRutForDisplay(rut: string | null | undefined): string {
-  if (!rut?.trim()) return "—";
-  const clean = rut.replace(/\./g, "").replace(/-/g, "").toUpperCase();
-  if (clean.length < 2) return rut;
-  const body = clean.slice(0, -1);
-  const dv = clean.slice(-1);
-  const rev = body.split("").reverse();
-  const parts: string[] = [];
-  for (let i = 0; i < rev.length; i += 3) {
-    parts.push(rev.slice(i, i + 3).reverse().join(""));
-  }
-  const withDots = parts.reverse().join(".");
-  return `${withDots}-${dv}`;
-}
-
 export default function EvaluacionPage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -67,10 +49,10 @@ export default function EvaluacionPage() {
   const [loading, setLoading] = useState(true);
   const [requesting, setRequesting] = useState(false);
   const [error, setError] = useState("");
-  const [previewChecked, setPreviewChecked] = useState(false);
+  // `previewChecked` quedó eliminado en el rediseño minimalista (2026-05-17) —
+  // el backend sigue recibiendo `dataPreviewAcknowledged: true` siempre porque
+  // ya no hay nada que el usuario tenga que confirmar haber revisado.
   const [consentChecked, setConsentChecked] = useState(false);
-  const [profileRut, setProfileRut] = useState<string | null>(null);
-  const [profileLoading, setProfileLoading] = useState(false);
   // Track del último estado conocido para gatillar router.refresh() en transiciones.
   // El stepper del layout (Server Component) consulta BD: si no lo refrescamos,
   // queda desactualizado hasta que el usuario navegue.
@@ -112,35 +94,9 @@ export default function EvaluacionPage() {
     }
   }, [evaluation?.status, loadEvaluation]);
 
-  const needPreflightProfile =
-    session?.user?.onboardingCompleted &&
-    (!evaluation || evaluation.status === "FAILED");
-
-  useEffect(() => {
-    if (!needPreflightProfile || loading) return;
-    let cancelled = false;
-    (async () => {
-      setProfileLoading(true);
-      try {
-        const res = await fetch("/api/users/profile");
-        if (res.ok) {
-          const data = await res.json();
-          if (!cancelled) setProfileRut(data.profile?.rut ?? null);
-        }
-      } catch {
-        if (!cancelled) setProfileRut(null);
-      } finally {
-        if (!cancelled) setProfileLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [needPreflightProfile, loading, evaluation?.status]);
-
   const requestEvaluation = async () => {
-    if (!previewChecked || !consentChecked) {
-      setError("Marca ambas casillas para continuar: revisión de datos y consentimiento.");
+    if (!consentChecked) {
+      setError("Marca la casilla de autorización para continuar.");
       return;
     }
     setRequesting(true);
@@ -174,7 +130,6 @@ export default function EvaluacionPage() {
           return;
         }
       }
-      setPreviewChecked(false);
       setConsentChecked(false);
       // Refrescamos para que el polling tome el nuevo estado + actualiza el stepper.
       await loadEvaluation();
@@ -206,7 +161,6 @@ export default function EvaluacionPage() {
         return;
       }
       setEvaluation(null);
-      setPreviewChecked(false);
       setConsentChecked(false);
       // Refresh del layout para actualizar el stepper (volvió al paso de Evaluación).
       lastJourneyKeyRef.current = "none";
@@ -218,79 +172,26 @@ export default function EvaluacionPage() {
     }
   };
 
-  const dualConsentBlock = (
-    <div className="space-y-4">
-      <label className="flex items-start gap-3 cursor-pointer text-left">
-        <input
-          type="checkbox"
-          checked={previewChecked}
-          onChange={(e) => setPreviewChecked(e.target.checked)}
-          className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-        />
-        <span className="text-sm text-gray-700 leading-relaxed">
-          Confirmo que <strong>revisé el RUT</strong> y la descripción de lo que se enviará a Floid y de
-          lo que esperamos recibir, mostrada arriba en esta pantalla.
-        </span>
-      </label>
-      <label className="flex items-start gap-3 cursor-pointer text-left">
-        <input
-          type="checkbox"
-          checked={consentChecked}
-          onChange={(e) => setConsentChecked(e.target.checked)}
-          className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-        />
-        <span className="text-sm text-gray-700 leading-relaxed">
-          Autorizo a <strong>MaxRent</strong> a iniciar la consulta con <strong>Floid</strong> para
-          obtener mi reporte de renta (Superintendencia de Pensiones) e información tributaria (SII).
-          Términos:{" "}
-          <span className="font-mono text-xs text-gray-600">{FLOID_CONSENT_VERSION}</span>.
-        </span>
-      </label>
-    </div>
-  );
-
-  const sendReceiveCards = (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-5">
-        <div className="flex items-center gap-2 text-blue-800 mb-3">
-          <Shield className="h-5 w-5 shrink-0" />
-          <h4 className="text-sm font-semibold">Qué enviamos a Floid</h4>
-        </div>
-        <ul className="text-sm text-gray-700 space-y-2 list-disc list-inside marker:text-blue-500">
-          <li>
-            Tu <strong>RUT</strong>:{" "}
-            <span className="font-semibold text-gray-900">
-              {profileLoading ? "cargando…" : formatRutForDisplay(profileRut)}
-            </span>
-          </li>
-          <li>
-            Un <strong>identificador interno</strong> de la solicitud (para correlacionar la respuesta).
-          </li>
-          <li className="text-gray-600">
-            <strong>Tus claves no pasan por MaxRent</strong>: Clave Única y Clave Tributaria SII las
-            ingresas directo en la ventana de Floid.
-          </li>
-        </ul>
-      </div>
-      <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-5">
-        <div className="flex items-center gap-2 text-emerald-900 mb-3">
-          <FileText className="h-5 w-5 shrink-0" />
-          <h4 className="text-sm font-semibold">Qué esperamos recibir</h4>
-        </div>
-        <ul className="text-sm text-gray-700 space-y-2 list-disc list-inside marker:text-emerald-600">
-          <li>
-            <strong>Renta imponible mensual</strong> (Superintendencia de Pensiones).
-          </li>
-          <li>
-            <strong>Carpeta tributaria</strong> con datos del contribuyente, bienes raíces y F22 (SII).
-          </li>
-          <li className="text-gray-600">
-            Floid genera un <strong>PDF</strong> con el detalle completo y MaxRent lo guarda para tu
-            consulta y la del equipo.
-          </li>
-        </ul>
-      </div>
-    </div>
+  // Preflight minimalista (2026-05-17): antes mostrábamos 2 cards densas con
+  // "Qué enviamos a Floid" / "Qué esperamos recibir" + 2 checkboxes (uno para
+  // "ya leí las cards" y otro para autorizar). Quedaba mucho texto entre el
+  // usuario y el click. Ahora solo va el checkbox de autorización legal —
+  // el `dataPreviewAcknowledged` que el backend pide se envía siempre `true`
+  // porque ya no hay nada que revisar arriba. Versión del consent
+  // (`FLOID_CONSENT_VERSION`) se sigue registrando en BD para auditoría.
+  const consentBlock = (
+    <label className="flex items-start gap-3 cursor-pointer text-left">
+      <input
+        type="checkbox"
+        checked={consentChecked}
+        onChange={(e) => setConsentChecked(e.target.checked)}
+        className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+      />
+      <span className="text-sm text-gray-700 leading-relaxed">
+        Autorizo a <strong>MaxRent</strong> a consultar mi información de renta
+        e información tributaria vía <strong>Floid</strong>.
+      </span>
+    </label>
   );
 
   if (loading) {
@@ -343,27 +244,18 @@ export default function EvaluacionPage() {
       <div className="max-w-2xl space-y-6">
         {preflightHeader}
 
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="border-b border-gray-100 bg-gradient-to-r from-blue-50/80 to-white px-6 py-4">
-            <h2 className="text-sm font-semibold text-gray-900">Tu próximo paso</h2>
-            <p className="mt-0.5 text-xs text-gray-600">
-              Revisa los datos y autoriza. Vas a Floid para ingresar tus claves.
-            </p>
-          </div>
-
-          <div className="p-6 space-y-6">
-            {sendReceiveCards}
-            {dualConsentBlock}
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
-                {error}
-              </div>
-            )}
-            <div className="flex justify-end pt-1">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-5">
+          {consentBlock}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
+              {error}
+            </div>
+          )}
+          <div className="flex justify-end">
               <button
                 type="button"
                 onClick={requestEvaluation}
-                disabled={requesting || !previewChecked || !consentChecked}
+                disabled={requesting || !consentChecked}
                 className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm"
               >
                 {requesting ? (
@@ -378,7 +270,6 @@ export default function EvaluacionPage() {
                   </>
                 )}
               </button>
-            </div>
           </div>
         </div>
       </div>
@@ -411,10 +302,8 @@ export default function EvaluacionPage() {
             </p>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-6">
-          <h2 className="text-sm font-semibold text-gray-900">Reintenta</h2>
-          {sendReceiveCards}
-          {dualConsentBlock}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-5">
+          {consentBlock}
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
               {error}
@@ -423,7 +312,7 @@ export default function EvaluacionPage() {
           <button
             type="button"
             onClick={requestEvaluation}
-            disabled={requesting || !previewChecked || !consentChecked}
+            disabled={requesting || !consentChecked}
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
             {requesting ? (
