@@ -18,7 +18,7 @@ export async function UfBadge() {
 
   return (
     <span
-      className="hidden items-center rounded-full bg-white/5 px-2.5 py-1 text-xs font-medium text-white/60 ring-1 ring-white/10 md:inline-flex"
+      className="hidden items-center rounded-full bg-white/5 px-2 py-0.5 text-[10.5px] font-medium tracking-tight text-white/55 ring-1 ring-white/10 md:inline-flex"
       title={`UF al ${uf.date} · fuente: ${uf.source}`}
     >
       {formatUfBadge(uf.valueClp)}

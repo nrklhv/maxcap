@@ -57,6 +57,20 @@ export function Header({
       ? "border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-teal-2"
       : "border-b-2 border-transparent px-3.5 py-0 text-xs font-medium text-gray-2 transition-colors h-14 flex items-center hover:text-white hover:border-orange";
 
+  // "Brokers aliados" → link al landing `/brokers` (no al portal). Distinto de
+  // "Portal broker" que es el login para brokers ya aprobados. Aparece en
+  // variants `inversionista` y `vendedor`; en `broker` no agrega valor (ya estás
+  // en esa página).
+  const brokersAliadosLink = (
+    <Link
+      href="/brokers"
+      className={portalLinkClass}
+      onClick={() => setOpen(false)}
+    >
+      Brokers aliados
+    </Link>
+  );
+
   const links =
     variant === "inversionista" ? (
       <>
@@ -81,6 +95,7 @@ export function Header({
         >
           FAQ
         </Link>
+        {brokersAliadosLink}
         <Link
           href={investorPortalHref}
           className={portalLinkClass}
@@ -126,6 +141,7 @@ export function Header({
         >
           Preguntas
         </Link>
+        {brokersAliadosLink}
         <Link
           href={investorPortalHref}
           className={portalLinkClass}
@@ -200,13 +216,16 @@ export function Header({
   const navLinks =
     variant === "broker" ? linksBroker : links;
 
-  const logoHref =
-    variant === "inversionista" ? "/#top" : variant === "broker" ? "/brokers" : "/vendedor";
+  // El logo siempre vuelve a la home (`/` = landing inversionista, eje del Club).
+  // Anteriormente cada variant llevaba a su propia página, pero eso confundía:
+  // un visitante en /vendedor o /brokers haciendo click en MAXRENT esperaba
+  // ir al sitio principal, no quedarse en la misma página.
+  const logoHref = "/";
 
   return (
     <>
       <header className="sticky top-0 z-[100] flex h-14 items-center justify-between border-b border-white/10 bg-dark/95 px-4 backdrop-blur-md md:px-10">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 md:gap-5">
           <Link href={logoHref} className="opacity-85 transition-opacity hover:opacity-100">
             <Logo size="sm" />
           </Link>
