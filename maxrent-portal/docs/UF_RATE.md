@@ -140,6 +140,28 @@ arrastrar Prisma al bundle del cliente:
 El service re-exporta `convertUfToClp` para que el caller server-side pueda
 importar todo desde un solo lugar.
 
+## Endpoint público para la landing (`www.maxrent.cl`)
+
+`GET /api/public/uf-rate` expone la UF cacheada al landing público para mostrar
+un badge sutil en el header (`"1 UF = $39.458"`).
+
+- **Sin auth**. Rate limit `public` (10/min por IP). CORS allowlist:
+  reutiliza `LEADS_ALLOWED_ORIGINS` (por default `https://www.maxrent.cl` +
+  `https://maxrent.cl`) + previews `*.vercel.app` en non-production.
+- **Cache HTTP**: `Cache-Control: public, s-maxage=1800, max-age=300,
+  stale-while-revalidate=86400`. El Vercel CDN cachea 30 min — la UF cambia
+  1 vez al día, no necesita estar más fresca.
+- **Body**:
+  ```json
+  { "uf": { "date": "2026-05-17", "valueClp": 39458.12, "source": "mindicador.cl" } }
+  ```
+  o `{ "uf": null }` si todavía no hay UF cacheada (post-deploy fresco).
+
+La landing lo consume desde `lib/uf.ts` (`fetchLatestUf()`) con
+`next: { revalidate: 1800 }` y un `AbortSignal.timeout(5_000)`. Si el portal
+no responde, devuelve `null` silenciosamente y el `<UfBadge />` no renderiza
+nada — la landing jamás falla por la UF.
+
 ## Endpoints que devuelven `latestUfRate`
 
 Los 3 endpoints del portal de pools incluyen el campo `latestUfRate` en la

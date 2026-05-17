@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Header } from "./Header";
 import { Footer } from "./Footer";
 import { Logo } from "./Logo";
@@ -9,10 +10,10 @@ import { StepRow, StepsWrap } from "./StepRow";
 import { FaqList } from "./FaqItem";
 import { brokerFaqItems } from "@/lib/faqBroker";
 
-export function BrokerLanding() {
+export function BrokerLanding({ ufBadge }: { ufBadge?: ReactNode } = {}) {
   return (
     <>
-      <Header variant="broker" />
+      <Header variant="broker" ufBadge={ufBadge} />
       <div className="md:mr-[420px] xl:mr-[480px] 2xl:mr-[520px]">
         <section
           className="hero-animate relative overflow-hidden bg-dark px-4 pb-10 pt-9 md:px-10 md:pb-10 md:pt-11"

@@ -329,8 +329,9 @@ maxrent-portal/
 | Método | Ruta | Auth | Descripción |
 |---|---|---|---|
 | POST | `/api/public/leads` | No | Recibe el body del form del landing (inversionista, vendedor o broker). Upsert idempotente de `Lead` por email. Para `kind=INVESTOR` nuevo, dispara welcome email vía la capa de notifications. Acepta opcionalmente `referral_code` (ver atribución abajo). |
+| GET | `/api/public/uf-rate` | No | UF chilena cacheada para el badge "1 UF = $X" del header de `www.maxrent.cl`. Cache HTTP 30 min (`s-maxage=1800`). Devuelve `{ uf: { date, valueClp, source } }` o `{ uf: null }` si todavía no hay cron corrido. Detalle: [`docs/UF_RATE.md`](./docs/UF_RATE.md). |
 
-CORS: orígenes permitidos vía `LEADS_ALLOWED_ORIGINS` (CSV). Por defecto: `https://www.maxrent.cl` y `https://maxrent.cl`. En non-prod, también `*.vercel.app`.
+CORS: orígenes permitidos vía `LEADS_ALLOWED_ORIGINS` (CSV, compartido entre los dos endpoints públicos). Por defecto: `https://www.maxrent.cl` y `https://maxrent.cl`. En non-prod, también `*.vercel.app`.
 
 **Atribución de referidos** (PR #47, captura — la creación de `Referral`/`BrokerLead` viene en PR siguiente):
 
@@ -846,7 +847,7 @@ Capa de defensa en profundidad contra abuso. **No reemplaza** otras protecciones
 | Bucket | Límite | Identificación | Endpoints |
 |---|---|---|---|
 | `webhook` | 60/min por IP | IP del cliente | `/api/payments/webhook`, `/api/floid/callback`, `/api/notifications/webhook/resend` |
-| `public` | 10/min por IP | IP del cliente | `/api/public/leads` |
+| `public` | 10/min por IP | IP del cliente | `/api/public/leads`, `/api/public/uf-rate` |
 | `authenticated` | 60/min por usuario | userId si hay sesión, sino IP | `/api/portal/pools` + `[slug]`, `/api/portal/pool-units/[id]`, `/api/portal/catalog-properties` |
 | `expensive` | 5/min por usuario | userId si hay sesión, sino IP | `/api/floid/evaluate`, `POST /api/reservations`, `POST /api/payments/checkout` |
 
