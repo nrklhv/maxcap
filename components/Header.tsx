@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { Logo } from "./Logo";
 import { getPortalUrl } from "@/lib/site";
 import { scrollToForm } from "@/lib/scrollToForm";
+import { referralQueryParam } from "@/lib/referralCookie";
 
 export type HeaderVariant = "inversionista" | "vendedor" | "broker";
 
@@ -48,9 +49,22 @@ export function Header({
   // Dos puertas explícitas al portal — solucionan el caso multi-rol donde
   // un mismo email tiene cuenta inversionista y broker. El callbackUrl
   // garantiza que cada link aterrice en su área.
+  //
+  // Si hay cookie `mxr_ref` (referido), anexamos `&ref=INV-XXX` al href para
+  // que el portal capture la atribución incluso si la cookie cross-subdomain
+  // no viaja (browsers strictos, private mode). El portal tiene un middleware
+  // que persiste el `?ref=` en su propia cookie del dominio del portal y el
+  // event `createUser` de NextAuth lo lee al crear la cuenta.
   const portalUrl = getPortalUrl();
-  const investorPortalHref = `${portalUrl}/login?callbackUrl=/dashboard`;
-  const brokerPortalHref = `${portalUrl}/login?callbackUrl=/broker/oportunidades`;
+  const [refParam, setRefParam] = useState<string | null>(null);
+  useEffect(() => {
+    // referralQueryParam() usa document.cookie → solo cliente. Por eso
+    // useEffect (no se evalúa en SSR).
+    setRefParam(referralQueryParam());
+  }, []);
+  const refSuffix = refParam ? `&${refParam}` : "";
+  const investorPortalHref = `${portalUrl}/login?callbackUrl=/dashboard${refSuffix}`;
+  const brokerPortalHref = `${portalUrl}/login?callbackUrl=/broker/oportunidades${refSuffix}`;
 
   // Nav links "comunes" (navegación dentro de la propia landing) tienen sus
   // clases hardcodeadas inline en cada `<Link>` más abajo — gris neutro,

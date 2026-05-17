@@ -77,15 +77,20 @@ export function captureFirstTouchReferralFromUrl(): void {
   const upper = raw.trim().toUpperCase();
   if (!REFERRAL_CODE_PATTERN.test(upper)) return;
 
-  // Cookie de 60 días en el dominio root para que funcione en `www.maxrent.cl`,
-  // `maxrent.cl` y futuros subdominios públicos (no portal — el portal usa otro
-  // dominio y no comparte cookies con el landing).
+  // Cookie de 60 días. En producción usamos `Domain=.maxrent.cl` para que la
+  // cookie viaje a todos los subdominios — específicamente al portal
+  // (`portal.maxrent.cl`). Antes la cookie quedaba scoped al host del landing
+  // y se perdía la atribución de cualquiera que clickeara "Portal inversionista"
+  // directo desde el header sin pasar por el lead form.
+  //
+  // En localhost o preview deploys (`*.vercel.app`) NO agregamos Domain — esos
+  // hosts son únicos y agregar Domain rompería el cookie por ser inválido.
   const maxAgeSeconds = REFERRAL_TTL_DAYS * 24 * 60 * 60;
-  const isHttps =
-    typeof window.location !== "undefined" &&
-    window.location.protocol === "https:";
+  const isHttps = window.location.protocol === "https:";
+  const hostname = window.location.hostname;
+  const isMaxrentDomain =
+    hostname === "maxrent.cl" || hostname.endsWith(".maxrent.cl");
 
-  // En localhost no agregamos `Secure` ni `Domain`; en producción sí.
   const parts = [
     `${REFERRAL_COOKIE_NAME}=${encodeURIComponent(upper)}`,
     `Max-Age=${maxAgeSeconds}`,
@@ -93,10 +98,23 @@ export function captureFirstTouchReferralFromUrl(): void {
     "SameSite=Lax",
   ];
   if (isHttps) parts.push("Secure");
+  if (isMaxrentDomain) parts.push("Domain=.maxrent.cl");
 
   try {
     document.cookie = parts.join("; ");
   } catch {
     /* private mode / quota — silencioso, no rompe la UX. */
   }
+}
+
+/**
+ * Devuelve un segmento de query string (`ref=INV-XXX`) si la cookie de referido
+ * está presente, o `null` si no. Se usa en el Header del landing para anexar
+ * el code a los links que llevan al portal — defensa adicional contra browsers
+ * que bloquean cookies cross-subdomain (private mode, trackers strictos, etc.).
+ */
+export function referralQueryParam(): string | null {
+  const code = readReferralCode();
+  if (!code) return null;
+  return `ref=${encodeURIComponent(code)}`;
 }

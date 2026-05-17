@@ -19,7 +19,9 @@ import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { Prisma } from "@prisma/client";
 import { isInvestorPerfilCompleteForPortal } from "@/lib/portal/profile-labor";
+import { cookies } from "next/headers";
 import {
+  claimAttributionFromCookieCode,
   ensureInvestorReferralCode,
   linkUserToPendingAttribution,
   safeRunReferralHook,
@@ -360,11 +362,41 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       await safeRunReferralHook("ensureInvestorReferralCode", () =>
         ensureInvestorReferralCode(user.id!)
       );
+
+      // Si NO había Lead previo (signup directo al portal sin pasar por el
+      // form del landing), intentar recuperar la atribución desde la cookie
+      // `mxr_ref` que el middleware persistió (viene del `?ref=` propagado en
+      // el header del landing o de la cookie cross-subdomain del propio
+      // landing). Esto crea Lead minimal + Referral/BrokerLead si el code es
+      // válido. Silencioso si no hay cookie o el code no matchea.
+      if (user.email && !existingLead) {
+        const refCookie = (await cookies()).get("mxr_ref")?.value;
+        if (refCookie) {
+          await safeRunReferralHook("claimAttributionFromCookieCode", () =>
+            claimAttributionFromCookieCode({
+              userId: user.id!,
+              email: user.email!.trim().toLowerCase(),
+              code: refCookie,
+            })
+          );
+        }
+      }
+
       if (user.email) {
+        // Si claimAttributionFromCookieCode acaba de crear+linkear un Lead,
+        // releemos. Si existía el original, usamos ese.
+        let effectiveLeadId = existingLead?.id ?? null;
+        if (!effectiveLeadId) {
+          const fresh = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: { leadId: true },
+          });
+          effectiveLeadId = fresh?.leadId ?? null;
+        }
         await safeRunReferralHook("linkUserToPendingAttribution", () =>
           linkUserToPendingAttribution({
             userId: user.id!,
-            leadId: existingLead?.id ?? null,
+            leadId: effectiveLeadId,
             email: user.email!.trim().toLowerCase(),
           })
         );
