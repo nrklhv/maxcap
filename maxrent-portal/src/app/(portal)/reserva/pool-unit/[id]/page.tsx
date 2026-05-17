@@ -17,6 +17,6 @@ export default function PoolUnitCheckoutPage({ params, searchParams }: Props) {
   const safeFrom =
     typeof searchParams.from === "string" && searchParams.from.startsWith("/")
       ? searchParams.from
-      : "/oportunidades/pools";
+      : "/oportunidades";
   return <PoolUnitCheckout unitId={params.id} backHref={safeFrom} />;
 }
