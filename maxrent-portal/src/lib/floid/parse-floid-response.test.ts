@@ -417,6 +417,48 @@ describe("parseFloidWidgetPayload", () => {
     const r = parseFloidWidgetPayload(payload);
     expect(r?.summary).toContain("mora");
   });
+
+  it("payload 'todo fallido' (INVALID_CONTRACT) → secciones null + errors populadas", () => {
+    // Caso real producción 2026-05-18 (cliente Benjamín Labra): el contrato
+    // MaxRent↔Floid quedó desactivado en Floid → cada sección viene con
+    // code: 400 + error_code: INVALID_CONTRACT, y el code global también es
+    // 400. El parser debe devolver sp/sii/cmf = null y poblar errors para que
+    // el service marque la evaluación como FAILED (no COMPLETED).
+    const payload = {
+      code: 400,
+      message: "Service unavailable",
+      caseid: "71ac1d29-c163-4ba5-92ec-149417a08aeb",
+      custom: "cmpaz12g50003jp0471inj1mx",
+      consumerId: "16096105-8",
+      download_pdf: "https://admin.floid.app/pdf_generator?url=...",
+      SP: {
+        renta_imponible: {
+          code: 400,
+          error_code: "INVALID_CONTRACT",
+          error_message: "El contrato asociado a este Token está desactivado",
+          display_message:
+            "The contract associated with this Token is deactivated",
+        },
+      },
+      SII: {
+        carpeta_tributaria: {
+          code: 400,
+          error_code: "INVALID_CONTRACT",
+          error_message: "El contrato asociado a este Token está desactivado",
+          display_message:
+            "The contract associated with this Token is deactivated",
+        },
+      },
+    };
+    const r = parseFloidWidgetPayload(payload);
+    expect(r).not.toBeNull();
+    expect(r?.sp).toBeNull();
+    expect(r?.sii).toBeNull();
+    expect(r?.cmf).toBeNull();
+    expect(r?.errors.sp?.errorCode).toBe("INVALID_CONTRACT");
+    expect(r?.errors.sii?.errorCode).toBe("INVALID_CONTRACT");
+    expect(r?.partial).toBe(true);
+  });
 });
 
 describe("looksLikeFloidAsyncAck", () => {
