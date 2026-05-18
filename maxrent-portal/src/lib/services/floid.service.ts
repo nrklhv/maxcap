@@ -151,6 +151,38 @@ async function persistWidgetReport(
     throw new Error("Payload del widget incompleto");
   }
 
+  // Caso "todo vacío" — Floid devolvió un payload reconocible pero ninguna de
+  // las 3 secciones (SP/SII/CMF) trajo data útil. Pasaba cuando el contrato
+  // MaxRent↔Floid estaba desactivado: cada sección venía con `code: 400` +
+  // `error_code: INVALID_CONTRACT` y el callback lo marcaba COMPLETED igual.
+  // Ahora detectamos el caso y marcamos FAILED con un errorMessage que
+  // concatena los errores de las secciones para que staff entienda qué pasó.
+  const hasAnySectionData =
+    report.sp !== null || report.sii !== null || report.cmf !== null;
+  if (!hasAnySectionData) {
+    const errorParts: string[] = [];
+    if (report.errors.sp) errorParts.push(`SP: ${report.errors.sp.message}`);
+    if (report.errors.sii) errorParts.push(`SII: ${report.errors.sii.message}`);
+    if (report.errors.cmf) errorParts.push(`CMF: ${report.errors.cmf.message}`);
+    const errorMessage =
+      errorParts.length > 0
+        ? `Floid no devolvió información de ninguna fuente. ${errorParts.join(" · ")}`
+        : "Floid no devolvió información de ninguna fuente.";
+    await prisma.creditEvaluation.update({
+      where: { id: evaluationId },
+      data: {
+        status: "FAILED",
+        summary: report.summary,
+        downloadPdfUrl: report.downloadPdfUrl,
+        floidCaseId: report.caseid,
+        rawResponse: report.rawResponse as Prisma.InputJsonValue,
+        completedAt: new Date(),
+        errorMessage,
+      },
+    });
+    return;
+  }
+
   await prisma.creditEvaluation.update({
     where: { id: evaluationId },
     data: {
