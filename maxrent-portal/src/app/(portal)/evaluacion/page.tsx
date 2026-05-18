@@ -141,11 +141,11 @@ export default function EvaluacionPage() {
     }
   };
 
-  const cancelAndRetry = async () => {
+  const cancelEvaluation = async () => {
     if (!evaluation) return;
     if (
       !window.confirm(
-        "Esto descarta el reporte actual para poder volver a iniciar el flujo con Floid. ¿Continuar?"
+        "Esto descarta la evaluación en curso. Después podrás iniciar el flujo nuevamente. ¿Continuar?"
       )
     )
       return;
@@ -281,7 +281,7 @@ export default function EvaluacionPage() {
     return (
       <EvaluacionProcessing
         requestedAt={evaluation.requestedAt}
-        onCancel={cancelAndRetry}
+        onCancel={cancelEvaluation}
         cancelling={requesting}
       />
     );
@@ -369,19 +369,19 @@ export default function EvaluacionPage() {
         <div>
           <button
             type="button"
-            onClick={cancelAndRetry}
+            onClick={cancelEvaluation}
             disabled={requesting}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-amber-900 bg-amber-100 border border-amber-300 rounded-lg hover:bg-amber-200 transition-colors disabled:opacity-50"
           >
             {requesting ? (
               <>
                 <RefreshCw className="h-4 w-4 animate-spin" aria-hidden />
-                Reiniciando…
+                Cancelando…
               </>
             ) : (
               <>
                 <RefreshCw className="h-4 w-4" aria-hidden />
-                Reintentar evaluación
+                Cancelar evaluación
               </>
             )}
           </button>
@@ -490,8 +490,8 @@ function EvaluacionProcessing({
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-left text-sm text-amber-900 space-y-2">
             <p>
               <span className="font-semibold">¿Cerraste la ventana de Floid?</span>{" "}
-              Si nunca llegó a enviarse el reporte, cancela esta evaluación para
-              volver a iniciar el flujo desde cero.
+              Si nunca llegó a enviarse el reporte, cancela esta evaluación.
+              Después podrás iniciar el flujo nuevamente.
             </p>
             <button
               type="button"
@@ -499,7 +499,7 @@ function EvaluacionProcessing({
               disabled={cancelling}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-900 bg-amber-100 border border-amber-300 rounded-lg hover:bg-amber-200 transition-colors disabled:opacity-50"
             >
-              {cancelling ? "Cancelando…" : "Cancelar y reintentar"}
+              {cancelling ? "Cancelando…" : "Cancelar"}
             </button>
           </div>
         )}
