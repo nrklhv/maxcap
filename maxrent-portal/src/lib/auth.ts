@@ -271,12 +271,24 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             email && allow.has(email) ? "SUPER_ADMIN" : dbUser.staffRole;
           t.onboardingCompleted = isInvestorPerfilCompleteForPortal(dbUser.profile);
           t.brokerAccessStatus = dbUser.brokerAccessStatus ?? null;
+          t.userMissing = false;
           if (dbUser.profile) {
             profileSnapshot = {
               onboardingCompleted: dbUser.profile.onboardingCompleted,
               additionalData: dbUser.profile.additionalData,
             };
           }
+        } else if (t.id || emailHint) {
+          // El token apunta a un User que NO existe en BD (típicamente porque
+          // fue borrado manualmente). Invalidamos campos sensibles + marcamos
+          // `userMissing` para que el middleware fuerce signOut. Sin esto,
+          // cookies viejas dejaban entrar al portal con los valores cacheados
+          // (canInvest=true, onboardingCompleted=true) — bypass del onboarding.
+          t.canInvest = false;
+          t.staffRole = "NONE";
+          t.onboardingCompleted = false;
+          t.brokerAccessStatus = null;
+          t.userMissing = true;
         }
       } catch {
         // No romper el flujo de login si Prisma falla en este paso

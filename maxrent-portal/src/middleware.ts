@@ -97,6 +97,32 @@ function handleRequest(req: AuthRequest): NextResponseType {
   const isNotificationsWebhook = pathname.startsWith(
     "/api/notifications/webhook/"
   );
+
+  // Cookie de cuenta borrada: el JWT callback (auth.ts) marca `userMissing=true`
+  // cuando el token apunta a un User que ya no existe en BD. Lo detectamos acá
+  // y forzamos signOut limpiando las cookies de sesión + redirigiendo al login.
+  // Sin esto, cookies viejas seguían entrando al portal con valores cacheados
+  // (canInvest=true) hasta que el JWT expirara naturalmente (~30 días).
+  // Exentos: rutas de NextAuth (para que el signOut/login funcione) + webhooks.
+  if (
+    isLoggedIn &&
+    req.auth?.user?.userMissing === true &&
+    !isApiAuth
+  ) {
+    const loginUrl = new URL("/login", req.nextUrl.origin);
+    loginUrl.searchParams.set("error", "AccountDeleted");
+    const res = NextResponse.redirect(loginUrl);
+    // Limpiar ambas cookies de sesión (la non-secure y la __Secure prefixed).
+    res.cookies.set({ name: "authjs.session-token", value: "", maxAge: 0, path: "/" });
+    res.cookies.set({
+      name: "__Secure-authjs.session-token",
+      value: "",
+      maxAge: 0,
+      path: "/",
+      secure: true,
+    });
+    return res;
+  }
   // Vercel Cron llega con header `Authorization: Bearer <CRON_SECRET>` que cada
   // endpoint /api/cron/* valida en su handler. El middleware de NextAuth debe
   // dejarlos pasar — sino corta el cron con 401 antes de llegar a la lógica

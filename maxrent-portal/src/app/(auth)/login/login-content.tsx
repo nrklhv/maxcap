@@ -69,12 +69,17 @@ export default function LoginContent({
   const [devLoading, setDevLoading] = useState(false);
   const [providerIds, setProviderIds] = useState<string[] | null>(null);
 
-  // Mensaje para errores de Auth.js en el query string. AccessDenied =
-  // signIn() retornó false (típicamente por whitelist beta).
+  // Mensaje para errores de Auth.js en el query string.
+  // - AccessDenied: signIn() retornó false (típicamente por whitelist beta).
+  // - AccountDeleted: el middleware detectó cookie de cuenta borrada y forzó
+  //   signOut. El usuario tiene que volver a iniciar sesión (la cuenta se
+  //   re-crea automáticamente al hacer login OAuth con Google).
   const authErrorMessage = errorCode
     ? errorCode === "AccessDenied"
       ? "Tu correo no está autorizado para acceder al portal en este momento. Si crees que deberías tener acceso, contáctanos."
-      : "No pudimos iniciar sesión. Vuelve a intentar."
+      : errorCode === "AccountDeleted"
+        ? "Tu sesión expiró porque la cuenta fue actualizada. Vuelve a iniciar sesión."
+        : "No pudimos iniciar sesión. Vuelve a intentar."
     : null;
 
   useEffect(() => {
