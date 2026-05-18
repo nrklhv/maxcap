@@ -23,6 +23,13 @@ declare module "next-auth" {
       staffRole: StaffRole;
       onboardingCompleted: boolean;
       brokerAccessStatus: BrokerAccessStatus | null;
+      /**
+       * `true` cuando el JWT callback no pudo encontrar el User en BD (ej. la
+       * cuenta fue borrada manualmente). El middleware lo detecta y fuerza
+       * signOut para que cookies de cuentas borradas no permitan acceso
+       * "fantasma" hasta que expiren naturalmente (~30 días por default).
+       */
+      userMissing?: boolean;
     };
   }
 }
@@ -35,6 +42,8 @@ export type AppJwt = {
   staffRole?: StaffRole;
   onboardingCompleted?: boolean;
   brokerAccessStatus?: BrokerAccessStatus | null;
+  /** Ver doc de `Session.user.userMissing`. */
+  userMissing?: boolean;
 };
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -148,6 +157,7 @@ export const authConfig = {
       session.user.staffRole = t.staffRole ?? "NONE";
       session.user.onboardingCompleted = t.onboardingCompleted ?? false;
       session.user.brokerAccessStatus = t.brokerAccessStatus ?? null;
+      session.user.userMissing = t.userMissing ?? false;
       return session;
     },
 
