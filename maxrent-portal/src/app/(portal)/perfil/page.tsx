@@ -138,18 +138,15 @@ export default function PerfilPage() {
     setSuccess(false);
   };
 
-  const startEditingPersonal = () => {
+  // Único entrypoint de edición — desde 2026-05-18 hay un solo botón
+  // "Editar datos" que edita TODOS los campos (personales + laborales)
+  // juntos. Los modos "personal" y "labor" del estado quedaron como legacy
+  // por compatibilidad con la lógica de submit, pero no se gatillan más
+  // desde la UI.
+  const startEditingAll = () => {
     setBaseline(form);
     setLaborBaseline(laborForm);
-    setEditSection("personal");
-    setErrors({});
-    setSuccess(false);
-  };
-
-  const startEditingLabor = () => {
-    setBaseline(form);
-    setLaborBaseline(laborForm);
-    setEditSection("labor");
+    setEditSection("both");
     setErrors({});
     setSuccess(false);
   };
@@ -297,8 +294,9 @@ export default function PerfilPage() {
 
       {isView ? (
         // Una sola card con dos subsecciones (Datos personales + Datos laborales)
-        // separadas por divider. Mantiene contraste de secciones sin la confusión
-        // visual del layout previo en dos columnas paralelas.
+        // separadas por divider. Un único botón "Editar datos" al final que
+        // abre TODOS los campos del form en modo edición (no más botones por
+        // sección separados — confundían: ¿edito uno o el otro?).
         <div className="rounded-xl border border-gray-200 bg-white divide-y divide-gray-200">
           <section className="p-5 space-y-3" aria-labelledby="personal-heading-view">
             <h2
@@ -314,7 +312,7 @@ export default function PerfilPage() {
               formatPhoneForDisplay={formatPhoneForDisplay}
               withHeading={false}
               embedded
-              onEdit={startEditingPersonal}
+              showEditButton={false}
             />
           </section>
           <section className="p-5 space-y-3" aria-labelledby="labor-heading-view">
@@ -326,12 +324,20 @@ export default function PerfilPage() {
             </h2>
             <LaborReadSection
               laborForm={laborForm}
-              showEditButton
-              onEditLabor={startEditingLabor}
+              showEditButton={false}
               withHeading={false}
               embedded
             />
           </section>
+          <div className="p-5">
+            <button
+              type="button"
+              onClick={startEditingAll}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+            >
+              Editar datos
+            </button>
+          </div>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -435,7 +441,6 @@ export default function PerfilPage() {
                   withHeading={false}
                   showEditButton={false}
                   embedded
-                  onEdit={startEditingPersonal}
                 />
               )}
             </section>
@@ -458,7 +463,6 @@ export default function PerfilPage() {
                 <LaborReadSection
                   laborForm={laborForm}
                   showEditButton={false}
-                  onEditLabor={startEditingLabor}
                   withHeading={false}
                   embedded
                 />
@@ -530,7 +534,8 @@ function PersonalReadSection({
   showEditButton?: boolean;
   /** Cuando true, omite el `rounded-xl border` propio para integrarse dentro de una card padre. */
   embedded?: boolean;
-  onEdit: () => void;
+  /** Solo se usa si `showEditButton=true`. El padre define qué hacer al click. */
+  onEdit?: () => void;
 }) {
   // En modo embedded, el wrapper no lleva borde ni rounded — vive dentro de la card padre.
   const cardClass = embedded
@@ -698,16 +703,6 @@ function LaborReadSection({
         label="Renta líquida mensual"
         value={formatClp(Number(laborForm.monthlyNetIncomeClp.replace(/\D/g, "") || 0))}
       />
-      <ReadRow
-        label="¿Complementa renta con cotitular?"
-        value={laborForm.complementsIncomeWithCotitular ? "Sí" : "No"}
-      />
-      {laborForm.complementsIncomeWithCotitular ? (
-        <ReadRow
-          label="Renta mensual cotitular"
-          value={formatClp(Number(laborForm.cotitularMonthlyNetIncomeClp.replace(/\D/g, "") || 0))}
-        />
-      ) : null}
       <ReadRow
         label="Deudas mensuales actuales"
         value={formatClp(Number(laborForm.monthlyDebtPaymentsClp.replace(/\D/g, "") || 0))}
@@ -897,56 +892,6 @@ function LaborEditSection({
                 <p className="mt-1 text-xs text-red-600">{err("monthlyNetIncomeClp")}</p>
               ) : null}
             </div>
-
-            <fieldset>
-              <legend className="block text-sm font-medium text-gray-700 mb-2">
-                ¿Complementa renta con cotitular?
-              </legend>
-              <div className="flex gap-4">
-                <label className="inline-flex items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    name="complementsIncomeWithCotitular"
-                    checked={laborForm.complementsIncomeWithCotitular === true}
-                    onChange={() => setLabor({ complementsIncomeWithCotitular: true })}
-                  />
-                  Sí
-                </label>
-                <label className="inline-flex items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    name="complementsIncomeWithCotitular"
-                    checked={laborForm.complementsIncomeWithCotitular === false}
-                    onChange={() => setLabor({ complementsIncomeWithCotitular: false })}
-                  />
-                  No
-                </label>
-              </div>
-            </fieldset>
-
-            {laborForm.complementsIncomeWithCotitular ? (
-              <div>
-                <label
-                  htmlFor="cotitularMonthlyNetIncomeClp"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Renta mensual cotitular (CLP) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="cotitularMonthlyNetIncomeClp"
-                  inputMode="numeric"
-                  value={laborForm.cotitularMonthlyNetIncomeClp}
-                  onChange={(e) => setLabor({ cotitularMonthlyNetIncomeClp: e.target.value })}
-                  placeholder="Ej.: 500000"
-                  className={`w-full px-3 py-2.5 border rounded-lg text-sm ${
-                    err("cotitularMonthlyNetIncomeClp") ? "border-red-300 bg-red-50" : "border-gray-300"
-                  }`}
-                />
-                {err("cotitularMonthlyNetIncomeClp") ? (
-                  <p className="mt-1 text-xs text-red-600">{err("cotitularMonthlyNetIncomeClp")}</p>
-                ) : null}
-              </div>
-            ) : null}
 
             <div>
               <label htmlFor="monthlyDebtPaymentsClp" className="block text-sm font-medium text-gray-700 mb-1">
