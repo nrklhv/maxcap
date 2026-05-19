@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { Building2, ClipboardList, Home, Layers, LayoutDashboard, LogOut, Share2, UserRound, Users } from "lucide-react";
+import { Building2, ClipboardList, Home, Layers, LayoutDashboard, LogOut, Mail, Share2, UserRound, Users } from "lucide-react";
 
 const links = [
   { href: "/staff", label: "Inicio", icon: Home, match: (p: string) => p === "/staff" },
@@ -43,6 +43,12 @@ const links = [
     label: "Atribución",
     icon: Share2,
     match: (p: string) => p.startsWith("/staff/atribuciones"),
+  },
+  {
+    href: "/staff/email-preview",
+    label: "Emails",
+    icon: Mail,
+    match: (p: string) => p.startsWith("/staff/email-preview"),
   },
 ] as const;
 
