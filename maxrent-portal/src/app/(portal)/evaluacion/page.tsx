@@ -189,7 +189,8 @@ export default function EvaluacionPage() {
       />
       <span className="text-sm text-gray-700 leading-relaxed">
         Autorizo a <strong>MaxRent</strong> a consultar mi información de renta
-        e información tributaria vía <strong>Floid</strong>.
+        e información tributaria a través de su proveedor de antecedentes
+        financieros.
       </span>
     </label>
   );
@@ -212,7 +213,7 @@ export default function EvaluacionPage() {
             <div>
               <p className="text-sm font-medium text-amber-800">Completa tu perfil primero</p>
               <p className="text-sm text-amber-700 mt-1">
-                Necesitamos tu RUT y datos personales para poder realizar la evaluación con Floid.
+                Necesitamos tu RUT y datos personales para poder iniciar la evaluación.
               </p>
               <a
                 href="/perfil"
@@ -261,7 +262,7 @@ export default function EvaluacionPage() {
                 {requesting ? (
                   <>
                     <RefreshCw className="h-4 w-4 animate-spin" aria-hidden />
-                    Iniciando con Floid…
+                    Iniciando…
                   </>
                 ) : (
                   <>
@@ -442,7 +443,7 @@ function EvaluacionProcessing({
   void tick;
 
   const messages = [
-    "Conectando con Floid…",
+    "Conectando con el proveedor…",
     "Esperando tu autenticación con Clave Única y SII…",
     "Procesando renta imponible y carpeta tributaria…",
     "Casi listo, recibiendo el reporte…",
@@ -476,7 +477,7 @@ function EvaluacionProcessing({
             {messages[messageIdx]}
           </h3>
           <p className="text-sm text-gray-500 mt-2 leading-relaxed">
-            Si no completaste el flujo en la ventana de Floid, vuelve a ella para
+            Si no completaste el flujo en la ventana abierta, vuelve a ella para
             ingresar tus credenciales. Esta pantalla se actualiza automáticamente.
           </p>
         </div>
@@ -489,7 +490,7 @@ function EvaluacionProcessing({
         {showStuckHint && (
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-left text-sm text-amber-900 space-y-2">
             <p>
-              <span className="font-semibold">¿Cerraste la ventana de Floid?</span>{" "}
+              <span className="font-semibold">¿Cerraste la ventana?</span>{" "}
               Si nunca llegó a enviarse el reporte, cancela esta evaluación.
               Después podrás iniciar el flujo nuevamente.
             </p>
