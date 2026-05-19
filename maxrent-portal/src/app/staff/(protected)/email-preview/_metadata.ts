@@ -66,7 +66,7 @@ export const TEMPLATE_METADATA: Record<TemplateKey, TemplateMetadata> = {
     description:
       "Bienvenida que recibe un lead al completar el form del landing.",
     trigger: "POST /api/public/leads (kind=INVESTOR)",
-    subject: "Tu cupo en MaxRent está reservado",
+    subject: "Estás a un paso del Club MaxRent",
   },
   "magic-link": {
     description:
