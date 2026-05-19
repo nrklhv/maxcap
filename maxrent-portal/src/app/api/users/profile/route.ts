@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isLaborProfileComplete } from "@/lib/portal/profile-labor";
+import { notifyTemplate } from "@/lib/services/notifications";
 import { profilePutSchema, type LaborProfileInput } from "@/lib/validations";
 import type { Prisma } from "@prisma/client";
 
@@ -204,8 +205,12 @@ export async function PUT(req: Request) {
     const profile = await prisma.$transaction(async (tx) => {
       const existing = await tx.profile.findUnique({
         where: { userId: session.user.id },
-        select: { additionalData: true },
+        select: { additionalData: true, onboardingCompleted: true },
       });
+
+      // Estado anterior del flag para detectar la transición false → true y
+      // disparar el email `perfil-completado` solo en la primera vez.
+      const wasOnboardingCompleted = Boolean(existing?.onboardingCompleted);
 
       const prevAdditional = isJsonObject(existing?.additionalData)
         ? { ...(existing!.additionalData as Record<string, unknown>) }
@@ -256,10 +261,30 @@ export async function PUT(req: Request) {
         where: { id: session.user.id },
         data: { name: displayName },
       });
-      return p;
+      return { profile: p, wasOnboardingCompleted, nowOnboardingCompleted: onboardingCompleted };
     });
 
-    return NextResponse.json({ profile });
+    // Disparar email `perfil-completado` solo en la transición false → true
+    // (no en cada save posterior). Fire-and-forget: si Resend falla, el save
+    // del perfil ya quedó OK y no rompemos la respuesta al usuario.
+    if (!profile.wasOnboardingCompleted && profile.nowOnboardingCompleted) {
+      const portalUrl =
+        process.env.NEXT_PUBLIC_PORTAL_URL?.trim() ||
+        "https://portal.maxrent.cl";
+      void notifyTemplate({
+        template: "perfil-completado",
+        to: profile.profile.contactEmail || session.user.email!,
+        variables: {
+          firstName: profile.profile.firstName ?? "",
+          portalUrl,
+        },
+        userId: session.user.id,
+      }).catch((err) => {
+        console.error("[profile PUT] notifyTemplate perfil-completado falló", err);
+      });
+    }
+
+    return NextResponse.json({ profile: profile.profile });
   } catch (e) {
     console.error("[profile PUT]", e);
     const code = prismaErrorCode(e);

@@ -24,6 +24,7 @@
 
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
+import { notifyTemplate } from "@/lib/services/notifications";
 import {
   parseFloidWidgetPayload,
   type FloidWidgetReport,
@@ -148,6 +149,7 @@ async function persistWidgetReport(
         completedAt: new Date(),
       },
     });
+    void sendEvaluationStatusEmail(evaluationId, "FAILED");
     throw new Error("Payload del widget incompleto");
   }
 
@@ -180,6 +182,7 @@ async function persistWidgetReport(
         errorMessage,
       },
     });
+    void sendEvaluationStatusEmail(evaluationId, "FAILED");
     return;
   }
 
@@ -195,6 +198,50 @@ async function persistWidgetReport(
       errorMessage: null,
     },
   });
+  void sendEvaluationStatusEmail(evaluationId, "COMPLETED");
+}
+
+/**
+ * Dispara el email correspondiente al estado final de la evaluación. Fire-and-
+ * forget: si Resend falla, NO rompemos el callback (la BD ya está actualizada).
+ * Trae el user + profile via una query extra; el callback es infrequente
+ * (1 por evaluación) y la simplicidad supera al costo.
+ */
+async function sendEvaluationStatusEmail(
+  evaluationId: string,
+  status: "COMPLETED" | "FAILED"
+): Promise<void> {
+  try {
+    const evaluation = await prisma.creditEvaluation.findUnique({
+      where: { id: evaluationId },
+      select: {
+        userId: true,
+        user: {
+          select: {
+            email: true,
+            profile: { select: { firstName: true } },
+          },
+        },
+      },
+    });
+    if (!evaluation?.user?.email) return;
+    const portalUrl =
+      process.env.NEXT_PUBLIC_PORTAL_URL?.trim() ||
+      "https://portal.maxrent.cl";
+    const firstName = evaluation.user.profile?.firstName ?? "";
+    await notifyTemplate({
+      template:
+        status === "COMPLETED" ? "evaluacion-completada" : "evaluacion-fallida",
+      to: evaluation.user.email,
+      variables: { firstName, portalUrl },
+      userId: evaluation.userId,
+    });
+  } catch (err) {
+    console.error(
+      `[floid.service] sendEvaluationStatusEmail(${evaluationId}, ${status}) falló`,
+      err
+    );
+  }
 }
 
 /**

@@ -24,6 +24,31 @@ import WelcomeInvestor, {
   welcomeInvestorText,
   type WelcomeInvestorVariables,
 } from "./welcome-investor";
+import PerfilCompletado, {
+  perfilCompletadoSubject,
+  perfilCompletadoText,
+  type PerfilCompletadoVariables,
+} from "./perfil-completado";
+import EvaluacionCompletada, {
+  evaluacionCompletadaSubject,
+  evaluacionCompletadaText,
+  type EvaluacionCompletadaVariables,
+} from "./evaluacion-completada";
+import EvaluacionFallida, {
+  evaluacionFallidaSubject,
+  evaluacionFallidaText,
+  type EvaluacionFallidaVariables,
+} from "./evaluacion-fallida";
+import HabilitacionAprobada, {
+  habilitacionAprobadaSubject,
+  habilitacionAprobadaText,
+  type HabilitacionAprobadaVariables,
+} from "./habilitacion-aprobada";
+import ReservaPagada, {
+  reservaPagadaSubject,
+  reservaPagadaText,
+  type ReservaPagadaVariables,
+} from "./reserva-pagada";
 
 /** Output común de cualquier template renderizado. */
 export type RenderedTemplate = {
@@ -36,6 +61,11 @@ export type RenderedTemplate = {
 export type TemplateMap = {
   "welcome-investor": WelcomeInvestorVariables;
   "magic-link": MagicLinkVariables;
+  "perfil-completado": PerfilCompletadoVariables;
+  "evaluacion-completada": EvaluacionCompletadaVariables;
+  "evaluacion-fallida": EvaluacionFallidaVariables;
+  "habilitacion-aprobada": HabilitacionAprobadaVariables;
+  "reserva-pagada": ReservaPagadaVariables;
 };
 
 export type TemplateKey = keyof TemplateMap;
@@ -58,6 +88,46 @@ const TEMPLATE_REGISTRY: {
       subject: magicLinkSubject,
       html,
       text: magicLinkText(vars),
+    };
+  },
+  "perfil-completado": async (vars) => {
+    const html = await render(createElement(PerfilCompletado, vars));
+    return {
+      subject: perfilCompletadoSubject,
+      html,
+      text: perfilCompletadoText(vars),
+    };
+  },
+  "evaluacion-completada": async (vars) => {
+    const html = await render(createElement(EvaluacionCompletada, vars));
+    return {
+      subject: evaluacionCompletadaSubject,
+      html,
+      text: evaluacionCompletadaText(vars),
+    };
+  },
+  "evaluacion-fallida": async (vars) => {
+    const html = await render(createElement(EvaluacionFallida, vars));
+    return {
+      subject: evaluacionFallidaSubject,
+      html,
+      text: evaluacionFallidaText(vars),
+    };
+  },
+  "habilitacion-aprobada": async (vars) => {
+    const html = await render(createElement(HabilitacionAprobada, vars));
+    return {
+      subject: habilitacionAprobadaSubject,
+      html,
+      text: habilitacionAprobadaText(vars),
+    };
+  },
+  "reserva-pagada": async (vars) => {
+    const html = await render(createElement(ReservaPagada, vars));
+    return {
+      subject: reservaPagadaSubject,
+      html,
+      text: reservaPagadaText(vars),
     };
   },
 };

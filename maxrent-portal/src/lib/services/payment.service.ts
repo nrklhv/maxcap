@@ -11,6 +11,7 @@
 import { prisma } from "@/lib/prisma";
 import { reconcilePropertyAfterInvestorReservationChange } from "@/lib/services/property.service";
 import { reconcilePoolUnitAfterReservationChange } from "@/lib/services/pool.service";
+import { notifyTemplate } from "@/lib/services/notifications";
 
 export interface CheckoutResult {
   checkoutUrl: string;       // URL donde redirigir al usuario para pagar
@@ -95,8 +96,11 @@ export class PaymentService {
       await reconcilePropertyAfterInvestorReservationChange(after.propertyId);
       await reconcilePoolUnitAfterReservationChange(after.poolUnitId);
 
-      // TODO: Enviar email de confirmación
-      // await notificationService.sendReservationConfirmation(reservation.id);
+      // Email "reserva-pagada" — fire-and-forget. El webhook MP no debe
+      // bloquearse si Resend falla; la reserva ya quedó PAID en BD.
+      void sendReservaPagadaEmail(after.id).catch((err) => {
+        console.error("[payment.webhook] reserva-pagada email falló", err);
+      });
 
     } else if (payload.status === "rejected") {
       const after = await prisma.reservation.update({
@@ -171,3 +175,64 @@ export class PaymentService {
 }
 
 export const paymentService = new PaymentService();
+
+/**
+ * Trae la reserva con datos suficientes para armar el email de confirmación
+ * (user.email, profile.firstName, descripción legible de la unidad, monto).
+ * Soporta los 2 productos (Property y PoolUnit) — XOR garantizado por el
+ * CHECK constraint del schema.
+ */
+async function sendReservaPagadaEmail(reservationId: string): Promise<void> {
+  const r = await prisma.reservation.findUnique({
+    where: { id: reservationId },
+    select: {
+      id: true,
+      userId: true,
+      propertyName: true,
+      amount: true,
+      currency: true,
+      user: {
+        select: {
+          email: true,
+          profile: { select: { firstName: true } },
+        },
+      },
+      poolUnit: {
+        select: {
+          label: true,
+          externalId: true,
+          pool: { select: { name: true } },
+        },
+      },
+    },
+  });
+
+  if (!r?.user?.email) return;
+
+  // Descripción legible de la unidad para el body del email.
+  let unitDescription = r.propertyName || "tu unidad";
+  if (r.poolUnit) {
+    unitDescription = `${r.poolUnit.label} (${r.poolUnit.pool.name})`;
+  }
+
+  const amountNumber = Number(r.amount);
+  const amountClpFormatted = Number.isFinite(amountNumber)
+    ? `$${Math.round(amountNumber).toLocaleString("es-CL")}`
+    : "—";
+
+  const portalUrl =
+    process.env.NEXT_PUBLIC_PORTAL_URL?.trim() ||
+    "https://portal.maxrent.cl";
+
+  await notifyTemplate({
+    template: "reserva-pagada",
+    to: r.user.email,
+    variables: {
+      firstName: r.user.profile?.firstName ?? "",
+      unitDescription,
+      amountClpFormatted,
+      portalUrl,
+    },
+    userId: r.userId,
+  });
+}
