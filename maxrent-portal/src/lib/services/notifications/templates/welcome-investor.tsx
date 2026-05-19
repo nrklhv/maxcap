@@ -101,17 +101,15 @@ export default function WelcomeInvestor({
   return (
     <Html>
       <Head />
-      <Preview>Tu cupo en MaxRent está reservado. Continúa en el portal.</Preview>
+      <Preview>Completa tu perfil y conoce las oportunidades disponibles.</Preview>
       <Body style={styles.body}>
         <Container style={styles.container}>
-          <Heading style={styles.heading}>
-            Recibimos tus datos en MaxRent
-          </Heading>
+          <Heading style={styles.heading}>Bienvenido al Club</Heading>
           <Text style={styles.paragraph}>{greeting}</Text>
           <Text style={styles.paragraph}>
-            Gracias por tu interés en invertir con MaxRent. Para continuar el
-            proceso, ingresa al portal del inversionista y completa tu perfil.
-            Toma menos de 2 minutos.
+            Gracias por tu interés en invertir con MaxRent. Para que veas las
+            oportunidades del Club, completa tu perfil en el portal. Toma menos
+            de 2 minutos.
           </Text>
           <Section style={styles.buttonWrap}>
             <Link href={loginUrl} style={styles.button}>
@@ -143,7 +141,7 @@ export function welcomeInvestorText(vars: WelcomeInvestorVariables): string {
   return [
     greeting,
     "",
-    "Gracias por tu interés en invertir con MaxRent. Para continuar el proceso, ingresa al portal del inversionista y completa tu perfil:",
+    "Gracias por tu interés en invertir con MaxRent. Para que veas las oportunidades del Club, completa tu perfil en el portal:",
     "",
     loginUrl,
     "",
@@ -155,4 +153,4 @@ export function welcomeInvestorText(vars: WelcomeInvestorVariables): string {
 }
 
 /** Subject line — vive con el template para que un cambio sea atómico. */
-export const welcomeInvestorSubject = "Tu cupo en MaxRent está reservado";
+export const welcomeInvestorSubject = "Estás a un paso del Club MaxRent";
