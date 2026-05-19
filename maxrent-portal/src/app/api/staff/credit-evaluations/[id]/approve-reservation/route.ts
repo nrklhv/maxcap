@@ -9,6 +9,7 @@
 import { NextResponse } from "next/server";
 import { requireStaffSuperAdmin } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
+import { notifyTemplate } from "@/lib/services/notifications";
 
 export async function POST(
   _req: Request,
@@ -30,6 +31,13 @@ export async function POST(
       id: true,
       status: true,
       staffReservationApprovedAt: true,
+      userId: true,
+      user: {
+        select: {
+          email: true,
+          profile: { select: { firstName: true } },
+        },
+      },
     },
   });
 
@@ -53,6 +61,26 @@ export async function POST(
       staffReservationApprovedByUserId: session.user.id,
     },
   });
+
+  // Email "habilitacion-aprobada" — fire-and-forget. Si Resend falla, la
+  // habilitación queda igual en BD; staff puede reenviar manualmente desde la
+  // vista de comunicaciones (PR B).
+  if (row.user?.email) {
+    const portalUrl =
+      process.env.NEXT_PUBLIC_PORTAL_URL?.trim() ||
+      "https://portal.maxrent.cl";
+    void notifyTemplate({
+      template: "habilitacion-aprobada",
+      to: row.user.email,
+      variables: {
+        firstName: row.user.profile?.firstName ?? "",
+        portalUrl,
+      },
+      userId: row.userId,
+    }).catch((err) => {
+      console.error("[approve-reservation] notifyTemplate falló", err);
+    });
+  }
 
   return NextResponse.json({ ok: true });
 }
