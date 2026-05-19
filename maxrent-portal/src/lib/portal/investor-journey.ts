@@ -179,7 +179,7 @@ export function buildInvestorJourney(input: InvestorJourneyInput): {
     next = {
       title: "Solicita tu evaluación financiera",
       message:
-        "Obtenemos tu información de renta (Sup. Pensiones) e información tributaria (SII) a través de Floid. Tarda 2-3 minutos y es sin costo.",
+        "Obtenemos tu información de renta (Sup. Pensiones) e información tributaria (SII) en pocos minutos. Sin costo.",
       href: "/evaluacion",
       ctaLabel: "Iniciar evaluación",
       tone: "primary",
@@ -208,7 +208,7 @@ export function buildInvestorJourney(input: InvestorJourneyInput): {
     next = {
       title: "Tu evaluación está en proceso",
       message:
-        "Estamos esperando la respuesta de Floid. Esta pantalla se actualiza sola cuando llega el reporte.",
+        "Estamos esperando la respuesta del proveedor. Esta pantalla se actualiza sola cuando llega el reporte.",
       href: "/evaluacion",
       ctaLabel: "Ver estado",
       tone: "wait",
